@@ -112,7 +112,7 @@ function IncidentSlide() {
     <div className="relative grid h-full grid-cols-12 items-center gap-10 px-[8vw]">
       <CarbonBg />
       <div className="relative col-span-7">
-        <Eyebrow>July 11, 2026 · 09:41 UTC</Eyebrow>
+        <Eyebrow>July 10–13, 2026</Eyebrow>
         <Headline className="mt-4">
           An autonomous agent swarm broke into a model hub.
           <br />
@@ -571,6 +571,22 @@ function DeckInner() {
     ],
     [agents, cassidyThread, cassidy, p, b],
   );
+
+  // Deep-link: /deck?slide=7 opens slide 7; the URL follows navigation so a slide can be reloaded in place.
+  const urlSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!urlSynced.current) {
+      urlSynced.current = true;
+      const n = Number(new URLSearchParams(window.location.search).get("slide"));
+      if (n >= 1 && n <= slides.length && n - 1 !== index) {
+        setIndex(n - 1);
+        return;
+      }
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set("slide", String(index + 1));
+    window.history.replaceState(null, "", url.toString());
+  }, [index, slides.length]);
 
   const go = React.useCallback(
     (delta: number) => {

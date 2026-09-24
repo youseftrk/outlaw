@@ -124,7 +124,7 @@ export default function SettingsPage() {
           >
             <label className="flex flex-col gap-1 text-[12px] text-text-2">
               Provider
-              <Select value={provider} onValueChange={(v) => pickProvider((v as LLMProvider) ?? "none")}>
+              <Select value={provider} onValueChange={(v) => pickProvider((v as LLMProvider) ?? "none")} items={Object.fromEntries((Object.keys(PRESETS) as LLMProvider[]).map((p) => [p, PRESETS[p].label]))}>
                 <SelectTrigger className="border-line bg-bg-2">
                   <SelectValue />
                 </SelectTrigger>

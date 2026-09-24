@@ -66,7 +66,7 @@ function TracesTab({ initialTraceId }: { initialTraceId: string | null }) {
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-          <Select value={verdict} onValueChange={(v) => setVerdict((v as string) ?? "any")}>
+          <Select value={verdict} onValueChange={(v) => setVerdict((v as string) ?? "any")} items={{ any: "Any verdict", completed: "completed", "in-progress": "in progress", "awaiting-approval": "awaiting approval", denied: "denied", failed: "failed" }}>
             <SelectTrigger className="ml-auto h-8 w-[160px] border-line bg-bg-2 text-[12px]">
               <SelectValue placeholder="Any verdict" />
             </SelectTrigger>
@@ -172,7 +172,7 @@ function PolicyDialog({ onSaved }: { onSaved: () => void }) {
           <div className="grid grid-cols-3 gap-3">
             <label className="flex flex-col gap-1 text-[12px] text-text-2">
               Effect
-              <Select value={effect} onValueChange={(v) => setEffect((v as PolicyEffect) ?? "allow")}>
+              <Select value={effect} onValueChange={(v) => setEffect((v as PolicyEffect) ?? "allow")} items={{ allow: "Allow", "require-approval": "Require approval", deny: "Deny" }}>
                 <SelectTrigger className="border-line bg-bg-2">
                   <SelectValue />
                 </SelectTrigger>

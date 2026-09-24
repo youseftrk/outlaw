@@ -363,7 +363,7 @@ function NewMigrationDialog({ servers }: { servers: Server[] }) {
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-[12px] text-text-2">
             Source server
-            <Select value={source} onValueChange={(v) => setSource((v as string) ?? "")}>
+            <Select value={source} onValueChange={(v) => setSource((v as string) ?? "")} items={Object.fromEntries(servers.map((s) => [s.id, s.hostname]))}>
               <SelectTrigger className="border-line bg-bg-2">
                 <SelectValue placeholder="Pick a host" />
               </SelectTrigger>
@@ -394,7 +394,7 @@ function NewMigrationDialog({ servers }: { servers: Server[] }) {
             </label>
             <label className="flex flex-col gap-1 text-[12px] text-text-2">
               Reason
-              <Select value={reason} onValueChange={(v) => setReason((v as MigrationReason) ?? "capacity")}>
+              <Select value={reason} onValueChange={(v) => setReason((v as MigrationReason) ?? "capacity")} items={Object.fromEntries(REASONS.map((r) => [r, humanize(r)]))}>
                 <SelectTrigger className="border-line bg-bg-2">
                   <SelectValue />
                 </SelectTrigger>

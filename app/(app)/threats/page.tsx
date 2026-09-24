@@ -90,7 +90,7 @@ export default function ThreatsPage() {
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
-            <Select value={severity} onValueChange={(v) => setSeverity((v as string) ?? "any")}>
+            <Select value={severity} onValueChange={(v) => setSeverity((v as string) ?? "any")} items={{ any: "Any severity", ...Object.fromEntries(SEVERITY_ORDER.map((s) => [s, s])) }}>
               <SelectTrigger className="h-8 w-[150px] border-line bg-bg-2 text-[12px]">
                 <SelectValue placeholder="Any severity" />
               </SelectTrigger>
