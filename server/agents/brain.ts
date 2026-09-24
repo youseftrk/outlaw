@@ -1,0 +1,579 @@
+/**
+ * Detection + decision engine (SPEC §4.1, §4.2). Deterministic rules over
+ * the 60-sim-s telemetry window; every signal kind is covered. Threats get
+ * a response plan executed step-per-tick through governance.
+ *
+ * BLIND BOUNDARY: this module never sees range internals — only telemetry,
+ * threats, the observed world, and store entities.
+ */
+import type {
+  Agent, GeoPoint, IOC, KillChainStageName, Severity, TelemetrySignal,
+  Threat, ThreatCategory, ToolName, ID,
+} from "@/lib/types";
+import { bus } from "../bus";
+import { store } from "../store";
+import { emitSignal, telemetryWindow } from "../telemetry";
+import * as world from "../world/world";
+import { ids } from "../ids";
+import { startTrace, addSpan, endSpan, endTrace } from "../governance/traces";
+import { runTool, type ToolArgs } from "./toolbelt";
+import { narrate, detectionCopy, resolutionCopy } from "./narrator";
+import { agentSay, threatAlert, threatResolved } from "../messaging/composer";
+import { refreshServerConformance } from "../fleet/conformance";
+
+/* ─────────────── detection rules ─────────────── */
+
+interface RuleHit {
+  category: ThreatCategory;
+  severity: Severity;
+  title: string;
+  signals: TelemetrySignal[];
+  serverIds: ID[];
+  iocs: IOC[];
+  killChainStage: KillChainStageName;
+  techniqueIds: string[];
+  preventable?: boolean;
+}
+
+const seen = new Set<string>();
+/** threats recently created keyed by server+category for dedup (5 min) */
+const recent = new Map<string, number>();
+
+function iocFromSignal(sig: TelemetrySignal): IOC[] {
+  const iocs: IOC[] = [];
+  const a = sig.attributes;
+  if (typeof a.ip === "string") iocs.push({ type: "ip", value: a.ip, confidence: 0.8, firstSeen: sig.at, tags: [] });
+  if (typeof a.account === "string") iocs.push({ type: "account", value: a.account, confidence: 0.9, firstSeen: sig.at, tags: [] });
+  if (typeof a.tokenId === "string") iocs.push({ type: "token", value: a.tokenId, confidence: 0.9, firstSeen: sig.at, tags: [] });
+  if (typeof a.dataset === "string") iocs.push({ type: "dataset", value: a.dataset, confidence: 0.85, firstSeen: sig.at, tags: [] });
+  if (typeof a.cve === "string") iocs.push({ type: "cve", value: a.cve, confidence: 0.95, firstSeen: sig.at, tags: [] });
+  if (typeof a.domain === "string") iocs.push({ type: "domain", value: a.domain, confidence: 0.8, firstSeen: sig.at, tags: [] });
+  return iocs;
+}
+
+function sourceGeo(sig: TelemetrySignal): { ip?: string; geo?: GeoPoint; actorLabel?: string } {
+  const a = sig.attributes;
+  const geo = typeof a.lat === "number" && typeof a.lng === "number"
+    ? { lat: a.lat, lng: a.lng, city: a.city as string | undefined, country: a.country as string | undefined }
+    : undefined;
+  return { ip: a.ip as string | undefined, geo, actorLabel: a.actor as string | undefined };
+}
+
+function correlate(signals: TelemetrySignal[]): RuleHit[] {
+  const hits: RuleHit[] = [];
+  const bySignal = new Map<string, TelemetrySignal[]>();
+  for (const s of signals) {
+    if (seen.has(s.id)) continue;
+    const list = bySignal.get(s.signal) ?? [];
+    list.push(s);
+    bySignal.set(s.signal, list);
+  }
+  const get = (k: TelemetrySignal["signal"]) => bySignal.get(k) ?? [];
+  const mark = (ss: TelemetrySignal[]) => ss.forEach((s) => seen.add(s.id));
+  const host = (s: TelemetrySignal) => (s.serverId ? store.server(s.serverId)?.hostname ?? s.serverId : "fleet");
+
+  const mkHit = (category: ThreatCategory, severity: Severity, title: string, sigs: TelemetrySignal[], stage: KillChainStageName, techniques: string[], preventable = false): RuleHit => ({
+    category, severity, title,
+    signals: sigs,
+    serverIds: [...new Set(sigs.map((s) => s.serverId).filter(Boolean))] as ID[],
+    iocs: sigs.flatMap(iocFromSignal),
+    killChainStage: stage,
+    techniqueIds: techniques,
+    preventable,
+  });
+
+  // auth.geo-anomaly + api.enumeration-burst same account → account-hijack
+  const geo = get("auth.geo-anomaly");
+  const bursts = get("api.enumeration-burst");
+  const paired = new Set<string>();
+  for (const g of geo) {
+    const burst = bursts.find((b) => b.attributes.account && b.attributes.account === g.attributes.account);
+    if (burst) {
+      paired.add(g.id); paired.add(burst.id);
+      hits.push(mkHit("account-hijack", "medium", `account ${g.attributes.account} showing impossible-travel + enumeration`, [g, burst], "initial-access", ["T1078", "T1595"]));
+    }
+  }
+  for (const g of geo.filter((x) => !paired.has(x.id))) {
+    hits.push(mkHit("recon", "low", `geo-anomalous login for ${g.attributes.account ?? "account"}`, [g], "recon", ["T1078"]));
+  }
+  for (const b of bursts.filter((x) => !paired.has(x.id))) {
+    hits.push(mkHit("recon", "low", `API enumeration burst on ${host(b)}`, [b], "recon", ["T1595"]));
+  }
+
+  for (const s of get("auth.admin-token-minted")) {
+    hits.push(mkHit("privilege-escalation", "high", `admin token minted on ${host(s)} with no session`, [s], "privilege-escalation", ["T1078", "T1552"]));
+  }
+  for (const s of get("auth.anomaly")) {
+    hits.push(mkHit("leaked-credential", "medium", `token used from new ASN on ${host(s)}`, [s], "credential-access", ["T1552.001"], true));
+  }
+  for (const s of [...get("process.plugin-install"), ...get("process.new-listener")]) {
+    const srv = s.serverId ? store.server(s.serverId) : undefined;
+    const hot = srv && (srv.role === "registry" || srv.env === "prod");
+    hits.push(mkHit("rce", hot ? "critical" : "high", `${s.signal === "process.plugin-install" ? "plugin install" : "new listener"} on ${host(s)}`, [s], "execution", ["T1190", "T1505.003"]));
+  }
+  for (const s of get("process.shell-spawn")) {
+    const ti = get("worker.template-render-anomaly").find((t) => t.serverId === s.serverId);
+    hits.push(mkHit(ti ? "template-injection" : "rce", "critical", `shell spawned on ${host(s)}`, ti ? [s, ti] : [s], "execution", ["T1059", "T1059.006"]));
+    if (ti) mark([ti]);
+  }
+  for (const s of get("net.egress-restricted-subnet")) {
+    hits.push(mkHit("anomalous-egress", "high", `${host(s)} egress to restricted subnet`, [s], "command-and-control", ["T1071"]));
+  }
+  for (const s of get("net.beacon-periodic")) {
+    hits.push(mkHit("c2-beacon", "high", `periodic beacon from ${host(s)}`, [s], "command-and-control", ["T1071"]));
+  }
+  for (const s of get("net.east-west-scan")) {
+    hits.push(mkHit("lateral-movement", "critical", `east-west scan from ${host(s)}`, [s], "lateral-movement", ["T1021"]));
+  }
+  for (const s of get("dataset.upload-suspicious")) {
+    const remote = get("dataset.loader-remote-code").find((r) => r.attributes.dataset === s.attributes.dataset);
+    hits.push(mkHit("malicious-dataset", remote ? "high" : "medium", `suspicious dataset upload ${s.attributes.dataset ?? ""}`, remote ? [s, remote] : [s], "initial-access", ["T1195.002"], true));
+    if (remote) mark([remote]);
+  }
+  for (const s of get("dataset.loader-remote-code").filter((x) => !seen.has(x.id))) {
+    hits.push(mkHit("malicious-dataset", "high", `remote-code loader on ${s.attributes.dataset ?? "dataset"}`, [s], "execution", ["T1059.006"], true));
+  }
+  for (const s of get("worker.env-read")) {
+    hits.push(mkHit("credential-harvest", "critical", `env secrets read on ${host(s)}`, [s], "credential-access", ["T1552.001"]));
+  }
+  for (const s of get("worker.template-render-anomaly").filter((x) => !seen.has(x.id))) {
+    hits.push(mkHit("template-injection", "critical", `template render anomaly on ${host(s)}`, [s], "execution", ["T1059.006"]));
+  }
+  for (const s of get("secrets.public-exposure")) {
+    hits.push(mkHit("leaked-credential", "high", `${s.attributes.count ?? "tokens"} credential(s) exposed in public data`, [s], "credential-access", ["T1552.005"], true));
+  }
+  for (const s of get("secrets.manager-access-spike")) {
+    hits.push(mkHit("credential-harvest", "critical", `secrets-manager access spike on ${host(s)}`, [s], "credential-access", ["T1552.005"]));
+  }
+  for (const s of get("cloud.imds-access")) {
+    hits.push(mkHit("credential-harvest", "high", `IMDS credential access on ${host(s)}`, [s], "credential-access", ["T1552.005"]));
+  }
+  for (const s of get("cloud.new-principal-activity")) {
+    hits.push(mkHit("lateral-movement", "critical", `new cloud principal activity from ${host(s)}`, [s], "lateral-movement", ["T1078"]));
+  }
+  for (const s of get("k8s.container-escape-indicator")) {
+    hits.push(mkHit("privilege-escalation", "critical", `container escape indicator on ${host(s)}`, [s], "privilege-escalation", ["T1068"]));
+  }
+  for (const s of get("k8s.kubeconfig-new-usage")) {
+    hits.push(mkHit("lateral-movement", "critical", `kubeconfig used from new context on ${host(s)}`, [s], "lateral-movement", ["T1021"]));
+  }
+  for (const s of get("storage.bulk-read")) {
+    hits.push(mkHit("data-exfiltration", "critical", `bulk storage read on ${host(s)}`, [s], "exfiltration", ["T1567"]));
+  }
+  for (const s of get("compute.ephemeral-burst")) {
+    hits.push(mkHit("agent-swarm", "critical", `ephemeral compute burst (${s.attributes.count ?? "many"} instances)`, [s], "impact", ["T1496"]));
+  }
+  for (const s of get("conformance.drift")) {
+    hits.push(mkHit("misconfiguration", "low", `config drift on ${host(s)}`, [s], "recon", ["T1496"], true));
+  }
+
+  // mark all consumed
+  for (const h of hits) mark(h.signals);
+  return hits;
+}
+
+/* ─────────────── response plans (§4.2) ─────────────── */
+
+interface PlanStep {
+  agentRole: "orchestrator" | "containment" | "forensics" | "credentials" | "fleet" | "supply-chain";
+  tool: ToolName;
+  args: (t: Threat) => ToolArgs;
+}
+interface Plan {
+  threatId: ID;
+  steps: PlanStep[];
+  cursor: number;
+  inFlight: boolean;
+}
+const plans = new Map<ID, Plan>();
+
+function threatServerId(t: Threat): ID | undefined {
+  return t.targetServerIds[0];
+}
+function threatDatasetId(t: Threat): ID | undefined {
+  const ioc = t.iocs.find((i) => i.type === "dataset");
+  if (ioc) return store.s.world.datasets.find((d) => d.name === ioc.value || d.id === ioc.value)?.id;
+  return undefined;
+}
+function threatClusterId(t: Threat): ID | undefined {
+  const srv = t.targetServerIds[0] ? store.server(t.targetServerIds[0]) : undefined;
+  const cl = store.s.world.clusters.find((c) => c.nodeServerIds.includes(srv?.id ?? "") || c.name === srv?.cluster);
+  return cl?.id;
+}
+function threatAccountId(t: Threat): ID | undefined {
+  const ioc = t.iocs.find((i) => i.type === "account");
+  if (!ioc) return undefined;
+  return store.s.world.accounts.find((a) => a.user === ioc.value || a.id === ioc.value)?.id;
+}
+function exposedTokenIds(t: Threat): ID[] | undefined {
+  const idsList = t.iocs.filter((i) => i.type === "token").map((i) => i.value);
+  return idsList.length ? idsList : undefined;
+}
+
+function planFor(t: Threat): PlanStep[] {
+  const sid = () => threatServerId(t);
+  switch (t.category) {
+    case "account-hijack":
+      return [
+        { agentRole: "credentials", tool: "disable_account", args: (x) => ({ accountId: threatAccountId(x) }) },
+        { agentRole: "credentials", tool: "rotate_credentials", args: (x) => ({ serverId: threatServerId(x) }) },
+        { agentRole: "forensics", tool: "enrich_ioc", args: (x) => ({ threatId: x.id }) },
+      ];
+    case "privilege-escalation":
+      return [
+        { agentRole: "containment", tool: "lock_registry", args: () => ({}) },
+        { agentRole: "fleet", tool: "patch_service", args: (x) => ({ serverId: store.s.world.registry.serverId }) },
+        { agentRole: "forensics", tool: "snapshot_evidence", args: (x) => ({ serverId: store.s.world.registry.serverId }) },
+        { agentRole: "containment", tool: "isolate_host", args: (x) => ({ serverId: threatServerId(x) }) },
+      ];
+    case "rce":
+      return [
+        { agentRole: "containment", tool: "isolate_host", args: (x) => ({ serverId: threatServerId(x) }) },
+        { agentRole: "containment", tool: "kill_process", args: (x) => ({ serverId: threatServerId(x) }) },
+        { agentRole: "forensics", tool: "snapshot_evidence", args: (x) => ({ serverId: threatServerId(x) }) },
+        { agentRole: "forensics", tool: "map_attack", args: (x) => ({ threatId: x.id }) },
+        { agentRole: "fleet", tool: "rebuild_node", args: (x) => ({ serverId: threatServerId(x) }) },
+      ];
+    case "anomalous-egress":
+      return [
+        { agentRole: "containment", tool: "block_egress", args: (x) => ({ serverId: threatServerId(x) }) },
+        { agentRole: "fleet", tool: "harden_sandbox", args: () => ({}) },
+      ];
+    case "leaked-credential":
+      return [
+        { agentRole: "credentials", tool: "revoke_token", args: (x) => ({ tokenIds: exposedTokenIds(x) }) },
+        { agentRole: "credentials", tool: "audit_tokens", args: () => ({}) },
+      ];
+    case "malicious-dataset":
+      return [
+        { agentRole: "supply-chain", tool: "scan_dataset", args: (x) => ({ datasetId: threatDatasetId(x) }) },
+        { agentRole: "supply-chain", tool: "quarantine_dataset", args: (x) => ({ datasetId: threatDatasetId(x) }) },
+        { agentRole: "credentials", tool: "revoke_token", args: (x) => ({ tokenIds: exposedTokenIds(x) }) },
+        { agentRole: "credentials", tool: "disable_account", args: (x) => ({ accountId: threatAccountId(x) }) },
+      ];
+    case "credential-harvest":
+      return [
+        { agentRole: "credentials", tool: "rotate_credentials", args: (x) => ({ serverId: threatServerId(x) }) },
+        { agentRole: "containment", tool: "isolate_host", args: (x) => ({ serverId: threatServerId(x) }) },
+      ];
+    case "template-injection":
+      return [
+        { agentRole: "containment", tool: "isolate_host", args: (x) => ({ serverId: threatServerId(x) }) },
+        { agentRole: "fleet", tool: "patch_service", args: (x) => ({ serverId: threatServerId(x) }) },
+        { agentRole: "supply-chain", tool: "quarantine_dataset", args: (x) => ({ datasetId: threatDatasetId(x) }) },
+      ];
+    case "lateral-movement":
+      return [
+        { agentRole: "containment", tool: "cordon_cluster", args: (x) => ({ clusterId: threatClusterId(x) }) },
+        { agentRole: "credentials", tool: "rotate_credentials", args: (x) => ({ serverId: threatServerId(x) }) },
+        { agentRole: "fleet", tool: "rebuild_node", args: (x) => ({ serverId: threatServerId(x) }) },
+      ];
+    case "c2-beacon":
+      return [
+        { agentRole: "containment", tool: "block_egress", args: (x) => ({ serverId: threatServerId(x), ip: x.iocs.find((i) => i.type === "ip")?.value }) },
+        { agentRole: "forensics", tool: "enrich_ioc", args: (x) => ({ threatId: x.id }) },
+      ];
+    case "data-exfiltration":
+      return [
+        { agentRole: "containment", tool: "block_egress", args: (x) => ({ serverId: threatServerId(x) }) },
+        { agentRole: "containment", tool: "isolate_host", args: (x) => ({ serverId: threatServerId(x) }) },
+        { agentRole: "credentials", tool: "rotate_credentials", args: () => ({ secretKind: "storage" }) },
+      ];
+    case "agent-swarm":
+      return [
+        { agentRole: "credentials", tool: "rotate_credentials", args: () => ({ secretKind: "cloud" }) },
+        { agentRole: "containment", tool: "cordon_cluster", args: (x) => ({ clusterId: threatClusterId(x) }) },
+        { agentRole: "fleet", tool: "migrate_workload", args: (x) => ({ serverId: threatServerId(x) }) },
+      ];
+    case "brute-force":
+    case "credential-stuffing":
+      return [{ agentRole: "containment", tool: "block_egress", args: (x) => ({ ip: x.iocs.find((i) => i.type === "ip")?.value }) }];
+    case "prompt-injection":
+      return [{ agentRole: "forensics", tool: "enrich_ioc", args: (x) => ({ threatId: x.id }) }];
+    case "misconfiguration":
+      return [{ agentRole: "fleet", tool: "remediate_drift", args: (x) => ({ serverId: threatServerId(x) }) }];
+    case "recon":
+      return [{ agentRole: "forensics", tool: "enrich_ioc", args: (x) => ({ threatId: x.id }) }];
+    default:
+      return [{ agentRole: "forensics", tool: "enrich_ioc", args: (x) => ({ threatId: x.id }) }];
+  }
+}
+
+function agentForRole(role: PlanStep["agentRole"]): Agent {
+  return store.s.agents.find((a) => a.role === role)!;
+}
+
+/* ─────────────── threat lifecycle ─────────────── */
+
+function createThreat(hit: RuleHit): Threat | null {
+  const key = `${hit.category}:${hit.serverIds.join(",")}`;
+  const lastAt = recent.get(key);
+  const nowMs = store.s.simNowMs;
+  if (lastAt && nowMs - lastAt < 5 * 60_000) {
+    const existing = store.s.threats.find(
+      (t) => t.category === hit.category && !["neutralized", "prevented", "false-positive"].includes(t.status)
+        && t.targetServerIds.join() === hit.serverIds.join()
+    );
+    if (existing) {
+      existing.updatedAt = store.now();
+      markSignalsSeen(hit.signals);
+      return null;
+    }
+  }
+  const id = ids.threat();
+  const first = hit.signals[0];
+  const threat: Threat = {
+    id,
+    title: hit.title,
+    category: hit.category,
+    severity: hit.severity,
+    status: "detected",
+    summary: `${hit.title}. Detected by Cassidy's correlation over ${hit.signals.length} signal(s).`,
+    source: sourceGeo(first),
+    targetServerIds: hit.serverIds,
+    handledBy: [],
+    attack: {
+      techniqueIds: hit.techniqueIds,
+      killChain: [{ stage: hit.killChainStage, at: store.now(), note: hit.title, outcome: "observed" }],
+    },
+    iocs: hit.iocs,
+    traceIds: [],
+    messageIds: [],
+    detectedAt: store.now(),
+    updatedAt: store.now(),
+  };
+  store.s.threats.push(threat);
+  recent.set(key, nowMs);
+  markSignalsSeen(hit.signals);
+  store.markDirty();
+  bus.emit("threat.detected", { threat }, {
+    severity: hit.severity,
+    summary: `${hit.severity} ${hit.category} — ${hit.title}`,
+    href: `/threats/${threat.id}`,
+  });
+  plans.set(id, { threatId: id, steps: planFor(threat), cursor: 0, inFlight: false });
+  // Doc enriches every new threat; Cassidy maps the kill chain
+  cassidyMention(threat);
+  return threat;
+}
+
+function markSignalsSeen(signals: TelemetrySignal[]): void {
+  // already marked inside correlate via mark(); helper for dedup path
+  for (const s of signals) seen.add(s.id);
+}
+
+const notifiedHigh = new Set<ID>();
+async function cassidyMention(threat: Threat): Promise<void> {
+  if (!["high", "critical"].includes(threat.severity)) return;
+  if (notifiedHigh.has(threat.id)) return;
+  notifiedHigh.add(threat.id);
+  if (store.s.settings.sim.quietHours && threat.severity === "medium") return;
+  const cassidy = store.agent("agt-cassidy")!;
+  const firstStep = planFor(threat)[0];
+  const actor = firstStep ? agentForRole(firstStep.agentRole) : store.agent("agt-doc")!;
+  const { text } = await narrate(
+    cassidy,
+    detectionCopy(threat, actor.name, firstStep?.tool ?? "investigating"),
+    { user: `Write Cassidy's one-line alert for: ${threat.title} (${threat.severity}). ${actor.name} is handling it.` }
+  );
+  const msg = threatAlert(threat, text);
+  threat.messageIds.push(msg.id);
+}
+
+async function advancePlan(plan: Plan): Promise<void> {
+  const threat = store.threat(plan.threatId);
+  if (!threat || ["neutralized", "prevented", "false-positive"].includes(threat.status)) {
+    plans.delete(plan.threatId);
+    return;
+  }
+  if (threat.status === "detected") {
+    threat.status = "investigating";
+    bus.emit("threat.updated", { threat }, { severity: threat.severity, summary: `${threat.id} investigating`, href: `/threats/${threat.id}` });
+  }
+  const step = plan.steps[plan.cursor];
+  if (!step) {
+    finishThreat(threat);
+    plans.delete(plan.threatId);
+    return;
+  }
+  const agent = agentForRole(step.agentRole);
+  if (agent.status === "paused") { plan.inFlight = false; return; }
+  if (!threat.handledBy.includes(agent.id)) threat.handledBy.push(agent.id);
+
+  const trace = startTrace(agent, `${step.tool} — ${threat.title}`, { threatId: threat.id, severity: threat.severity });
+  threat.traceIds.push(trace.id);
+  const o = addSpan(trace, "observe", `context for ${step.tool}`, { input: { threatId: threat.id, category: threat.category } });
+  endSpan(o);
+  const r = addSpan(trace, "reason", "why this step", { input: { tool: step.tool } });
+  const { text: reasonText, llm } = await narrate(agent, () => `${step.tool} on ${threat.targetServerIds.map((id) => store.server(id)?.hostname ?? id).join(", ") || "scope"} — part of the ${threat.category} response.`, undefined);
+  r.output = reasonText;
+  if (llm) r.llm = llm;
+  endSpan(r);
+  const p = addSpan(trace, "plan", `execute ${step.tool}`);
+  endSpan(p);
+
+  agent.status = "acting";
+  agent.currentTask = `${step.tool} → ${threat.id}`;
+  const result = await runTool(agent, step.tool, step.args(threat), trace, { severity: threat.severity });
+  const outcome = addSpan(trace, "outcome", result.ok ? "succeeded" : "didn't run", { output: result });
+  endSpan(outcome, result.ok ? "ok" : "denied", result);
+  endTrace(trace, result.ok ? "completed" : "denied");
+  agent.status = "idle";
+  agent.currentTask = undefined;
+  agent.metrics.threatsHandled += 1;
+
+  if (result.ok && ["isolate_host", "block_egress", "cordon_cluster", "lock_registry", "quarantine_dataset", "revoke_token", "disable_account"].includes(step.tool)) {
+    threat.status = "contained";
+    threat.attack.killChain.push({ stage: "containment" as KillChainStageName, at: store.now(), note: result.summary, outcome: "blocked" });
+    bus.emit("threat.updated", { threat }, { severity: threat.severity, summary: `${threat.id} contained — ${result.summary}`, href: `/threats/${threat.id}` });
+  }
+  plan.cursor += 1;
+  plan.inFlight = false;
+}
+
+function finishThreat(threat: Threat): void {
+  // `prevented` when the attack path closed before the attacker used it
+  const w = store.s.world;
+  let prevented = false;
+  if (threat.category === "leaked-credential") {
+    const ids = threat.iocs.filter((i) => i.type === "token").map((i) => i.value);
+    const held = w.tokens.filter((t) => (ids.length ? ids.includes(t.id) : t.exposedInDatasetId) && t.attackerHeld);
+    prevented = held.length === 0;
+  } else if (threat.category === "malicious-dataset") {
+    const ds = threatDatasetId(threat);
+    const rec = ds ? w.datasets.find((d) => d.id === ds) : undefined;
+    prevented = !!rec?.quarantined && !w.workers.some((wk) => wk.compromised);
+  } else if (threat.category === "misconfiguration") {
+    prevented = true;
+  }
+  threat.status = prevented ? "prevented" : "neutralized";
+  threat.resolvedAt = store.now();
+  threat.updatedAt = store.now();
+  store.markDirty();
+  bus.emit("threat.updated", { threat }, {
+    severity: threat.severity,
+    summary: `${threat.id} ${threat.status}`,
+    href: `/threats/${threat.id}`,
+  });
+  // Doc writes the report for neutralized/prevented
+  const doc = store.agent("agt-doc")!;
+  const text = prevented
+    ? `Closed ${threat.id} — ${threat.title.toLowerCase()}. The path was shut before it was ever used; marked prevented.`
+    : `Report on ${threat.id}: ${threat.title.toLowerCase()} — contained and neutralized. Evidence is on the trace.`;
+  const msg = threatResolved(threat, text);
+  threat.messageIds.push(msg.id);
+}
+
+/* ─────────────── patrols (§4.1) ─────────────── */
+
+const patrolAt: Record<string, number> = {};
+
+function patrolDue(key: string, everySec: number): boolean {
+  const last = patrolAt[key] ?? -Infinity;
+  if (store.s.tick - last >= everySec) {
+    patrolAt[key] = store.s.tick;
+    return true;
+  }
+  return false;
+}
+
+let rrCursor = 0;
+const extraTelemetry: TelemetrySignal[] = [];
+
+/** Queued by tools that produce signals (e.g. scan_public_secrets). */
+export function queueSignal(sig: TelemetrySignal): void {
+  extraTelemetry.push(sig);
+}
+
+async function patrols(): Promise<void> {
+  const calamity = store.agent("agt-calamity")!;
+  const belle = store.agent("agt-belle")!;
+  const ringo = store.agent("agt-ringo")!;
+  const paused = (a: Agent) => a.status === "paused";
+
+  // Calamity: scan_public_secrets every 90 sim-s
+  if (!paused(calamity) && patrolDue("calamity-secrets", 90)) {
+    const trace = startTrace(calamity, "patrol: scan public datasets for leaked secrets", {});
+    const o = addSpan(trace, "observe", "public dataset sweep", { input: { patrol: "scan_public_secrets" } });
+    endSpan(o);
+    const res = await runTool(calamity, "scan_public_secrets", {}, trace);
+    endTrace(trace, "completed");
+    if (res.ok && res.evidence && (res.evidence.tokenIds as string[])?.length) {
+      emitSignal("secrets.public-exposure", {
+        severity: "high",
+        attributes: {
+          count: (res.evidence.tokenIds as string[]).length,
+          tokenIds: (res.evidence.tokenIds as string[]).join(","),
+          datasets: (res.evidence.datasets as string[])?.join(",") ?? "",
+        },
+      });
+    }
+  }
+  // Calamity: registry plugin inventory every 120 s
+  if (!paused(calamity) && patrolDue("calamity-registry", 120)) {
+    const w = store.s.world;
+    const trace = startTrace(calamity, "patrol: registry plugin inventory", {});
+    if (w.registry.pluginInstallAllowed && !w.registry.locked) {
+      await runTool(calamity, "lock_registry", {}, trace, { severity: "medium" });
+      agentSay(calamity, `Registry was wide open — plugin installs allowed. Locked pkg-cache-01 until someone explains that.`, { kind: "status", severity: "low" });
+    }
+    endTrace(trace, "completed");
+  }
+  // Belle: audit_tokens every 120 s
+  if (!paused(belle) && patrolDue("belle-audit", 120)) {
+    const trace = startTrace(belle, "patrol: audit tokens", {});
+    await runTool(belle, "audit_tokens", {}, trace);
+    endTrace(trace, "completed");
+  }
+  // Ringo: conformance on 3 servers / 30 s round-robin + auto-remediate low risk
+  if (!paused(ringo) && patrolDue("ringo-conformance", 30)) {
+    const servers = store.s.servers;
+    for (let i = 0; i < 3; i++) {
+      const srv = servers[rrCursor++ % servers.length];
+      const trace = startTrace(ringo, `patrol: conformance ${srv.hostname}`, {});
+      const res = await runTool(ringo, "run_conformance", { serverId: srv.id }, trace);
+      endTrace(trace, "completed");
+      if (res.ok && res.evidence && (res.evidence.fails as number) > 0) {
+        const fails = srv.checks.filter((c) => c.status === "fail" && c.autoRemediable);
+        for (const c of fails.slice(0, 2)) {
+          if (c.remediationTool) {
+            const t2 = startTrace(ringo, `remediate ${c.name} on ${srv.hostname}`, {});
+            await runTool(ringo, c.remediationTool, { serverId: srv.id }, t2, { severity: "low" });
+            refreshServerConformance(srv);
+            endTrace(t2, "completed");
+          }
+        }
+      }
+    }
+  }
+}
+
+/* ─────────────── main tick ─────────────── */
+
+/** `paused` = baseline range mode: detection runs, response doesn't (SPEC §9). */
+export async function brainTick(paused = false): Promise<void> {
+  const signals = [...telemetryWindow(60), ...extraTelemetry.splice(0)];
+  const hits = correlate(signals);
+  for (const hit of hits) {
+    createThreat(hit);
+  }
+  if (paused) return;
+  await patrols();
+  for (const plan of [...plans.values()]) {
+    if (!plan.inFlight) {
+      plan.inFlight = true;
+      void advancePlan(plan);
+    }
+  }
+}
+
+/** Export for runtime reset. */
+export function brainReset(): void {
+  seen.clear();
+  recent.clear();
+  plans.clear();
+  notifiedHigh.clear();
+  for (const k of Object.keys(patrolAt)) delete patrolAt[k];
+  rrCursor = 0;
+  extraTelemetry.length = 0;
+}
