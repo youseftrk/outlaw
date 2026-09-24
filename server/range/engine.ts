@@ -15,6 +15,9 @@ import * as world from "../world/world";
 import { emitSignal } from "../telemetry";
 import { HF_2026 } from "./scenarios/hf-2026";
 import { scoreRun } from "./scoring";
+import { refreshServerConformance } from "../fleet/conformance";
+import { staggerPatrols } from "../agents/brain";
+import { systemSay, agentSay, threatAlert } from "../messaging/composer";
 import { G } from "../shared";
 
 export const RETRY_MS = 10_000;
@@ -46,9 +49,10 @@ const compromisedNode = () =>
 const liveSecret = (kind: string) =>
   W().secrets.find((s) => s.kind === kind && s.attackerHeld && new Date(s.rotatedAt).getTime() <= store.s.simNowMs - 3600_000);
 
-/** cascade: upstream step affirmatively blocked → "step:N", else null (keep retrying) */
+/** cascade: upstream step never succeeded (blocked or skipped) → "step:N" →
+ * this step is "skipped — never reached". Pending upstream → null (keep retrying). */
 const cascade = (run: RangeRun, n: number) =>
-  run.stepResults[n - 1]?.status === "blocked" ? `step:${n}` : null;
+  ["blocked", "skipped"].includes(run.stepResults[n - 1]?.status ?? "") ? `step:${n}` : null;
 /** first recorded closure key matching a pattern */
 const firstClosure = (re: RegExp) => Object.keys(W().closures).find((k) => re.test(k)) ?? null;
 
@@ -101,11 +105,12 @@ const IMPL: Record<number, StepImpl> = {
   4: {
     pre: () => {
       const srv = store.server(registryHost());
-      return srv?.status === "compromised" && W().sandbox.egressAllowed && !!W().network.egressAllowed[registryHost()];
+      // compromised or being evacuated (migrating) — foothold still live until isolated
+      return ["compromised", "migrating"].includes(srv?.status ?? "") && W().sandbox.egressAllowed && !!W().network.egressAllowed[registryHost()];
     },
     closedBy: (run) => {
       const srv = store.server(registryHost());
-      if (srv?.status !== "compromised") return cascade(run, 3) ?? firstClosure(/^egress:srv-pkg-cache-01$/);
+      if (!["compromised", "migrating"].includes(srv?.status ?? "")) return cascade(run, 3) ?? firstClosure(/^egress:srv-pkg-cache-01$/);
       if (!W().sandbox.egressAllowed) return "sandbox.egress";
       if (!W().network.egressAllowed[registryHost()]) return `egress:${registryHost()}`;
       return null;
@@ -136,7 +141,7 @@ const IMPL: Record<number, StepImpl> = {
   6: {
     pre: () => heldTokens().some((t) => { const a = W().accounts.find((x) => x.id === t.accountId); return !!a && !a.disabled; }),
     closedBy: (run) => {
-      if (heldTokens().length === 0) return cascade(run, 5);
+      if (heldTokens().length === 0) return cascade(run, 5) ?? firstClosure(/^token:/) ?? "tokens.revoked";
       const usable = heldTokens().some((t) => { const a = W().accounts.find((x) => x.id === t.accountId); return !!a && !a.disabled; });
       return usable ? null : firstClosure(/^account:.+:(enabled|weak)$/) ?? "accounts.enabled";
     },
@@ -309,6 +314,95 @@ function scenarioFor(run: RangeRun): RangeScenario | undefined {
   return run.scenarioId === HF_2026.id ? HF_2026 : undefined;
 }
 
+/**
+ * Arm the world for a run — restores the July 2026 incident snapshot so the
+ * replay races live agents, not a pre-hardened fleet: registry vulnerable,
+ * sandbox egress open, the 14 write tokens re-exposed, weak accounts live,
+ * workers unpatched, clusters open, no isolations, closures cleared.
+ */
+function armWorldForRun(run: RangeRun): void {
+  const w = W();
+  Object.assign(w.registry, {
+    tokenRefreshSigBypass: true,
+    pluginInstallAllowed: true,
+    locked: false,
+    patched: false,
+    attackerAdminToken: false,
+    plugins: ["groovy-console", "artifact-resolver"],
+  });
+  w.sandbox.hardened = false;
+  w.sandbox.egressAllowed = true;
+  w.sandbox.ephemeralInstances = 3;
+  for (const s of store.s.servers) w.network.egressAllowed[s.id] = true;
+  w.network.blockedIps = [];
+  w.network.blockedSubnets = [];
+
+  // re-expose the 14 write tokens across 6 public datasets (mint fresh if needed)
+  const publicDs = w.datasets.filter((d) => d.public).slice(0, 6);
+  let n = 0;
+  for (const t of w.tokens) {
+    t.attackerHeld = false;
+    if (t.exposedInDatasetId) { t.revoked = false; t.lastUsedFromASN = undefined; }
+  }
+  while (w.tokens.filter((t) => t.exposedInDatasetId && !t.revoked).length < 14) {
+    const ds = publicDs[n % Math.max(1, publicDs.length)];
+    const acct = w.accounts[n % w.accounts.length];
+    const tok: world.WorldToken = {
+      id: `tok-r${run.id.replace(/\D/g, "")}-${n}`,
+      accountId: acct?.id ?? "acct-ava",
+      scope: "write",
+      revoked: false,
+      attackerHeld: false,
+      exposedInDatasetId: ds?.id,
+    };
+    if (ds) ds.containsTokenIds.push(tok.id);
+    w.tokens.push(tok);
+    n++;
+  }
+
+  // accounts clean again; the five weak no-MFA ones are live
+  for (const a of w.accounts) a.compromised = false;
+  for (const a of w.accounts.slice(0, 5)) {
+    a.mfa = false; a.weakCreds = true; a.disabled = false;
+  }
+
+  // secrets harvestable again (stale rotation dates, none held)
+  for (const s of w.secrets) {
+    s.attackerHeld = false;
+    s.rotatedAt = new Date(store.s.simNowMs - 40 * 86400_000).toISOString();
+  }
+
+  // workers unpatched + clean, clusters open, no compromised/isolated hosts
+  for (const wk of w.workers) {
+    wk.fileDisclosurePatched = false;
+    wk.templateInjectionPatched = false;
+    wk.compromised = false;
+  }
+  for (const c of w.clusters) {
+    c.eastWestOpen = true;
+    c.cordoned = false;
+    c.compromisedNodeIds = [];
+  }
+  for (const s of store.s.servers) {
+    if (["isolated", "compromised", "rebuilding", "migrating"].includes(s.status)) s.status = "healthy";
+  }
+  w.datasets = w.datasets.filter((d) => d.id !== "ds-malicious-hf");
+  w.attacker = { hasInternet: false, c2Active: false, stagingAccounts: [], datasetsRead: [] };
+  w.revealed = { maliciousDatasets: [], exposedTokenIds: [], serverFacts: {} };
+  w.closures = {};
+
+  // conformance reflects the degradation again
+  for (const id of [w.registry.serverId, ...w.workers.map((x) => x.serverId)]) {
+    const srv = store.server(id);
+    if (srv) refreshServerConformance(srv);
+  }
+
+  // patrols "just swept" — next sweeps land mid/late run instead of instantly
+  staggerPatrols();
+
+  run.attackerLog.push({ at: store.now(), text: "environment restored to the July 2026 snapshot" });
+}
+
 export function startRun(scenarioId: string, mode: "protected" | "baseline", speed: number): RangeRun | { error: string } {
   const scenario = scenarioId === HF_2026.id ? HF_2026 : undefined;
   if (!scenario) return { error: `unknown scenario ${scenarioId}` };
@@ -324,12 +418,15 @@ export function startRun(scenarioId: string, mode: "protected" | "baseline", spe
     clockMs: 0,
     currentStepIndex: 0,
     stepResults: scenario.steps.map((s) => ({ stepId: s.id, status: "pending" as const })),
-    attackerLog: [{ at: store.now(), text: `run ${mode === "baseline" ? "baseline — agents paused" : "protected"} started` }],
+    attackerLog: [],
   };
+  armWorldForRun(run);
+  run.attackerLog.push({ at: store.now(), text: `run ${mode === "baseline" ? "baseline — agents paused" : "protected"} started` });
   store.s.rangeRuns.push(run);
   store.s.activeRunId = run.id;
   lastAttempt.set(run.id, new Map());
   store.markDirty();
+  systemSay(`Range run ${run.id} started · ${mode} · ${speed}×`);
   bus.emit("range.run", { run }, { severity: "medium", summary: `range run ${run.id} started (${mode})`, href: "/range" });
   return run;
 }
@@ -358,11 +455,6 @@ export function rangeAction(runId: ID, action: "pause" | "resume" | "abort" | "s
   store.markDirty();
   bus.emit("range.run", { run }, { summary: `range run ${run.id} ${action}`, href: "/range" });
   return { ok: true };
-}
-
-function cascadeBlockedBy(run: RangeRun, srcOrder: number): NonNullable<RangeStepResult["blockedBy"]> {
-  const src = run.stepResults[srcOrder - 1];
-  return src?.blockedBy ?? { agentId: "agt-cassidy", toolName: "isolate_host", traceId: "", note: `upstream step ${srcOrder} blocked` };
 }
 
 export function tickRange(): void {
@@ -398,22 +490,24 @@ export function tickRange(): void {
     if (!impl) { res.status = "skipped"; continue; }
     const closedKey = impl.closedBy(run);
     if (closedKey) {
-      res.status = "blocked";
       res.at = store.now();
-      const cascade = closedKey.match(/^step:(\d+)$/);
-      res.blockedBy = cascade
-        ? cascadeBlockedBy(run, Number(cascade[1]))
-        : (() => {
-            const c = world.closureOf(closedKey);
-            return {
-              agentId: c?.agentId ?? "agt-cassidy",
-              toolName: (c?.toolName ?? "isolate_host") as import("@/lib/types").ToolName,
-              traceId: c?.traceId ?? "",
-              note: `precondition closed (${closedKey})`,
-            };
-          })();
-      run.attackerLog.push({ at: store.now(), text: `[${step.realWorldLabel}] BLOCKED: ${step.title} — ${res.blockedBy.note}` });
-      bus.emit("range.step", { runId: run.id, stepId: step.id, status: "blocked", blockedBy: res.blockedBy }, { severity: "medium", summary: `step ${step.order} blocked — ${step.title}`, href: "/range" });
+      if (/^step:\d+$/.test(closedKey)) {
+        // upstream step never succeeded → never reached, not a direct block
+        res.status = "skipped";
+        run.attackerLog.push({ at: store.now(), text: `[${step.realWorldLabel}] skipped — ${step.title} (never reached)` });
+        bus.emit("range.step", { runId: run.id, stepId: step.id, status: "skipped" }, { summary: `step ${step.order} skipped — never reached`, href: "/range" });
+      } else {
+        res.status = "blocked";
+        const c = world.closureOf(closedKey);
+        res.blockedBy = {
+          agentId: c?.agentId ?? "agt-cassidy",
+          toolName: (c?.toolName ?? "isolate_host") as import("@/lib/types").ToolName,
+          traceId: c?.traceId ?? "",
+          note: `precondition closed (${closedKey})`,
+        };
+        run.attackerLog.push({ at: store.now(), text: `[${step.realWorldLabel}] BLOCKED: ${step.title} — ${res.blockedBy.note}` });
+        bus.emit("range.step", { runId: run.id, stepId: step.id, status: "blocked", blockedBy: res.blockedBy }, { severity: "medium", summary: `step ${step.order} blocked — ${step.title}`, href: "/range" });
+      }
       changed = true;
       continue;
     }
@@ -433,7 +527,26 @@ export function tickRange(): void {
   const allTerminal = run.stepResults.every((r) => ["succeeded", "blocked", "skipped"].includes(r.status));
   if (allTerminal || run.clockMs >= scenario.durationMs) {
     if (!allTerminal) {
-      for (const res of run.stepResults) if (res.status === "active" || res.status === "pending") res.status = "skipped";
+      // duration elapsed — final closedBy pass for accurate blocked vs skipped
+      for (let i = 0; i < scenario.steps.length; i++) {
+        const res = run.stepResults[i];
+        if (!["pending", "active"].includes(res.status)) continue;
+        const impl = IMPL[scenario.steps[i].order];
+        const key = impl?.closedBy(run) ?? null;
+        if (key && !/^step:\d+$/.test(key)) {
+          res.status = "blocked";
+          const c = world.closureOf(key);
+          res.blockedBy = {
+            agentId: c?.agentId ?? "agt-cassidy",
+            toolName: (c?.toolName ?? "isolate_host") as import("@/lib/types").ToolName,
+            traceId: c?.traceId ?? "",
+            note: `precondition closed (${key})`,
+          };
+          res.at = store.now();
+        } else {
+          res.status = "skipped";
+        }
+      }
     }
     finishRun(run);
   } else if (changed) {
@@ -460,6 +573,13 @@ function linkThreats(run: RangeRun): void {
         threat.rangeRunId = run.id;
         threat.rangeStepId = scenario.steps[i].id;
         run.attackerLog.push({ at: store.now(), text: `linked ${threat.id} to step ${scenario.steps[i].order}` });
+        // Cassidy texts the operator on every detected stage (alert w/ threat card)
+        const alreadyAlerted = store.s.messages.some((m) => m.threatId === threat.id && m.kind === "alert");
+        if (!alreadyAlerted && run.mode === "protected") {
+          const handler = threat.handledBy[0] ? store.agent(threat.handledBy[0])?.name : undefined;
+          const msg = threatAlert(threat, `${threat.title} — replay step ${scenario.steps[i].order}. ${handler ? `${handler} is on it.` : "Working it."}`);
+          threat.messageIds.push(msg.id);
+        }
         store.markDirty();
         break;
       }
@@ -473,6 +593,19 @@ function finishRun(run: RangeRun): void {
   run.attackerLog.push({ at: store.now(), text: `run complete — grade ${run.score.grade}, ${run.score.stagesBlocked} blocked / ${run.score.stagesSucceeded} succeeded` });
   if (run.status === "running" || run.status === "paused") run.status = "completed";
   store.s.activeRunId = null;
+  // Cassidy's final report to the operator
+  const cassidy = store.agent("agt-cassidy");
+  if (cassidy) {
+    const sc = run.score;
+    const stopper = run.stepResults.find((r) => r.status === "blocked" && r.blockedBy);
+    const blocker = stopper?.blockedBy ? `${store.agent(stopper.blockedBy.agentId)?.name ?? "the gang"}'s ${stopper.blockedBy.toolName}` : "the gang";
+    agentSay(cassidy,
+      run.mode === "baseline"
+        ? `Baseline run ${run.id} done — no defense. ${sc.stagesSucceeded}/14 stages ran end to end. That's what we're here to prevent.`
+        : `Run ${run.id} wrapped — grade ${sc.grade}. ${sc.stagesSucceeded}/14 stages got through; ${blocker} shut it down. ${sc.credentialsHarvested} creds lost, ${sc.datasetsAccessed} datasets touched.`,
+      { kind: "report", severity: run.mode === "baseline" ? "high" : "low", attachments: [{ type: "range-card", refId: run.id, title: `range run ${run.id}`, subtitle: `grade ${sc.grade}` }] }
+    );
+  }
   store.markDirty();
   bus.emit("range.run", { run }, { severity: "medium", summary: `run ${run.id} finished — grade ${run.score.grade}`, href: "/range" });
 }

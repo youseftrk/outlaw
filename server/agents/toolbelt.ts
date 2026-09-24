@@ -130,7 +130,7 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
         return { ok: n > 0, summary: `revoked ${n} token(s)` };
       }
       if (args.tokenId) return world.revokeToken(args.tokenId, by);
-      const r = world.revokeExposedTokens(by);
+      const r = world.revokeRevealedTokens(by);
       return { ok: r.ok, summary: r.summary };
     }
     case "rotate_credentials": {

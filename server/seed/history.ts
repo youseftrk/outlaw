@@ -61,7 +61,10 @@ export function seedHistory(nowIso: string, servers: Server[], agents: Agent[]):
     const origin = rng.pick(ORIGINS);
     const detectedAgo = rng.int(30, 10080); // up to 7 days back, minutes
     const detectedAt = iso(now - detectedAgo * 60_000);
-    const resolvedAt = iso(now - (detectedAgo - rng.int(5, 240)) * 60_000);
+    const detectMs = rng.int(5, 45) * 1000;   // signal → threat
+    const containMs = rng.int(20, 120) * 1000; // detected → resolved
+    const traceStartAt = iso(Date.parse(detectedAt) + detectMs);
+    const resolvedAt = iso(Date.parse(detectedAt) + Math.max(containMs, detectMs + 5000));
     const id = `T-${1001 + i}`;
     const traceId = `TR-${2001 + i}`;
     const agent = handlerFor(kind.category);
@@ -102,14 +105,14 @@ export function seedHistory(nowIso: string, servers: Server[], agents: Agent[]):
       threatId: id,
       intent: `respond to ${kind.category} on ${srv.hostname}`,
       spans: [
-        { id: `SP-${traceId}-1`, kind: "observe", label: "signal correlation", startedAt: detectedAt, endedAt: detectedAt, status: "ok" },
-        { id: `SP-${traceId}-2`, kind: "reason", label: "assessed severity", startedAt: detectedAt, endedAt: detectedAt, status: "ok", input: { category: kind.category }, output: { severity: kind.sev } },
+        { id: `SP-${traceId}-1`, kind: "observe", label: "signal correlation", startedAt: traceStartAt, endedAt: traceStartAt, status: "ok" },
+        { id: `SP-${traceId}-2`, kind: "reason", label: "assessed severity", startedAt: traceStartAt, endedAt: traceStartAt, status: "ok", input: { category: kind.category }, output: { severity: kind.sev } },
         { id: `SP-${traceId}-3`, kind: "tool", label: status === "false-positive" ? "closed as false positive" : "contained routinely", toolName: "snapshot_evidence", startedAt: resolvedAt, endedAt: resolvedAt, status: "ok" },
         { id: `SP-${traceId}-4`, kind: "outcome", label: `threat ${status}`, startedAt: resolvedAt, endedAt: resolvedAt, status: "ok" },
       ],
       verdict: status === "false-positive" ? "completed" : "completed",
       riskScore: kind.sev === "medium" ? 30 : 15,
-      startedAt: detectedAt,
+      startedAt: traceStartAt,
       endedAt: resolvedAt,
     });
 

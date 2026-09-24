@@ -318,6 +318,7 @@ export interface AgentMetrics {
   approvalsRequested: number;
   messagesSent: number;
   policyDenials: number;
+  avgTimeToDetectSec: number;
   avgTimeToContainSec: number;
 }
 
@@ -752,6 +753,7 @@ export interface TelemetrySignal {
     | "k8s.kubeconfig-new-usage"
     | "storage.bulk-read"
     | "compute.ephemeral-burst"
+    | "inference.prompt-injection"
     | "conformance.drift";
   severity: Severity;
   attributes: Record<string, string | number | boolean>;

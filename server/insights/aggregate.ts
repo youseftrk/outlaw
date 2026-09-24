@@ -6,10 +6,11 @@ export function aggregateInsights(state: {
   threats: {
     id: string; category: ThreatCategory; severity: Severity; status: string;
     detectedAt: string; resolvedAt?: string; targetServerIds: string[]; handledBy: string[];
+    traceIds: string[];
   }[];
   approvals: { status: string }[];
   messages: { from: string; agentId?: string; sentAt: string }[];
-  traces: { agentId: string; spans: { kind: string; status: string }[] }[];
+  traces: { id: string; agentId: string; threatId?: string; startedAt: string; spans: { kind: string; status: string }[] }[];
   world: { tokens: { revoked: boolean }[]; datasets: { quarantined: boolean }[]; secrets: { rotatedAt: string }[] };
 }, window: InsightsWindow, nowMs: number): InsightsSummary {
   const windowMs = window === "24h" ? 86400_000 : window === "7d" ? 7 * 86400_000 : 30 * 86400_000;
@@ -62,7 +63,14 @@ export function aggregateInsights(state: {
     byAgent.set(tr.agentId, e);
   }
 
-  const detectTimes = closed.map((t) => Date.parse(t.resolvedAt!) - Date.parse(t.detectedAt)).filter((d) => d > 0);
+  const traceById = new Map(state.traces.map((t) => [t.id, t]));
+  const detectTimes = closed
+    .map((t) => {
+      const tr = t.traceIds.map((id) => traceById.get(id)).find(Boolean);
+      return tr ? Date.parse(tr.startedAt) - Date.parse(t.detectedAt) : 0;
+    })
+    .filter((d) => d > 0);
+  const containTimes = closed.map((t) => Date.parse(t.resolvedAt!) - Date.parse(t.detectedAt)).filter((d) => d > 0);
 
   return {
     window,
@@ -75,8 +83,8 @@ export function aggregateInsights(state: {
     tokensRevoked: state.world.tokens.filter((t) => t.revoked).length,
     datasetsQuarantined: state.world.datasets.filter((d) => d.quarantined).length,
     approvalsPending: state.approvals.filter((a) => a.status === "pending").length,
-    avgTimeToDetectSec: 45,
-    avgTimeToContainSec: detectTimes.length ? Math.round(detectTimes.reduce((a, b) => a + b, 0) / detectTimes.length / 1000) : 0,
+    avgTimeToDetectSec: detectTimes.length ? Math.round(detectTimes.reduce((a, b) => a + b, 0) / detectTimes.length / 1000) : 0,
+    avgTimeToContainSec: containTimes.length ? Math.round(containTimes.reduce((a, b) => a + b, 0) / containTimes.length / 1000) : 0,
     uptimePct: 99.98,
     byCategory: [...byCat.entries()].map(([category, count]) => ({ category, count })),
     bySeverity: [...bySev.entries()].map(([severity, count]) => ({ severity, count })),

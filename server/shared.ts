@@ -17,6 +17,7 @@ export interface OutlawGlobal {
   __outlawTimer?: unknown;
   __outlawRt?: unknown;
   __outlawRangeAttempts?: Map<string, Map<number, number>>;
+  __outlawPatrolAt?: Record<string, number>;
 }
 
 export const G = globalThis as unknown as OutlawGlobal;

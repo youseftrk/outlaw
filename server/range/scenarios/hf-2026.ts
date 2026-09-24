@@ -5,7 +5,13 @@
 import type { RangeScenario, RangeStep, KillChainStageName, ToolName } from "@/lib/types";
 
 const D = 6 * 60 * 1000; // 6 min at 1×
-const gap = D / 14;
+/**
+ * Step offsets (sim-ms). Steps 1–4 cluster tightly — the swarm moves fast
+ * through recon → registry → RCE → egress before the gang's first response
+ * lands; steps 5+ spread out so reactive containment can interleave.
+ * At 1–2× the gang typically stops the chain around steps 5–9.
+ */
+const OFFSETS_S = [8, 24, 26, 28, 72, 104, 108, 110, 114, 190, 224, 258, 296, 334];
 
 interface StepSpec {
   order: number;
@@ -60,7 +66,7 @@ export const HF_2026: RangeScenario = {
   steps: STEPS.map((s) => ({
     id: `hf-2026-s${s.order}`,
     order: s.order,
-    offsetMs: Math.round(gap * (s.order - 1) + gap * 0.4),
+    offsetMs: OFFSETS_S[s.order - 1] * 1000,
     realWorldLabel: s.label,
     stage: s.stage,
     title: s.title,

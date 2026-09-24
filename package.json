@@ -82,5 +82,31 @@
     "typescript": "^5",
     "vitest": "^5.0.1",
     "wait-on": "^9.1.0"
+  },
+  "build": {
+    "appId": "xyz.outlaw.app",
+    "productName": "Outlaw",
+    "files": [
+      "desktop/**",
+      "public/**",
+      ".next/standalone/**",
+      ".next/static/**",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "desktop/main.cjs"
+    },
+    "directories": {
+      "output": "release",
+      "buildResources": "desktop"
+    },
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": "dmg",
+      "identity": null
+    },
+    "win": {
+      "target": "dir"
+    }
   }
 }

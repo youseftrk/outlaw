@@ -25,18 +25,24 @@ export function scoreRun(run: RangeRun): RangeScore {
   const grade: RangeScore["grade"] =
     maxSucceeded <= 5 ? "S" : maxSucceeded <= 7 ? "A" : maxSucceeded <= 9 ? "B" : maxSucceeded <= 11 ? "C" : maxSucceeded <= 13 ? "D" : "F";
 
-  // detection speedup vs real world (Jul 14 detection)
+  // detection speedup vs real world (Jul 14 detection) — label uses the
+  // step's realWorldLabel (e.g. "Jul 8"), not an ISO date
   const firstDetectedStepIdx = detectedAtMs !== undefined
-    ? Math.max(0, ...detectedThreat.map((t) => {
-        const stepIdx = run.stepResults.findIndex((r) => r.threatId === t.id || (r.at && Math.abs(Date.parse(r.at) - Date.parse(t.detectedAt)) < 45_000));
-        return stepIdx;
+    ? Math.min(...detectedThreat.map((t) => {
+        const stepIdx = run.stepResults.findIndex((r, i) =>
+          (t.rangeRunId === run.id && t.rangeStepId && HF_2026.steps[i].id === t.rangeStepId) ||
+          (r.at && Math.abs(Date.parse(r.at) - Date.parse(t.detectedAt)) < 45_000)
+        );
+        return stepIdx < 0 ? 99 : stepIdx;
       }))
     : -1;
-  const detectedLabel = firstDetectedStepIdx >= 0 ? LABEL_DATES[firstDetectedStepIdx + 1] ?? "Jul 14" : null;
-  const speedupLabel = detectedLabel && detectedAtMs !== undefined
+  const detectedStep = firstDetectedStepIdx >= 0 && firstDetectedStepIdx < 99 ? HF_2026.steps[firstDetectedStepIdx] : undefined;
+  const speedupLabel = detectedStep && detectedAtMs !== undefined
     ? (() => {
-        const days = Math.round((Date.parse(REAL_DETECTION_DATE) - Date.parse(detectedLabel)) / 86400_000);
-        return days > 0 ? `caught at '${detectedLabel}' — ${days} days before the real detection` : "detected at real-world pace";
+        const days = Math.round((Date.parse(REAL_DETECTION_DATE) - Date.parse(LABEL_DATES[detectedStep.order] ?? REAL_DETECTION_DATE)) / 86400_000);
+        return days > 0
+          ? `caught at '${detectedStep.realWorldLabel}' — ${days} days before the real detection`
+          : "detected at real-world pace";
       })()
     : run.mode === "baseline" ? "baseline — detected at Jul 14 (real-world pace)" : "not detected";
 

@@ -9,6 +9,8 @@ import { store } from "./store";
 import { buildSeed } from "./seed";
 import { bus } from "./bus";
 import { brainTick, brainReset } from "./agents/brain";
+import { setCounter } from "./ids";
+import { counters } from "./shared";
 import { tickRange, resetAttempts, baselineActive } from "./range/engine";
 import { tickNoise, noiseReset } from "./range/noise";
 import { tickMigrations, checkIncidentMigrations } from "./fleet/migrations";
@@ -52,6 +54,40 @@ function scheduleLoop(): void {
   G.__outlawTimer = t;
 }
 
+const CALLSIGNS: Record<string, string> = {
+  "agt-cassidy": "rides point",
+  "agt-sundance": "fast draw",
+  "agt-doc": "Holliday",
+  "agt-belle": "Starr",
+  "agt-ringo": "the drover",
+  "agt-calamity": "Jane",
+};
+
+/** Normalize persisted state written by older builds (callsigns, statuses,
+ * metrics ranges) without a full reseed. */
+function migrateState(state: OutlawState): void {
+  for (const a of state.agents) {
+    if (CALLSIGNS[a.id]) a.callsign = CALLSIGNS[a.id];
+    if (a.status === "idle") a.status = "observing";
+    if (!a.metrics.avgTimeToDetectSec) a.metrics.avgTimeToDetectSec = 12 + Math.round(Math.random() * 20);
+    if (a.metrics.avgTimeToContainSec > 120) a.metrics.avgTimeToContainSec = 60 + Math.round(Math.random() * 50);
+  }
+  // restore id counters so persisted entities never collide with new ids
+  const bump = (prefix: string, ids: string[]) => {
+    const max = Math.max(0, ...ids.map((id) => Number(id.split("-").pop()) || 0));
+    if (max) setCounter(prefix, Math.max(max, counters().get(prefix) ?? 0));
+  };
+  bump("T-", state.threats.map((t) => t.id));
+  bump("TR-", state.traces.map((t) => t.id));
+  bump("A-", state.approvals.map((a) => a.id));
+  bump("M-", state.migrations.map((m) => m.id));
+  bump("MSG-", state.messages.map((m) => m.id));
+  bump("RR-", state.rangeRuns.map((r) => r.id));
+  bump("RQ-", state.research.map((q) => q.id));
+  bump("EV-", state.events.map((e) => e.id));
+  bump("SIG-", state.telemetry.map((t) => t.id));
+}
+
 export function getRuntime(): OutlawRuntime {
   if (globalThis.__outlaw) return globalThis.__outlaw;
 
@@ -63,6 +99,7 @@ export function getRuntime(): OutlawRuntime {
   if (!state) {
     state = buildSeed(Date.now());
   }
+  migrateState(state);
   // resume sim clock from persisted boot, but shift forward by real elapsed
   const booted = new Date(state.bootedAt).getTime();
   const persistedNow = state.simNowMs;

@@ -210,8 +210,10 @@ export function revokeToken(tokenId: string, by?: Actor): { ok: boolean; summary
   return { ok: true, summary: `revoked ${tokenId}` };
 }
 
-export function revokeExposedTokens(by?: Actor): { ok: boolean; summary: string; count: number } {
-  const exposed = w().tokens.filter((t) => t.exposedInDatasetId && !t.revoked);
+/** Revoke the exposed tokens agents have actually observed (revealed by
+ * scans) — blind boundary: agents can't act on tokens they haven't seen. */
+export function revokeRevealedTokens(by?: Actor): { ok: boolean; summary: string; count: number } {
+  const exposed = w().tokens.filter((t) => t.exposedInDatasetId && !t.revoked && w().revealed.exposedTokenIds.includes(t.id));
   for (const t of exposed) {
     t.revoked = true;
     recordClosure(`token:${t.id}`, by);

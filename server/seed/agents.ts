@@ -17,7 +17,7 @@ const AGENTS: AgentSpec[] = [
   {
     key: "cassidy",
     name: "Cassidy",
-    callsign: "the orchestrator",
+    callsign: "rides point",
     role: "orchestrator",
     mandate: "Triage every signal, assign the gang, keep the operator informed. Owns the operator thread and approval requests.",
     description: "First to every signal. Reads the telemetry feed, correlates it into threats, decides who rides on it, and texts the operator when it matters.",
@@ -27,7 +27,7 @@ const AGENTS: AgentSpec[] = [
   {
     key: "sundance",
     name: "Sundance",
-    callsign: "fast-draw containment",
+    callsign: "fast draw",
     role: "containment",
     mandate: "Stop lateral movement and egress before it spreads.",
     description: "Quiet until something real shows up. Then the fastest hands in the gang — isolates hosts, blocks egress, cordons clusters.",
@@ -37,7 +37,7 @@ const AGENTS: AgentSpec[] = [
   {
     key: "doc",
     name: "Doc",
-    callsign: "forensics",
+    callsign: "Holliday",
     role: "forensics",
     mandate: "Patient, precise investigation: enrich IOCs, reconstruct kill chains, write the report.",
     description: "Reads everything twice. Enriches indicators, maps attack techniques, and writes the report you'd send to the board.",
@@ -47,7 +47,7 @@ const AGENTS: AgentSpec[] = [
   {
     key: "belle",
     name: "Belle",
-    callsign: "warden of secrets",
+    callsign: "Starr",
     role: "credentials",
     mandate: "Audit, revoke, rotate — no token left exposed.",
     description: "Keeps the keys. Audits token hygiene on a loop, revokes anything exposed the moment it leaks, and rotates credentials on compromise.",
@@ -57,7 +57,7 @@ const AGENTS: AgentSpec[] = [
   {
     key: "ringo",
     name: "Ringo",
-    callsign: "drover of the fleet",
+    callsign: "the drover",
     role: "fleet",
     mandate: "Conformance, patching, rebuilds, migrations.",
     description: "Works the herd. Runs conformance checks round-robin, fixes drift, patches services, and moves workloads when a host goes bad.",
@@ -67,7 +67,7 @@ const AGENTS: AgentSpec[] = [
   {
     key: "calamity",
     name: "Calamity",
-    callsign: "supply-chain scout",
+    callsign: "Jane",
     role: "supply-chain",
     mandate: "Smells trouble first: datasets, packages, pipelines, registry.",
     description: "Reads every upload before it lands. Scans public datasets for leaked secrets, quarantines malicious payloads, keeps the registry honest.",
@@ -93,7 +93,7 @@ export function seedAgents(nowIso: string, serverIdsByRole: Record<string, strin
     role: a.role,
     mandate: a.mandate,
     description: a.description,
-    status: "idle" as const,
+    status: "observing" as const,
     autonomy: "autonomous" as const,
     trustLevel: a.trust,
     tools: a.tools,
@@ -104,7 +104,8 @@ export function seedAgents(nowIso: string, serverIdsByRole: Record<string, strin
       approvalsRequested: rng.int(0, 4),
       messagesSent: rng.int(30, 90),
       policyDenials: rng.int(0, 3),
-      avgTimeToContainSec: rng.int(45, 180),
+      avgTimeToDetectSec: rng.int(5, 45),
+      avgTimeToContainSec: rng.int(20, 120),
     },
     heartbeatAt: nowIso,
     createdAt: nowIso,
