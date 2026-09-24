@@ -21,7 +21,7 @@ function PhoneInner() {
   const selected = params.get("thread");
   const sorted = [...(threads ?? [])].sort((a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt));
   const thread = sorted.find((t) => t.id === selected);
-  const agent = thread ? boot?.agents.find((a) => a.id === thread.agentId) : undefined;
+  const agent = thread && thread.id !== "thr-outlaw" ? boot?.agents.find((a) => a.id === thread.agentId) : undefined;
 
   return (
     <main className="thermal relative grid min-h-svh place-items-center overflow-hidden p-6">
@@ -39,7 +39,7 @@ function PhoneInner() {
               <h1 className="px-5 text-[28px] font-semibold tracking-tight">Messages</h1>
               <ul className="mt-3 flex flex-col">
                 {sorted.map((t) => {
-                  const a = boot?.agents.find((x) => x.id === t.agentId);
+                  const a = t.id === "thr-outlaw" ? undefined : boot?.agents.find((x) => x.id === t.agentId);
                   return (
                     <li key={t.id}>
                       <button

@@ -335,7 +335,7 @@ export default function RangePage() {
               <p className="eyebrow">Attacker view · operator-only</p>
               <span className="text-[11px] text-sev-high">agents can&apos;t see this</span>
             </div>
-            <Terminal className="max-h-[420px] min-h-[320px] w-full max-w-none border-line bg-bg-0" startOnView={false}>
+            <Terminal className="max-h-[420px] min-h-[320px] w-full max-w-none border-line bg-bg-0" startOnView={false} sequence={false}>
               {(shown?.attackerLog ?? []).length === 0 && <AnimatedSpan className="text-text-3">$ waiting for a run…</AnimatedSpan>}
               {(shown?.attackerLog ?? []).slice(-60).map((l, i) => (
                 <AnimatedSpan key={`${l.at}-${i}`} className="text-[12px]">

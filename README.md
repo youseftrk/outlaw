@@ -54,13 +54,16 @@ Settings → Agent brain → pick a preset (Groq is free, no card, fastest), pas
 
 ## Demo script (≈8 minutes)
 
-1. **Command center** — fleet on the map, live feed, the gang on duty. `⌘K` opens the director palette.
-2. **Range** → *Start the replay* (protected, 2×). Watch the attacker view (operator-only) and the gang's response side by side.
-3. **Messages** — Cassidy texts what's happening. Reply `status`, or tap an approval.
+0. Before you go on: `⌘K` → **Reset the demo** (fresh seed, quiet world). The gang's response time depends on how busy the world is, so start clean.
+1. **Command center** — fleet on the map, live feed, the gang on duty. `⌘K` opens the director palette (inject a brute-force burst, a C2 beacon, a leaked token…).
+2. **Range** → *Start the replay* (protected, **2×** ≈ 3 minutes). Watch the attacker view (operator-only) and the gang's response side by side. Expect a handful of early stages to get through (recon, registry zero-day, escape, leaked tokens) before Calamity / Belle / Sundance shut the chain — that's the honest result; **4×–8×** shows the gang under real pressure.
+3. **Messages** — Cassidy texts every detected stage. Reply `status`, `report`, or `isolate dataset-worker-01`; tap an approval if one appears.
 4. **Governance** — open a trace; show the policy evaluations and the tool spans that ran on the server.
-5. **Fleet** — the isolated worker, Ringo's incident-response migration, conformance checks.
-6. Back to **Range** — the score card vs. what really happened. Run **Baseline** to compare.
-7. **Deck** (`/deck`) for the close.
+5. **Fleet** — quarantined dataset, isolated worker, Ringo's incident-response migration, conformance checks.
+6. Back to **Range** — the score card vs. what really happened. Run **Baseline** (agents paused, 8×) to compare: 14/14 stages, grade F — the July 2026 outcome.
+7. **Deck** (`/deck`, `F` for fullscreen; slide 11 pulls the live numbers from the last runs) for the close.
+
+Keyboard: `⌘K` command palette · deck `←` `→` `F` `Esc` · `/deck?slide=N` deep links · `/phone` phone-only view for a second window.
 
 ## Layout
 

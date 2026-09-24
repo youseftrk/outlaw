@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { AnimatedSpan, Terminal } from "@/components/ui/terminal";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { api, useAgent } from "@/lib/hooks/use-data";
+import { api, useAgent, useBootstrap } from "@/lib/hooks/use-data";
 import { useLive } from "@/lib/hooks/use-live";
 import { AGENT_STATUS_LABEL, SEVERITY_CLASS, THREAT_STATUS_CLASS, THREAT_STATUS_LABEL, VERDICT_CLASS, ago, clock, humanize } from "@/lib/format";
 import type { Autonomy, Trace } from "@/lib/types";
@@ -34,10 +34,16 @@ const AUTONOMY: { value: Autonomy; label: string; hint: string }[] = [
 export default function AgentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data, mutate } = useAgent(id);
+  const { data: boot } = useBootstrap();
   const { events } = useLive();
   const [trace, setTrace] = React.useState<Trace | null>(null);
 
   const agent = data?.agent;
+  const servers = React.useMemo(() => {
+    if (!agent) return [];
+    if (data?.servers.length) return data.servers;
+    return (boot?.servers ?? []).filter((s) => agent.assignedServerIds.includes(s.id) || s.protectedBy.includes(agent.id));
+  }, [agent, data?.servers, boot?.servers]);
   const log = React.useMemo(
     () =>
       events
@@ -173,11 +179,11 @@ export default function AgentDetailPage() {
               <TabsTrigger value="log">Live log</TabsTrigger>
               <TabsTrigger value="traces">Traces ({data?.traces.length ?? 0})</TabsTrigger>
               <TabsTrigger value="threats">Threats ({data?.threats.length ?? 0})</TabsTrigger>
-              <TabsTrigger value="servers">Servers ({data?.servers.length ?? 0})</TabsTrigger>
+              <TabsTrigger value="servers">Servers ({servers.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="log" className="p-3">
-              <Terminal className="max-h-[520px] min-h-[320px] w-full max-w-none border-line bg-bg-0" startOnView={false}>
+              <Terminal className="max-h-[520px] min-h-[320px] w-full max-w-none border-line bg-bg-0" startOnView={false} sequence={false}>
                 {log.length === 0 && (
                   <AnimatedSpan className="text-text-3">
                     {`$ tail -f /var/log/outlaw/${agent.id}.log`} — waiting for {agent.name} to move…
@@ -234,7 +240,7 @@ export default function AgentDetailPage() {
 
             <TabsContent value="servers" className="p-3">
               <ul className="grid grid-cols-1 gap-1 md:grid-cols-2">
-                {data?.servers.map((s) => (
+                {servers.map((s) => (
                   <li key={s.id}>
                     <Link href={`/fleet?server=${s.id}`} className="flex items-center gap-3 rounded-[12px] px-3 py-2 transition-colors hover:bg-bg-2">
                       <span className="mono-data min-w-0 flex-1 truncate text-text-1">{s.hostname}</span>

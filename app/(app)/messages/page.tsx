@@ -29,7 +29,7 @@ function MessagesInner() {
   );
   const selectedId = params.get("thread") ?? sorted[0]?.id;
   const thread = sorted.find((t) => t.id === selectedId) ?? sorted[0];
-  const agent = thread ? boot?.agents.find((a) => a.id === thread.agentId) : undefined;
+  const agent = thread && thread.id !== "thr-outlaw" ? boot?.agents.find((a) => a.id === thread.agentId) : undefined;
 
   return (
     <div className="flex flex-col gap-4">
@@ -53,7 +53,8 @@ function MessagesInner() {
             <ScrollArea className="h-[668px]">
               <ul className="flex flex-col p-2">
                 {sorted.map((t) => {
-                  const a = boot?.agents.find((x) => x.id === t.agentId);
+                  const system = t.id === "thr-outlaw";
+                  const a = system ? undefined : boot?.agents.find((x) => x.id === t.agentId);
                   const active = t.id === thread?.id;
                   return (
                     <li key={t.id}>
