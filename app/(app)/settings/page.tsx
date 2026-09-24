@@ -91,7 +91,10 @@ export default function SettingsPage() {
   const test = async () => {
     setTesting(true);
     try {
-      await saveLlm();
+      // Testing implies you want it on: enable, save, then probe.
+      setEnabled(true);
+      await api.settings.update({ llm: { provider, baseUrl, model, enabled: true, ...(apiKey ? { apiKey } : {}) } });
+      setApiKey("");
       const r = await api.settings.testLlm();
       if (r?.ok) toast.success(`Model answered in ${r.latencyMs} ms: “${r.sample ?? "ready"}”`);
       else toast.error(r?.error ?? "The model didn't answer");
