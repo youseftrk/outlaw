@@ -1,87 +1,67 @@
 "use client";
-import {
-  useMotionValueEvent,
-  useScroll,
-  useTransform,
-  motion,
-} from "motion/react";
+/**
+ * Aceternity UI `timeline`, adapted for Outlaw: demo heading removed, compact spacing,
+ * brand beam colours, per-entry tone (observed / blocked / prevented) and meta line.
+ * Keeps the upstream mechanic: a scroll-progress beam fills the rail as you read down.
+ */
+import { motion, useScroll, useTransform } from "motion/react";
 import React, { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
-interface TimelineEntry {
+export type TimelineTone = "neutral" | "observed" | "blocked" | "prevented" | "active";
+
+export interface TimelineEntry {
   title: string;
+  meta?: React.ReactNode;
   content: React.ReactNode;
+  tone?: TimelineTone;
 }
 
-export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
+const DOT: Record<TimelineTone, string> = {
+  neutral: "bg-bg-3 border-line-strong",
+  observed: "bg-sev-critical/20 border-sev-critical",
+  blocked: "bg-lime/20 border-lime",
+  prevented: "bg-lime border-lime",
+  active: "bg-cerulean/20 border-cerulean animate-pulse-soft",
+};
+
+export const Timeline = ({ data, className }: { data: TimelineEntry[]; className?: string }) => {
   const ref = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
 
   useEffect(() => {
-    if (ref.current) {
-      const rect = ref.current.getBoundingClientRect();
-      setHeight(rect.height);
-    }
-  }, [ref]);
+    if (ref.current) setHeight(ref.current.getBoundingClientRect().height);
+  }, [data.length]);
 
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start 10%", "end 50%"],
-  });
-
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start 60%", "end 70%"] });
   const heightTransform = useTransform(scrollYProgress, [0, 1], [0, height]);
   const opacityTransform = useTransform(scrollYProgress, [0, 0.1], [0, 1]);
 
   return (
-    <div
-      className="w-full bg-white dark:bg-neutral-950 font-sans md:px-10"
-      ref={containerRef}
-    >
-      <div className="max-w-7xl mx-auto py-20 px-4 md:px-8 lg:px-10">
-        <h2 className="text-lg md:text-4xl mb-4 text-black dark:text-white max-w-4xl">
-          Changelog from my journey
-        </h2>
-        <p className="text-neutral-700 dark:text-neutral-300 text-sm md:text-base max-w-sm">
-          I&apos;ve been working on Aceternity for the past 2 years. Here&apos;s
-          a timeline of my journey.
-        </p>
-      </div>
-
-      <div ref={ref} className="relative max-w-7xl mx-auto pb-20">
+    <div className={cn("w-full font-sans", className)} ref={containerRef}>
+      <div ref={ref} className="relative pb-4">
         {data.map((item, index) => (
-          <div
-            key={index}
-            className="flex justify-start pt-10 md:pt-40 md:gap-10"
-          >
-            <div className="sticky flex flex-col md:flex-row z-40 items-center top-40 self-start max-w-xs lg:max-w-sm md:w-full">
-              <div className="h-10 absolute left-3 md:left-3 w-10 rounded-full bg-white dark:bg-black flex items-center justify-center">
-                <div className="h-4 w-4 rounded-full bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 p-2" />
-              </div>
-              <h3 className="hidden md:block text-xl md:pl-20 md:text-5xl font-bold text-neutral-500 dark:text-neutral-500 ">
-                {item.title}
-              </h3>
+          <div key={index} className="flex justify-start gap-4 pt-5 first:pt-1">
+            <div className="relative z-10 flex w-8 shrink-0 justify-center pt-1">
+              <div className={cn("size-3.5 rounded-full border-2 ring-4 ring-bg-1", DOT[item.tone ?? "neutral"])} />
             </div>
-
-            <div className="relative pl-20 pr-4 md:pl-4 w-full">
-              <h3 className="md:hidden block text-2xl mb-4 text-left font-bold text-neutral-500 dark:text-neutral-500">
-                {item.title}
-              </h3>
-              {item.content}{" "}
+            <div className="min-w-0 flex-1 pr-2">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h3 className="font-display text-[18px] leading-tight text-text-1">{item.title}</h3>
+                {item.meta && <span className="mono-data text-[11px] text-text-3">{item.meta}</span>}
+              </div>
+              <div className="mt-1.5 text-text-2">{item.content}</div>
             </div>
           </div>
         ))}
         <div
-          style={{
-            height: height + "px",
-          }}
-          className="absolute md:left-8 left-8 top-0 overflow-hidden w-[2px] bg-[linear-gradient(to_bottom,var(--tw-gradient-stops))] from-transparent from-[0%] via-neutral-200 dark:via-neutral-700 to-transparent to-[99%]  [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] "
+          style={{ height: height + "px" }}
+          className="absolute left-[15px] top-0 w-[2px] overflow-hidden bg-[linear-gradient(to_bottom,var(--tw-gradient-stops))] from-transparent from-[0%] via-line-strong to-transparent to-[99%] [mask-image:linear-gradient(to_bottom,transparent_0%,black_6%,black_94%,transparent_100%)]"
         >
           <motion.div
-            style={{
-              height: heightTransform,
-              opacity: opacityTransform,
-            }}
-            className="absolute inset-x-0 top-0  w-[2px] bg-gradient-to-t from-purple-500 via-blue-500 to-transparent from-[0%] via-[10%] rounded-full"
+            style={{ height: heightTransform, opacity: opacityTransform }}
+            className="absolute inset-x-0 top-0 w-[2px] rounded-full bg-gradient-to-t from-lime via-cerulean to-transparent from-[0%] via-[10%]"
           />
         </div>
       </div>

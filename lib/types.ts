@@ -716,6 +716,10 @@ export interface OutlawEvent<T = unknown> {
   at: ISODate;
   agentId?: ID;
   severity?: Severity;
+  /** one-line human description for live feeds, e.g. "Sundance isolated dataset-worker-02" */
+  summary?: string;
+  /** optional deep link target, e.g. "/threats/T-1042" */
+  href?: string;
   payload: T;
 }
 

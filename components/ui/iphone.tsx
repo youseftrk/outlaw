@@ -1,4 +1,6 @@
-import type { HTMLAttributes } from "react"
+import type { HTMLAttributes, ReactNode } from "react"
+
+/** Magic UI `iphone` (15 Pro frame), adapted for Outlaw: a `children` slot renders live UI inside the screen. */
 
 const PHONE_WIDTH = 433
 const PHONE_HEIGHT = 882
@@ -19,17 +21,24 @@ const RADIUS_V = (SCREEN_RADIUS / SCREEN_HEIGHT) * 100
 export interface IphoneProps extends HTMLAttributes<HTMLDivElement> {
   src?: string
   videoSrc?: string
+  /** Live content rendered inside the screen area (interactive). */
+  children?: ReactNode
+  /** Screen background behind children. */
+  screenClassName?: string
 }
 
 export function Iphone({
   src,
   videoSrc,
+  children,
+  screenClassName = "",
   className,
   style,
   ...props
 }: IphoneProps) {
   const hasVideo = !!videoSrc
-  const hasMedia = hasVideo || !!src
+  const hasChildren = children !== undefined && children !== null
+  const hasMedia = hasVideo || !!src || hasChildren
 
   return (
     <div
@@ -63,7 +72,22 @@ export function Iphone({
         </div>
       )}
 
-      {!hasVideo && src && (
+      {hasChildren && (
+        <div
+          className={`absolute z-0 overflow-hidden ${screenClassName}`}
+          style={{
+            left: `${LEFT_PCT}%`,
+            top: `${TOP_PCT}%`,
+            width: `${WIDTH_PCT}%`,
+            height: `${HEIGHT_PCT}%`,
+            borderRadius: `${RADIUS_H}% / ${RADIUS_V}%`,
+          }}
+        >
+          {children}
+        </div>
+      )}
+
+      {!hasVideo && !hasChildren && src && (
         <div
           className="pointer-events-none absolute z-0 overflow-hidden"
           style={{
@@ -86,7 +110,7 @@ export function Iphone({
         viewBox={`0 0 ${PHONE_WIDTH} ${PHONE_HEIGHT}`}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="absolute inset-0 size-full"
+        className="pointer-events-none absolute inset-0 size-full"
         style={{ transform: "translateZ(0)" }}
       >
         <g mask={hasMedia ? "url(#screenPunch)" : undefined}>

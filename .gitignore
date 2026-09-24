@@ -46,3 +46,4 @@ dist/
 release/
 .env*.local
 !.env.example
+.shots/
