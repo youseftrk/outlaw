@@ -57,9 +57,10 @@ async function standaloneUrl() {
   if (!fs.existsSync(entry)) throw new Error(`standalone server not found at ${entry} — run npm run build && node scripts/prepare-standalone.mjs`);
   const port = await freePort();
   const url = `http://127.0.0.1:${port}`;
+  // process.execPath is the Electron binary in a packaged app — run it as Node
   serverProc = spawn(process.execPath, [entry], {
     cwd: dir,
-    env: { ...process.env, PORT: String(port), HOSTNAME: "127.0.0.1" },
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", PORT: String(port), HOSTNAME: "127.0.0.1" },
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
   });
@@ -72,19 +73,25 @@ async function standaloneUrl() {
 
 async function createWindow() {
   const url = DEV_URL ?? (await standaloneUrl());
+  const isMac = process.platform === "darwin";
   mainWin = new BrowserWindow({
     width: 1480,
     height: 940,
     minWidth: 1100,
     minHeight: 700,
-    backgroundColor: "#0c0c0c",
+    backgroundColor: "#040e17",
     title: "Outlaw",
+    show: false,
+    titleBarStyle: "hiddenInset",
+    trafficLightPosition: { x: 18, y: 18 },
+    ...(isMac ? { vibrancy: "under-window", visualEffectState: "active" } : { autoHideMenuBar: true }),
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
+  mainWin.once("ready-to-show", () => mainWin.show());
   await mainWin.loadURL(url);
   if (SHOT) {
     setTimeout(async () => {

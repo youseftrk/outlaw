@@ -22,7 +22,11 @@ export async function GET(_req: Request, { params }: Params) {
   const tools = agent.tools.map((t) => TOOL_SPECS[t]);
   const threats = store.s.threats.filter((t) => t.handledBy.includes(agent.id));
   const traces = store.s.traces.filter((t) => t.agentId === agent.id).slice(-50);
-  return json({ agent, tools, threats, traces });
+  // SPEC §10: assigned ∪ protectedBy servers + this agent's thread (last 50)
+  const serverIds = new Set([...agent.assignedServerIds, ...store.s.servers.filter((s) => s.protectedBy.includes(agent.id)).map((s) => s.id)]);
+  const servers = store.s.servers.filter((s) => serverIds.has(s.id));
+  const messages = store.s.messages.filter((m) => m.threadId === `thr-${agent.name.toLowerCase()}`).slice(-50);
+  return json({ agent, tools, threats, traces, servers, messages });
 }
 
 export async function PATCH(req: Request, { params }: Params) {

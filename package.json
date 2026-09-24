@@ -107,6 +107,7 @@
     },
     "win": {
       "target": "dir"
-    }
+    },
+    "asar": false
   }
 }

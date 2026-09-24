@@ -157,7 +157,7 @@ export interface ObservedWorld {
   registry: Omit<WorldRegistry, "tokenRefreshSigBypass" | "attackerAdminToken">;
   workers: Omit<WorldWorker, "compromised">[];
   secrets: Omit<WorldSecret, "attackerHeld">[];
-  clusters: WorldCluster[];
+  clusters: Omit<WorldCluster, "compromisedNodeIds">[];
   network: World["network"];
   sandbox: World["sandbox"];
 }
@@ -187,7 +187,8 @@ export function projectWorld(world: World): ObservedWorld {
     })(),
     workers: world.workers.map(({ compromised: _c, ...wk }) => wk),
     secrets: world.secrets.map(({ attackerHeld: _h, ...s }) => s),
-    clusters: world.clusters.map((c) => ({ ...c, compromisedNodeIds: [...c.compromisedNodeIds] })),
+    // compromisedNodeIds is hidden — agents must detect node compromise via telemetry
+    clusters: world.clusters.map(({ compromisedNodeIds: _n, ...c }) => c),
     network: {
       egressAllowed: { ...world.network.egressAllowed },
       blockedIps: [...world.network.blockedIps],

@@ -72,6 +72,9 @@ function migrateState(state: OutlawState): void {
     if (!a.metrics.avgTimeToDetectSec) a.metrics.avgTimeToDetectSec = 12 + Math.round(Math.random() * 20);
     if (a.metrics.avgTimeToContainSec > 120) a.metrics.avgTimeToContainSec = 60 + Math.round(Math.random() * 50);
   }
+  // thr-outlaw keeps agentId but always reads as the system thread
+  const outlaw = state.threads.find((t) => t.id === "thr-outlaw");
+  if (outlaw) { outlaw.title = "Outlaw"; outlaw.agentId = "agt-cassidy"; }
   // restore id counters so persisted entities never collide with new ids
   const bump = (prefix: string, ids: string[]) => {
     const max = Math.max(0, ...ids.map((id) => Number(id.split("-").pop()) || 0));

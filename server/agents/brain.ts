@@ -645,11 +645,21 @@ export async function brainTick(paused = false): Promise<void> {
   settleAgents();
   if (paused) return;
   await patrols();
-  for (const plan of [...plans.values()]) {
-    if (!plan.inFlight) {
-      plan.inFlight = true;
-      void advancePlan(plan);
-    }
+  // severity-first scheduling; one tool per agent per tick — different agents
+  // run their steps in parallel (Doc's evidence never delays Sundance's contain)
+  const SEV_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+  const usedAgents = new Set<ID>();
+  const pending = [...plans.values()]
+    .filter((p) => !p.inFlight)
+    .sort((a, b) => (SEV_RANK[store.threat(a.threatId)?.severity ?? "low"] ?? 3) - (SEV_RANK[store.threat(b.threatId)?.severity ?? "low"] ?? 3));
+  for (const plan of pending) {
+    const step = plan.steps[plan.cursor];
+    if (!step) continue;
+    const agent = agentForRole(step.agentRole);
+    if (usedAgents.has(agent.id)) continue;
+    usedAgents.add(agent.id);
+    plan.inFlight = true;
+    void advancePlan(plan);
   }
   settleAgents();
 }

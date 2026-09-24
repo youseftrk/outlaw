@@ -34,8 +34,17 @@ describe("blind range — hf-2026", () => {
     expect(["S", "A", "B", "C"].includes(run.score!.grade)).toBe(true);
     const prevented = store.s.threats.filter((t) => t.status === "prevented");
     expect(prevented.length).toBeGreaterThanOrEqual(1);
-    // every blocked step has blockedBy attribution (skipped = never reached)
+    // every blocked step carries real attribution (skipped = never reached)
     const blockedNoBy = run.stepResults.filter((r) => r.status === "blocked" && !r.blockedBy?.agentId);
     expect(blockedNoBy.length).toBe(0);
+    // no blockedBy with an empty traceId — blocked requires a real closure record
+    const emptyTrace = run.stepResults.filter((r) => r.status === "blocked" && !r.blockedBy?.traceId);
+    expect(emptyTrace.length).toBe(0);
+    // a step whose upstream never succeeded is skipped, never blocked
+    const firstBlockedIdx = run.stepResults.findIndex((r) => r.status === "blocked");
+    if (firstBlockedIdx >= 0) {
+      const downstream = run.stepResults.slice(firstBlockedIdx + 1);
+      expect(downstream.every((r) => r.status === "skipped" || r.status === "succeeded")).toBe(true);
+    }
   }, 60_000);
 });

@@ -25,8 +25,9 @@ export function scoreRun(run: RangeRun): RangeScore {
   const grade: RangeScore["grade"] =
     maxSucceeded <= 5 ? "S" : maxSucceeded <= 7 ? "A" : maxSucceeded <= 9 ? "B" : maxSucceeded <= 11 ? "C" : maxSucceeded <= 13 ? "D" : "F";
 
-  // detection speedup vs real world (Jul 14 detection) — label uses the
-  // step's realWorldLabel (e.g. "Jul 8"), not an ISO date
+  // vsBaseline copy: "first flagged at '<first detected step's realWorldLabel>',
+  // chain stopped at '<first blocked step's realWorldLabel>' — N days before
+  // the real detection (Jul 14)". N counts from the stopped step's real date.
   const firstDetectedStepIdx = detectedAtMs !== undefined
     ? Math.min(...detectedThreat.map((t) => {
         const stepIdx = run.stepResults.findIndex((r, i) =>
@@ -37,14 +38,15 @@ export function scoreRun(run: RangeRun): RangeScore {
       }))
     : -1;
   const detectedStep = firstDetectedStepIdx >= 0 && firstDetectedStepIdx < 99 ? HF_2026.steps[firstDetectedStepIdx] : undefined;
-  const speedupLabel = detectedStep && detectedAtMs !== undefined
-    ? (() => {
-        const days = Math.round((Date.parse(REAL_DETECTION_DATE) - Date.parse(LABEL_DATES[detectedStep.order] ?? REAL_DETECTION_DATE)) / 86400_000);
-        return days > 0
-          ? `caught at '${detectedStep.realWorldLabel}' — ${days} days before the real detection`
-          : "detected at real-world pace";
-      })()
-    : run.mode === "baseline" ? "baseline — detected at Jul 14 (real-world pace)" : "not detected";
+  const stoppedIdx = run.stepResults.findIndex((r) => r.status === "blocked");
+  const stoppedStep = stoppedIdx >= 0 ? HF_2026.steps[stoppedIdx] : undefined;
+  const speedupLabel = !stoppedStep
+    ? "never stopped — same outcome as the real incident"
+    : (() => {
+        const days = Math.round((Date.parse(REAL_DETECTION_DATE) - Date.parse(LABEL_DATES[stoppedStep.order] ?? REAL_DETECTION_DATE)) / 86400_000);
+        const flagged = detectedStep?.realWorldLabel ?? "unknown";
+        return `first flagged at '${flagged}', chain stopped at '${stoppedStep.realWorldLabel}' — ${days} days before the real detection (Jul 14)`;
+      })();
 
   const infraRebuiltPct = Math.round(
     (store.s.servers.filter((s) => ["compromised", "rebuilding", "isolated"].includes(s.status)).length / Math.max(1, store.s.servers.length)) * 100

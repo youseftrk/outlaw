@@ -60,7 +60,8 @@ function pickKind(): NoiseKind {
 /** Called every tick — emits ~2–4 signals/min at 1× (≈4% chance per tick). */
 export function tickNoise(): void {
   noiseTick++;
-  if (!rng.chance(0.04)) return;
+  // halve noise while a range run is active so the replay stands out
+  if (!rng.chance(store.s.activeRunId ? 0.02 : 0.04)) return;
   const servers = store.s.servers.filter((s) => s.status === "healthy" || s.status === "degraded");
   if (!servers.length) return;
   const origin = rng.pick(ORIGINS);

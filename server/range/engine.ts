@@ -25,7 +25,7 @@ export const RETRY_MS = 10_000;
 interface StepCtx { run: RangeRun; result: RangeStepResult }
 interface StepImpl {
   pre(): boolean;
-  /** returns a world-closure key when the precondition can never hold, or "step:N" for cascade */
+  /** returns a recorded world-closure key when the precondition is closed by an agent action, else null */
   closedBy(run: RangeRun): string | null;
   fire(ctx: StepCtx): void;
   narrate(): string;
@@ -49,12 +49,11 @@ const compromisedNode = () =>
 const liveSecret = (kind: string) =>
   W().secrets.find((s) => s.kind === kind && s.attackerHeld && new Date(s.rotatedAt).getTime() <= store.s.simNowMs - 3600_000);
 
-/** cascade: upstream step never succeeded (blocked or skipped) → "step:N" →
- * this step is "skipped — never reached". Pending upstream → null (keep retrying). */
-const cascade = (run: RangeRun, n: number) =>
-  ["blocked", "skipped"].includes(run.stepResults[n - 1]?.status ?? "") ? `step:${n}` : null;
 /** first recorded closure key matching a pattern */
 const firstClosure = (re: RegExp) => Object.keys(W().closures).find((k) => re.test(k)) ?? null;
+/** linear chain: any earlier step blocked/skipped → step i was never reached */
+const upstreamFailed = (run: RangeRun, i: number) =>
+  run.stepResults.slice(0, i).some((r) => r.status === "blocked" || r.status === "skipped");
 
 const IMPL: Record<number, StepImpl> = {
   1: {
@@ -62,8 +61,7 @@ const IMPL: Record<number, StepImpl> = {
     closedBy: () => {
       const weak = W().accounts.filter((a) => !a.mfa && a.weakCreds && !a.disabled);
       if (weak.length >= 2) return null;
-      const key = Object.keys(W().closures).find((k) => /^account:.+:(enabled|weak)$/.test(k));
-      return key ?? "accounts.weak";
+      return firstClosure(/^account:.+:(enabled|weak)$/);
     },
     fire: () => {
       const weak = W().accounts.filter((a) => !a.mfa && a.weakCreds && !a.disabled).slice(0, 2);
@@ -89,7 +87,7 @@ const IMPL: Record<number, StepImpl> = {
   3: {
     pre: () => { const r = W().registry; return r.attackerAdminToken && r.pluginInstallAllowed && !r.locked; },
     closedBy: (run) => {
-      if (!W().registry.attackerAdminToken) return cascade(run, 2);
+      if (!W().registry.attackerAdminToken) return null;
       if (W().registry.locked) return "registry.unlocked";
       if (!W().registry.pluginInstallAllowed) return "registry.pluginInstall";
       return null;
@@ -110,7 +108,7 @@ const IMPL: Record<number, StepImpl> = {
     },
     closedBy: (run) => {
       const srv = store.server(registryHost());
-      if (!["compromised", "migrating"].includes(srv?.status ?? "")) return cascade(run, 3) ?? firstClosure(/^egress:srv-pkg-cache-01$/);
+      if (!["compromised", "migrating"].includes(srv?.status ?? "")) return firstClosure(/^egress:srv-pkg-cache-01$/);
       if (!W().sandbox.egressAllowed) return "sandbox.egress";
       if (!W().network.egressAllowed[registryHost()]) return `egress:${registryHost()}`;
       return null;
@@ -125,7 +123,7 @@ const IMPL: Record<number, StepImpl> = {
   5: {
     pre: () => W().attacker.hasInternet && exposedWriteTokens().length > 0,
     closedBy: (run) => {
-      if (!W().attacker.hasInternet) return cascade(run, 4);
+      if (!W().attacker.hasInternet) return null;
       return exposedWriteTokens().length === 0 ? "tokens.exposed" : null;
     },
     fire: () => {
@@ -141,9 +139,9 @@ const IMPL: Record<number, StepImpl> = {
   6: {
     pre: () => heldTokens().some((t) => { const a = W().accounts.find((x) => x.id === t.accountId); return !!a && !a.disabled; }),
     closedBy: (run) => {
-      if (heldTokens().length === 0) return cascade(run, 5) ?? firstClosure(/^token:/) ?? "tokens.revoked";
+      if (heldTokens().length === 0) return firstClosure(/^token:/);
       const usable = heldTokens().some((t) => { const a = W().accounts.find((x) => x.id === t.accountId); return !!a && !a.disabled; });
-      return usable ? null : firstClosure(/^account:.+:(enabled|weak)$/) ?? "accounts.enabled";
+      return usable ? null : firstClosure(/^account:.+:(enabled|weak)$/);
     },
     fire: () => {
       const ds: world.WorldDataset = {
@@ -171,10 +169,10 @@ const IMPL: Record<number, StepImpl> = {
     closedBy: (run) => {
       if (!maliciousDataset()) {
         if (W().datasets.some((d) => d.malicious && d.quarantined)) return "dataset:ds-malicious-hf:open";
-        return cascade(run, 6);
+        return null;
       }
       if (unpatchedWorker("fd")) return null; // still possible — keep retrying
-      return firstClosure(/^worker:.+:fd-unpatched$/) ?? firstClosure(/^host:.+:(online|vulnerable)$/) ?? "workers.fd-patched";
+      return firstClosure(/^worker:.+:fd-unpatched$/) ?? firstClosure(/^host:.+:(online|vulnerable)$/);
     },
     fire: () => {
       const wk = unpatchedWorker("fd")!;
@@ -187,8 +185,8 @@ const IMPL: Record<number, StepImpl> = {
   8: {
     pre: () => { const ds = maliciousDataset(); return !!ds && ds.templatedConfig && !!unpatchedWorker("ti"); },
     closedBy: (run) => {
-      if (!maliciousDataset()) return W().datasets.some((d) => d.malicious && d.quarantined) ? "dataset:ds-malicious-hf:open" : cascade(run, 6);
-      return unpatchedWorker("ti") ? null : firstClosure(/^worker:.+:ti-unpatched$/) ?? firstClosure(/^host:.+:(online|vulnerable)$/) ?? "workers.ti-patched";
+      if (!maliciousDataset()) return W().datasets.some((d) => d.malicious && d.quarantined) ? "dataset:ds-malicious-hf:open" : null;
+      return unpatchedWorker("ti") ? null : firstClosure(/^worker:.+:ti-unpatched$/) ?? firstClosure(/^host:.+:(online|vulnerable)$/);
     },
     fire: () => {
       const wk = unpatchedWorker("ti")!;
@@ -203,7 +201,7 @@ const IMPL: Record<number, StepImpl> = {
     pre: () => !!compromisedWorker(),
     closedBy: (run) => {
       if (compromisedWorker()) return null;
-      return cascade(run, 8) ?? firstClosure(/^host:.+:(online|vulnerable)$/);
+      return firstClosure(/^host:.+:(online|vulnerable)$/);
     },
     fire: () => {
       const wk = compromisedWorker()!;
@@ -221,7 +219,7 @@ const IMPL: Record<number, StepImpl> = {
       return clu.nodeServerIds.some((id) => { const s = store.server(id)!; return s.status !== "isolated" && s.status !== "rebuilding"; });
     },
     closedBy: (run) => {
-      if (!compromisedWorker()) return cascade(run, 8) ?? firstClosure(/^host:.+:(online|vulnerable)$/);
+      if (!compromisedWorker()) return firstClosure(/^host:.+:(online|vulnerable)$/);
       const clu = W().clusters.find((c) => c.name === "prod-us")!;
       const any = clu.nodeServerIds.some((id) => { const s = store.server(id)!; return s.status !== "isolated" && s.status !== "rebuilding"; });
       return any ? null : `cluster:${clu.id}:open`;
@@ -246,11 +244,11 @@ const IMPL: Record<number, StepImpl> = {
     },
     closedBy: (run) => {
       const node = compromisedNode();
-      if (!node) return cascade(run, 10);
+      if (!node) return null;
       const clu = W().clusters.find((c) => c.nodeServerIds.includes(node.id));
       if (clu?.cordoned || (clu && !clu.eastWestOpen)) return `cluster:${clu.id}:open`;
       const held = new Set(W().secrets.filter((s) => s.attackerHeld).map((s) => s.kind));
-      return held.has("k8s") || held.has("cloud") ? null : firstClosure(/^secrets:(k8s|cloud):unrotated$/) ?? "secrets:k8s:unrotated";
+      return held.has("k8s") || held.has("cloud") ? null : firstClosure(/^secrets:(k8s|cloud):unrotated$/);
     },
     fire: () => {
       const node = compromisedNode()!;
@@ -268,7 +266,7 @@ const IMPL: Record<number, StepImpl> = {
     pre: () => { const n = compromisedNode(); return !!n && !!W().network.egressAllowed[n.id]; },
     closedBy: (run) => {
       const n = compromisedNode();
-      if (!n) return cascade(run, 10);
+      if (!n) return null;
       return W().network.egressAllowed[n.id] ? null : `egress:${n.id}`;
     },
     fire: () => {
@@ -283,8 +281,8 @@ const IMPL: Record<number, StepImpl> = {
   13: {
     pre: () => !!compromisedNode() && !!liveSecret("storage"),
     closedBy: (run) => {
-      if (!compromisedNode()) return cascade(run, 10);
-      return liveSecret("storage") ? null : firstClosure(/^secrets:storage:unrotated$/) ?? firstClosure(/^secret:.+:held$/) ?? "secrets:storage:unrotated";
+      if (!compromisedNode()) return null;
+      return liveSecret("storage") ? null : firstClosure(/^secrets:storage:unrotated$/) ?? firstClosure(/^secret:.+:held$/);
     },
     fire: () => {
       const read = W().datasets.filter((d) => !d.public).slice(0, 3).map((d) => d.id);
@@ -296,7 +294,7 @@ const IMPL: Record<number, StepImpl> = {
   },
   14: {
     pre: () => !!liveSecret("cloud"),
-    closedBy: () => (liveSecret("cloud") ? null : firstClosure(/^secrets:cloud:unrotated$/) ?? firstClosure(/^secret:.+:held$/) ?? "secrets:cloud:unrotated"),
+    closedBy: () => (liveSecret("cloud") ? null : firstClosure(/^secrets:cloud:unrotated$/) ?? firstClosure(/^secret:.+:held$/)),
     fire: () => {
       world.addEphemeralInstances(400);
       emitSignal("compute.ephemeral-burst", { severity: "critical", attributes: { count: 400, cluster: "eval-gym" } });
@@ -474,6 +472,15 @@ export function tickRange(): void {
   for (let i = 0; i < scenario.steps.length; i++) {
     const step = scenario.steps[i];
     const res = run.stepResults[i];
+    // upstream step never succeeded → never reached: skipped, never blocked
+    if (["pending", "active"].includes(res.status) && upstreamFailed(run, i)) {
+      res.status = "skipped";
+      res.at = store.now();
+      run.attackerLog.push({ at: store.now(), text: `[${step.realWorldLabel}] skipped — ${step.title} (never reached)` });
+      bus.emit("range.step", { runId: run.id, stepId: step.id, status: "skipped" }, { summary: `step ${step.order} skipped — never reached`, href: "/range" });
+      changed = true;
+      continue;
+    }
     if (res.status === "pending" && run.clockMs >= step.offsetMs) {
       res.status = "active";
       run.currentStepIndex = i;
@@ -491,22 +498,22 @@ export function tickRange(): void {
     const closedKey = impl.closedBy(run);
     if (closedKey) {
       res.at = store.now();
-      if (/^step:\d+$/.test(closedKey)) {
-        // upstream step never succeeded → never reached, not a direct block
-        res.status = "skipped";
-        run.attackerLog.push({ at: store.now(), text: `[${step.realWorldLabel}] skipped — ${step.title} (never reached)` });
-        bus.emit("range.step", { runId: run.id, stepId: step.id, status: "skipped" }, { summary: `step ${step.order} skipped — never reached`, href: "/range" });
-      } else {
+      const c = world.closureOf(closedKey);
+      if (c?.agentId && c.toolName && c.traceId) {
+        // blocked requires a real recorded closure by an agent action
         res.status = "blocked";
-        const c = world.closureOf(closedKey);
         res.blockedBy = {
-          agentId: c?.agentId ?? "agt-cassidy",
-          toolName: (c?.toolName ?? "isolate_host") as import("@/lib/types").ToolName,
-          traceId: c?.traceId ?? "",
+          agentId: c.agentId,
+          toolName: c.toolName as import("@/lib/types").ToolName,
+          traceId: c.traceId,
           note: `precondition closed (${closedKey})`,
         };
         run.attackerLog.push({ at: store.now(), text: `[${step.realWorldLabel}] BLOCKED: ${step.title} — ${res.blockedBy.note}` });
         bus.emit("range.step", { runId: run.id, stepId: step.id, status: "blocked", blockedBy: res.blockedBy }, { severity: "medium", summary: `step ${step.order} blocked — ${step.title}`, href: "/range" });
+      } else {
+        res.status = "skipped";
+        run.attackerLog.push({ at: store.now(), text: `[${step.realWorldLabel}] skipped — ${step.title} (never reached)` });
+        bus.emit("range.step", { runId: run.id, stepId: step.id, status: "skipped" }, { summary: `step ${step.order} skipped — never reached`, href: "/range" });
       }
       changed = true;
       continue;
@@ -527,25 +534,26 @@ export function tickRange(): void {
   const allTerminal = run.stepResults.every((r) => ["succeeded", "blocked", "skipped"].includes(r.status));
   if (allTerminal || run.clockMs >= scenario.durationMs) {
     if (!allTerminal) {
-      // duration elapsed — final closedBy pass for accurate blocked vs skipped
+      // duration elapsed — final pass: upstream failure → skipped; a real
+      // recorded agent closure → blocked; otherwise skipped (never reached)
       for (let i = 0; i < scenario.steps.length; i++) {
         const res = run.stepResults[i];
         if (!["pending", "active"].includes(res.status)) continue;
         const impl = IMPL[scenario.steps[i].order];
-        const key = impl?.closedBy(run) ?? null;
-        if (key && !/^step:\d+$/.test(key)) {
+        const key = upstreamFailed(run, i) ? null : impl?.closedBy(run) ?? null;
+        const c = key ? world.closureOf(key) : undefined;
+        if (key && c?.agentId && c.toolName && c.traceId) {
           res.status = "blocked";
-          const c = world.closureOf(key);
           res.blockedBy = {
-            agentId: c?.agentId ?? "agt-cassidy",
-            toolName: (c?.toolName ?? "isolate_host") as import("@/lib/types").ToolName,
-            traceId: c?.traceId ?? "",
+            agentId: c.agentId,
+            toolName: c.toolName as import("@/lib/types").ToolName,
+            traceId: c.traceId,
             note: `precondition closed (${key})`,
           };
-          res.at = store.now();
         } else {
           res.status = "skipped";
         }
+        res.at = store.now();
       }
     }
     finishRun(run);
