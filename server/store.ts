@@ -3,7 +3,7 @@
  * All entities from Bootstrap plus traces, messages, telemetry ring (2000),
  * events ring (5000), range runs and research queries.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type {
   Agent,
@@ -24,12 +24,19 @@ import type {
   ID,
 } from "@/lib/types";
 import type { World } from "./world/world";
+import type { SshAdapterConfig } from "./fleet/adapters/ssh-config";
 
 export const TELEMETRY_CAP = 2000;
 export const EVENTS_CAP = 5000;
 
 export interface QalaaSecrets {
   llmApiKey?: string;
+  /** SshAdapterConfig — non-secret shape, but kept out of state.json so the whole adapter config travels with the key material */
+  ssh?: SshAdapterConfig;
+  /** keyRef → PEM/OpenSSH private key. Never returned by any API. */
+  sshKeys?: Record<string, string>;
+  /** `host:port` → base64 host key blob pinned by the strict / accept-new host-key policy */
+  sshKnownHosts?: Record<string, string>;
   /** HMAC key for outbound webhooks + shared secret for generic inbound */
   deliverySecret?: string;
   twilioAuthToken?: string;
@@ -166,7 +173,6 @@ export const store = {
   wipe(): void {
     try {
       if (existsSync(STATE_FILE)) {
-        const { unlinkSync } = require("node:fs") as typeof import("node:fs");
         unlinkSync(STATE_FILE);
       }
     } catch {
