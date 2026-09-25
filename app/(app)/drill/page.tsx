@@ -39,7 +39,7 @@ export default function DrillPage() {
   const { data: drill } = useDrillState();
   const { data: lease } = useLease(drill?.leaseId ?? null);
   const { data: path } = useAuthorityPath(drill?.leaseId ?? null);
-  const { data: records = [] } = useRecords(drill?.leaseId ? `?leaseId=${drill.leaseId}&limit=40` : "?limit=12");
+  const { data: records = [] } = useRecords(`?system=${encodeURIComponent(drill?.system.serverId ?? "srv-dataset-worker-02")}&limit=40`);
   const refresh = useRefreshAuthority();
   const [askBusy, setAskBusy] = React.useState(false);
 

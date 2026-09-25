@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { toast } from "sonner";
 import { ArrowCounterClockwise, Play } from "@phosphor-icons/react";
 
+import { AutoPlay } from "@/components/authority/auto-play";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
 import { authorityApi, useDrillState, useRefreshAuthority } from "@/lib/hooks/use-authority";
@@ -91,6 +92,7 @@ export function DrillGuide({ className, showReset = true }: { className?: string
             <Button variant="ghost" size="sm" onClick={() => reset(false)} disabled={busy} className="gap-1.5 text-text-3">
               <ArrowCounterClockwise className="size-3.5" /> Start over
             </Button>
+            {data && <AutoPlay system={data.system} className="gap-1.5 text-text-2" />}
           </div>
         )}
       </div>

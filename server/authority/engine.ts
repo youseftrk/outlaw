@@ -49,6 +49,15 @@ export function entity(id?: ID): Entity | undefined {
 export function entityName(id?: ID): string {
   return entity(id)?.name ?? id ?? "unknown";
 }
+/** agent id → agent name, entity id → short name, "qalaa" → Qalaa; anything else as given */
+function friendlyActor(actor: string): string {
+  if (actor === "qalaa") return "Qalaa";
+  const a = store.agent(actor);
+  if (a) return a.name;
+  const e = entity(actor);
+  if (e) return e.shortName;
+  return actor;
+}
 export function lease(id?: ID): AuthorityLease | undefined {
   return store.s.leases.find((l) => l.id === id);
 }
@@ -231,12 +240,12 @@ function refusalFor(l: AuthorityLease, input: AuthorizeInput, agent: Agent | und
 
 const REFUSAL_RANK: RefusalCode[] = [
   "STEP_UP_REQUIRED",
+  "AUTHORITY_REVOKED",
   "AUTHORITY_PENDING",
   "REQUESTER_MISMATCH",
   "CAPABILITY_MISMATCH",
   "SCOPE_MISMATCH",
   "NEVER_SHARED",
-  "AUTHORITY_REVOKED",
   "AUTHORITY_EXPIRED",
   "RULES_EXCEEDED",
   "AUTHORITY_REQUIRED",
@@ -294,7 +303,12 @@ export function authorize(input: AuthorizeInput): AuthorizeResult {
     if (!best || rank(refusal.code) < rank(best.refusal.code)) best = { refusal, lease: l };
   }
   if (best) {
-    return { allow: false, code: best.refusal.code, ownerEntityId, lease: best.lease, message: best.refusal.message, checks: checkRow(best.lease, input, agent, ownerEntityId) };
+    let message = best.refusal.message;
+    if (best.refusal.code === "AUTHORITY_REVOKED") {
+      const waiting = candidates.find((l) => l.status === "pending" || l.status === "pending-step-up");
+      if (waiting) message += ` A new ask (${waiting.id}) is waiting on the ${entityName(ownerEntityId)}.`;
+    }
+    return { allow: false, code: best.refusal.code, ownerEntityId, lease: best.lease, message, checks: checkRow(best.lease, input, agent, ownerEntityId) };
   }
   return { allow: false, code: "AUTHORITY_REQUIRED", ownerEntityId, message: `No permission from the ${entityName(ownerEntityId)} covers this.`, checks: checkRow(undefined, input, agent, ownerEntityId) };
 }
@@ -306,7 +320,7 @@ export function record(kind: DecisionKind, opts: Partial<DecisionRecord> & { act
     id: ids.record(),
     at: store.now(),
     kind,
-    actorName: opts.actorName ?? opts.actor,
+    actorName: opts.actorName ?? friendlyActor(opts.actor),
     summary: "",
     ...opts,
   } as DecisionRecord;
@@ -439,11 +453,11 @@ export function issueStepUp(leaseId: ID, by: string): { challenge: StepUpChallen
   store.s.stepUps.push(challenge);
   codeCache().set(l.id, code);
   store.markDirty();
-  record("step-up-sent", { actor: by, leaseId: l.id, summary: `Human code sent to the ${entityName(l.ownerEntityId)} for ${l.id} — good for ${STEP_UP_TTL_SIM_SEC / 60} sim-min.` });
+  record("step-up-sent", { actor: by, leaseId: l.id, summary: `Human code sent to the ${entityName(l.ownerEntityId)} for ${l.id} — good for ${STEP_UP_TTL_SIM_SEC / 60} minutes, one use only.` });
   void (async () => {
     const { sendMessage } = await import("../messaging/composer");
     sendMessage("thr-qalaa", "agent",
-      `One-time code for **${l.id}** (${CAPABILITY_LABEL[l.capability].toLowerCase()} on ${describeScope(l.scope)}): **${code}**\nEnter it within ${STEP_UP_TTL_SIM_SEC / 60} sim-min. Reply \`code ${l.id} ${code}\` or POST /api/authority/leases/${l.id}/step-up.`,
+      `One-time code for **${l.id}** (${CAPABILITY_LABEL[l.capability].toLowerCase()} on ${describeScope(l.scope)}): **${code}**\nEnter it within ${STEP_UP_TTL_SIM_SEC / 60} minutes. Reply \`code ${l.id} ${code}\` or POST /api/authority/leases/${l.id}/step-up.`,
       { agentId: "agt-saqr", severity: "high" }
     );
   })().catch(() => undefined);
@@ -476,7 +490,7 @@ function activateInternal(l: AuthorityLease, by: string): void {
   l.activatedAt = store.now();
   l.expiresAt = iso(store.s.simNowMs + l.durationSec * 1000);
   store.markDirty();
-  record("activated", { actor: by, leaseId: l.id, requestingEntityId: l.requestingEntityId, ownerEntityId: l.ownerEntityId, capability: l.capability, target: describeScope(l.scope), summary: `${l.id} is live — ${CAPABILITY_LABEL[l.capability].toLowerCase()} on ${describeScope(l.scope)} for ${Math.round(l.durationSec / 60)} sim-min.` });
+  record("activated", { actor: by, leaseId: l.id, requestingEntityId: l.requestingEntityId, ownerEntityId: l.ownerEntityId, capability: l.capability, target: describeScope(l.scope), summary: `${l.id} is live — ${CAPABILITY_LABEL[l.capability].toLowerCase()} on ${describeScope(l.scope)} for ${Math.round(l.durationSec / 60)} minutes.` });
   resolveLeaseWaiters(l.id, "active");
 }
 
@@ -545,6 +559,18 @@ export function revoke(leaseId: ID, by: string, reason?: string): { ok: true; le
   emit("authority.updated", { lease: l }, `${l.id} revoked — power cut`, "high");
   resolveLeaseWaiters(l.id, "refused");
   return { ok: true, lease: l };
+}
+
+/* ── presenter quiet window ── */
+
+const QUIET_AFTER_RESET_MS = 20 * 60_000;
+function quietUntil(): { ms: number } {
+  return ((G as Record<string, unknown>).__qalaaQuietUntil ??= { ms: 0 }) as { ms: number };
+}
+/** After a presenter reset, patrolling agents keep working but file no new asks for a while,
+ * so the record only shows the story the presenter is telling. Protected calls still refuse. */
+export function agentsQuiet(): boolean {
+  return Date.now() < quietUntil().ms;
 }
 
 /* ── waiters for the tool gate (like waitForDecision) ── */
@@ -643,15 +669,15 @@ export function drillState(): DrillState {
   const l = demoLease();
   const owner = entityName(srv.ownerEntityId);
   if (!l) return { step: "no-permission", title: "No permission yet", next: `Ask the ${owner} to contain ${system.hostname}.`, system };
-  if (l.status === "pending") return { step: "asked", title: "Asked", next: `Next: the ${owner} decides.`, leaseId: l.id, system };
-  if (l.status === "pending-step-up") return { step: "code-needed", title: "Owner said yes — human code needed", next: "Next: a person enters the one-time code from Messages.", leaseId: l.id, system };
+  if (l.status === "pending") return { step: "asked", title: "Asked", next: `The ${owner} decides — switch to them and say yes or no.`, leaseId: l.id, system };
+  if (l.status === "pending-step-up") return { step: "code-needed", title: "Owner said yes — human code needed", next: "A person enters the one-time code from Messages.", leaseId: l.id, system };
   if (l.status === "declined") return { step: "asked", title: "Declined", next: `The ${owner} said no — ask again with a better reason.`, leaseId: l.id, system };
   if (l.status === "revoked") return { step: "revoked", title: "Taken back", next: `The ${owner} revoked it — the agent is powerless again.`, leaseId: l.id, system };
   if (l.status === "expired") return { step: "expired", title: "Expired", next: "The window closed — ask for a new one.", leaseId: l.id, system };
   // active
   const acted = store.s.records.some((r) => r.leaseId === l.id && r.kind === "allowed");
   if (acted) return { step: "acted", title: "Acted", next: `The agent used it. The ${owner} can revoke any time.`, leaseId: l.id, system };
-  return { step: "allowed", title: "Live permission", next: "Next: the agent may act — watch the record.", leaseId: l.id, system };
+  return { step: "allowed", title: "Live permission", next: "The agent may act — try the door again and watch the record.", leaseId: l.id, system };
 }
 
 /**
@@ -702,6 +728,7 @@ export function resetAuthority(nowIso: string, opts: { fromOnboarding?: boolean 
   store.s.records = [];
   for (const w of [...leaseWaiters()]) resolveLeaseWaiters(w[0], "refused");
   codeCache().clear();
+  quietUntil().ms = Date.now() + QUIET_AFTER_RESET_MS;
   const srv = demoServer();
   if (srv) {
     if (opts.fromOnboarding) delete srv.ownerEntityId;

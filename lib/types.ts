@@ -1063,6 +1063,19 @@ export type RefusalCode =
   | "NEVER_SHARED"
   | "RULES_EXCEEDED";
 
+export const REFUSAL_LABEL: Record<RefusalCode, string> = {
+  AUTHORITY_REQUIRED: "No permission",
+  AUTHORITY_PENDING: "Permission not yet given",
+  AUTHORITY_REVOKED: "Permission taken back",
+  AUTHORITY_EXPIRED: "Permission ran out",
+  SCOPE_MISMATCH: "Not where the permission applies",
+  CAPABILITY_MISMATCH: "Not what the permission allows",
+  REQUESTER_MISMATCH: "Permission belongs to another agent",
+  STEP_UP_REQUIRED: "Human code still needed",
+  NEVER_SHARED: "The owner never shares this data",
+  RULES_EXCEEDED: "Outside the owner's house rules",
+};
+
 /** Kinds of data a system can hold. Owners can mark some as never shared, whatever the permission says. */
 export type DataClass = "personal-data" | "health-data" | "financial-data" | "security-telemetry" | "infrastructure";
 

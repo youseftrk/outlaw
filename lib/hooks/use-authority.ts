@@ -7,6 +7,7 @@
 import * as React from "react";
 import useSWR, { useSWRConfig, type SWRConfiguration } from "swr";
 import { ApiError, fetcher } from "@/lib/api";
+import { REFUSAL_LABEL } from "@/lib/types";
 import type {
   AuthorityCheck,
   AuthorityLease,
@@ -48,7 +49,7 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
 export const useEntities = () => useSWR<Entity[]>("/authority/entities", fetcher, { ...opts, refreshInterval: 0 });
 export const useLeases = (query = "") => useSWR<AuthorityLease[]>(`/authority/leases${query}`, fetcher, opts);
 export const useLease = (id?: string | null) => useSWR<AuthorityLease>(id ? `/authority/leases/${id}` : null, fetcher, opts);
-export const useAuthorityPath = (id?: string | null) => useSWR<AuthorityPath>(id ? `/authority/path/${id}` : null, fetcher, opts);
+export const useAuthorityPath = (id?: string | null) => useSWR<AuthorityPath>(id ? `/authority/path?leaseId=${encodeURIComponent(id)}` : null, fetcher, opts);
 export const useRecords = (query = "?limit=60") => useSWR<DecisionRecord[]>(`/authority/records${query}`, fetcher, opts);
 export const useHouseRules = () => useSWR<HouseRules[]>("/authority/rules", fetcher, opts);
 export const useDrillState = () => useSWR<DrillState>("/authority/step", fetcher, { ...opts, refreshInterval: 2000 });
@@ -159,18 +160,7 @@ export const STATUS_LABEL: Record<AuthorityLease["status"], string> = {
   declined: "Said no",
 };
 
-export const REFUSAL_LABEL: Record<RefusalCode, string> = {
-  AUTHORITY_REQUIRED: "No permission",
-  AUTHORITY_PENDING: "Permission not yet given",
-  AUTHORITY_REVOKED: "Permission taken back",
-  AUTHORITY_EXPIRED: "Permission ran out",
-  SCOPE_MISMATCH: "Not where the permission applies",
-  CAPABILITY_MISMATCH: "Not what the permission allows",
-  REQUESTER_MISMATCH: "Permission belongs to another agent",
-  STEP_UP_REQUIRED: "Human code still needed",
-  NEVER_SHARED: "The owner never shares this data",
-  RULES_EXCEEDED: "Outside the owner's house rules",
-};
+export { REFUSAL_LABEL };
 
 export function scopeLabel(scope: AuthorityScope, hostnameOf: (id: string) => string): string {
   const parts: string[] = [];
