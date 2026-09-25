@@ -71,7 +71,7 @@ function Attachment({ a }: { a: NonNullable<Message["attachments"]>[number] }) {
       href={href}
       className="mt-2 flex items-center gap-2 rounded-[12px] bg-black/10 px-3 py-2 text-[12px] transition-colors hover:bg-black/15"
     >
-      <span className="eyebrow text-[9px] opacity-70">
+      <span className="eyebrow text-[10px] opacity-70">
         {a.type.replace("-card", "").replace("-link", "")}
       </span>
       <span className="min-w-0 flex-1">
@@ -231,12 +231,12 @@ export function PhoneConversation({
                           />
                         )}
                         {m.kind === "approval-request" && (
-                          <span className="eyebrow mb-1 block text-[9px] opacity-70">
+                          <span className="eyebrow mb-1 block text-[10px] opacity-70">
                             approval needed
                           </span>
                         )}
                         {m.kind === "report" && (
-                          <span className="eyebrow mb-1 block text-[9px] opacity-70">
+                          <span className="eyebrow mb-1 block text-[10px] opacity-70">
                             report
                           </span>
                         )}

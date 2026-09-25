@@ -628,11 +628,13 @@ function DeckInner() {
 
       <div className="deck-chrome absolute inset-x-0 bottom-0 z-20 flex items-center justify-between px-6 py-4">
         <span className="mono-data text-[11px] text-text-3">
-          outlaw · {String(index + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
+          Qalaa · {String(index + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
         </span>
         <div className="flex items-center gap-1.5">
           {slides.map((s, i) => (
-            <button key={s.key} type="button" aria-label={`Slide ${i + 1}`} onClick={() => { setDir(i > index ? 1 : -1); setIndex(i); }} className={cn("h-1.5 rounded-full transition-all duration-500 ease-[var(--ease-spring)]", i === index ? "w-6 bg-lime" : "w-1.5 bg-text-3/50 hover:bg-text-3")} />
+            <button key={s.key} type="button" aria-label={`Slide ${i + 1}`} aria-current={i === index ? "step" : undefined} onClick={() => { setDir(i > index ? 1 : -1); setIndex(i); }} className="group/dot flex h-6 items-center rounded-full px-0.5 outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <span aria-hidden className={cn("block h-1.5 rounded-full transition-[width,background-color] duration-500 ease-[var(--ease-spring)]", i === index ? "w-6 bg-lime" : "w-1.5 bg-text-3/50 group-hover/dot:bg-text-3")} />
+            </button>
           ))}
         </div>
         <div className="flex items-center gap-1">

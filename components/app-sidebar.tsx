@@ -37,8 +37,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AnimatedBackground } from "@/components/ui/animated-background";
-import { BorderTrail } from "@/components/ui/border-trail";
-import { Magnetic } from "@/components/ui/magnetic";
 import { SlidingNumber } from "@/components/ui/sliding-number";
 import { Status, StatusIndicator, StatusLabel } from "@/components/kibo-ui/status";
 import { AgentAvatar } from "@/components/shell/agent-avatar";
@@ -46,25 +44,46 @@ import { api, useAuthMe, useBootstrap } from "@/lib/hooks/use-data";
 import { useLive, useLiveEvent } from "@/lib/hooks/use-live";
 import { useDesktopMac } from "@/lib/desktop";
 import { ago } from "@/lib/format";
-import type { AgentStatus, EventType, QalaaEvent, Trace } from "@/lib/types";
+import type { Agent, AgentStatus, EventType, QalaaEvent, Trace } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { title: "Command center", href: "/", icon: Broadcast },
-  { title: "Agents", href: "/agents", icon: UsersThree },
-  { title: "Threats", href: "/threats", icon: Crosshair },
-  { title: "Fleet", href: "/fleet", icon: HardDrives },
-  { title: "Governance", href: "/governance", icon: Gavel },
-  { title: "Messages", href: "/messages", icon: ChatsCircle },
-  { title: "Research", href: "/research", icon: MagnifyingGlass },
-  { title: "Insights", href: "/insights", icon: ChartLineUp },
-  { title: "Range", href: "/range", icon: Target },
-] as const;
+type NavItem = { title: string; href: string; icon: typeof Broadcast };
 
-const SLIDE = { type: "spring", bounce: 0.18, duration: 0.5 } as const;
+const GROUPS: { label: string; items: NavItem[] }[] = [
+  {
+    label: "Watch",
+    items: [
+      { title: "Command center", href: "/", icon: Broadcast },
+      { title: "Threats", href: "/threats", icon: Crosshair },
+      { title: "Fleet", href: "/fleet", icon: HardDrives },
+      { title: "Messages", href: "/messages", icon: ChatsCircle },
+    ],
+  },
+  {
+    label: "Garrison",
+    items: [
+      { title: "Agents", href: "/agents", icon: UsersThree },
+      { title: "Research", href: "/research", icon: MagnifyingGlass },
+    ],
+  },
+  {
+    label: "Govern",
+    items: [
+      { title: "Governance", href: "/governance", icon: Gavel },
+      { title: "Insights", href: "/insights", icon: ChartLineUp },
+      { title: "Range", href: "/range", icon: Target },
+    ],
+  },
+];
 
+const SETTINGS: NavItem = { title: "Settings", href: "/settings", icon: Sliders };
+const ALL_ITEMS = [...GROUPS.flatMap((g) => g.items), SETTINGS];
+
+const SLIDE = { type: "spring", duration: 0.35, bounce: 0 } as const;
+
+/** Active row: flat accent surface plus a 2px lime bar on the leading edge. No glow. */
 const NAV_ACTIVE_CLASS =
-  "rounded-md bg-sidebar-accent shadow-[inset_0_0_0_1px_rgba(208,255,120,0.14),0_0_22px_-8px_rgba(208,255,120,0.55)] before:absolute before:top-1/2 before:left-0 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-lime before:content-[''] after:absolute after:inset-0 after:rounded-[inherit] after:bg-[radial-gradient(120%_120%_at_0%_50%,rgba(208,255,120,0.14),transparent_60%)] after:content-['']";
+  "rounded-md bg-sidebar-accent before:absolute before:top-1/2 before:left-0 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-lime before:content-['']";
 
 const LIVE_STATUS = {
   live: { status: "online", label: "Live" },
@@ -73,6 +92,15 @@ const LIVE_STATUS = {
 } as const;
 
 const WORK_EVENTS: EventType[] = ["trace.started", "trace.completed", "agent.action"];
+
+const STATUS_LABEL: Record<AgentStatus, string> = {
+  observing: "observing",
+  investigating: "investigating",
+  acting: "acting",
+  "awaiting-approval": "awaiting approval",
+  paused: "paused",
+  idle: "idle",
+};
 
 /** Agents with an open trace (or a very recent action) on the wire, derived from SSE. */
 function useWorkingAgents() {
@@ -117,11 +145,6 @@ function useWorkingAgents() {
   }, [traces, flash]);
 }
 
-function liveStatus(base: AgentStatus, working: boolean): AgentStatus {
-  if (!working || base === "paused" || base === "awaiting-approval") return base;
-  return base === "acting" ? "acting" : "investigating";
-}
-
 function LastEvent({ at }: { at: string | null }) {
   const [, tick] = React.useReducer((n: number) => n + 1, 0);
   React.useEffect(() => {
@@ -129,9 +152,63 @@ function LastEvent({ at }: { at: string | null }) {
     return () => clearInterval(t);
   }, []);
   return (
-    <span className="mono-data text-[10px] text-text-3" suppressHydrationWarning>
+    <span className="mono-data truncate text-[10px] text-text-3" suppressHydrationWarning>
       {at ? `last event ${ago(at)}` : "waiting for events"}
     </span>
+  );
+}
+
+function RosterRow({ agent, working, collapsed, reduced }: { agent: Agent; working: boolean; collapsed: boolean; reduced: boolean | null }) {
+  const status = agent.status;
+  const busy = working || status === "investigating" || status === "acting";
+  const avatar = (
+    <span className="relative flex shrink-0">
+      <AgentAvatar agent={agent} status={status} size={collapsed ? 22 : 20} />
+      <AnimatePresence initial={false}>
+        {busy && (
+          <motion.span
+            initial={reduced ? false : { scale: 0.25, opacity: 0, filter: "blur(4px)" }}
+            animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
+            exit={reduced ? undefined : { scale: 0.25, opacity: 0, filter: "blur(4px)" }}
+            transition={{ type: "spring", duration: 0.3, bounce: 0 }}
+            className="absolute -right-1 -bottom-1 rounded-full bg-sidebar p-px"
+          >
+            <ThinkingOrb state={status === "acting" ? "working" : "searching"} size={20} theme="dark" style={{ width: 10, height: 10 }} />
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </span>
+  );
+
+  return (
+    <li>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Link
+              href={`/agents/${agent.id}`}
+              aria-label={`${agent.name} · ${STATUS_LABEL[status]}`}
+              className={cn(
+                "flex items-center gap-2 rounded-md text-[12.5px] text-sidebar-foreground outline-none transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                collapsed ? "size-8 justify-center" : "h-8 px-1.5",
+              )}
+            />
+          }
+        >
+          {avatar}
+          {!collapsed && (
+            <>
+              <span className="min-w-0 flex-1 truncate">{agent.name}</span>
+              <span className={cn("mono-data shrink-0 text-[10px]", busy ? "text-lime" : "text-text-3")}>{STATUS_LABEL[status]}</span>
+            </>
+          )}
+        </TooltipTrigger>
+        <TooltipContent side="right" hidden={!collapsed}>
+          <span className="font-medium">{agent.name}</span>
+          <span className="text-muted-foreground"> · {STATUS_LABEL[status]}</span>
+        </TooltipContent>
+      </Tooltip>
+    </li>
   );
 }
 
@@ -149,7 +226,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const unread = data?.threads.reduce((n, t) => n + t.unread, 0) ?? 0;
   const agents = data?.agents ?? [];
   const canSignOut = !!me?.enabled && !!me?.authenticated;
-  const [wordmarkHover, setWordmarkHover] = React.useState(false);
 
   const prevUnread = React.useRef(unread);
   const [pulse, setPulse] = React.useState(0);
@@ -163,9 +239,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     return () => clearTimeout(t);
   }, [pulse]);
 
-  const activeHref =
-    NAV.find((item) => (item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)))?.href ??
-    (pathname.startsWith("/settings") ? "/settings" : undefined);
+  const activeHref = ALL_ITEMS.find((item) => (item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)))?.href;
 
   const signOut = async () => {
     try {
@@ -177,35 +251,33 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   };
 
   const live = LIVE_STATUS[liveState];
+  const transition = reduced ? { duration: 0 } : SLIDE;
 
-  const navItem = (item: { title: string; href: string; icon: typeof Broadcast }) => {
+  const navItem = (item: NavItem) => {
     const active = activeHref === item.href;
     const Icon = item.icon;
+    const showBadge = item.href === "/messages" && unread > 0;
     return (
       <SidebarMenuItem key={item.href} data-id={item.href} className="flex [&>div:last-child]:min-w-0 [&>div:last-child]:flex-1">
         <SidebarMenuButton
           tooltip={item.title}
           isActive={active}
-          className="relative bg-transparent transition-colors duration-300 data-[active=true]:bg-transparent data-[active=true]:text-lime hover:data-[active=true]:bg-transparent"
+          className="relative bg-transparent text-sidebar-foreground transition-colors duration-150 hover:text-sidebar-accent-foreground data-[active=true]:bg-transparent data-[active=true]:font-medium data-[active=true]:text-text-1 hover:data-[active=true]:bg-transparent"
           render={<Link href={item.href} />}
         >
-          <Magnetic intensity={0.35} range={48} actionArea="parent" springOptions={{ stiffness: 220, damping: 18, mass: 0.4 }}>
-            <Icon weight={active ? "fill" : "light"} className={cn("size-[18px]! transition-transform duration-300", active && "drop-shadow-[0_0_8px_rgba(208,255,120,0.55)]")} />
-          </Magnetic>
+          <Icon weight={active ? "fill" : "regular"} className={cn("size-4! transition-colors duration-150", active && "text-lime")} />
           <span>{item.title}</span>
         </SidebarMenuButton>
-        {item.href === "/messages" && unread > 0 && (
-          <SidebarMenuBadge className="mono-data overflow-visible bg-lime text-[10px] font-semibold text-carbon">
-            {pulse > 0 && !reduced && (
-              <span aria-hidden className="absolute inset-0 animate-ping rounded-md bg-lime opacity-70" />
-            )}
+        {showBadge && !collapsed && (
+          <SidebarMenuBadge className="mono-data overflow-visible rounded-full bg-lime px-1.5 text-[10px] font-semibold text-carbon! peer-data-active/menu-button:text-carbon">
+            {pulse > 0 && !reduced && <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-lime opacity-60" />}
             <span className="relative">
               <SlidingNumber value={unread} />
             </span>
           </SidebarMenuBadge>
         )}
-        {item.href === "/messages" && unread > 0 && collapsed && (
-          <span className="pointer-events-none absolute top-1 right-1 flex size-2">
+        {showBadge && collapsed && (
+          <span className="pointer-events-none absolute top-1 right-1 flex size-2" aria-hidden>
             {pulse > 0 && !reduced && <span className="absolute inline-flex size-full animate-ping rounded-full bg-lime opacity-75" />}
             <span className="relative inline-flex size-2 rounded-full bg-lime" />
           </span>
@@ -216,128 +288,62 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader className={cn("app-drag", mac && "pt-9")}>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              className="app-no-drag data-[slot=sidebar-menu-button]:p-1.5! hover:bg-transparent"
-              render={<Link href="/" aria-label="Qalaa home" />}
-              onMouseEnter={() => setWordmarkHover(true)}
-              onMouseLeave={() => setWordmarkHover(false)}
-            >
-              <motion.span
-                className="relative grid size-8 shrink-0 place-items-center rounded-full"
-                whileHover={reduced ? undefined : { rotate: 12, scale: 1.06 }}
-                transition={{ type: "spring", stiffness: 260, damping: 16 }}
-              >
-                <span className={cn("aura absolute inset-0 rounded-full opacity-40 blur-md transition-opacity duration-500", wordmarkHover && "opacity-80")} />
-                {wordmarkHover && !reduced && (
-                  <BorderTrail
-                    className="bg-linear-to-l from-lime via-cerulean to-transparent"
-                    size={24}
-                    transition={{ repeat: Infinity, duration: 1.8, ease: "linear" }}
-                  />
-                )}
-                <Image src="/brand/logo.svg" alt="" width={28} height={28} priority className="relative" />
-              </motion.span>
-              <Image
-                src="/brand/wordmark.png"
-                alt="Qalaa"
-                width={90}
-                height={22}
-                priority
-                style={{ height: 22, width: "auto" }}
-                className={cn("opacity-95 transition-[opacity,filter] duration-500 group-data-[collapsible=icon]:hidden", wordmarkHover && "opacity-100 drop-shadow-[0_0_10px_rgba(208,255,120,0.35)]")}
-              />
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarHeader className={cn("app-drag px-2 pt-3 pb-1", mac && "pt-9")}>
+        <Link
+          href="/"
+          aria-label="Qalaa home"
+          className="app-no-drag flex h-8 items-center gap-2.5 rounded-md px-1.5 outline-none transition-colors duration-150 hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+        >
+          <Image src="/brand/logo.svg" alt="" width={22} height={22} priority className="shrink-0" />
+          <Image
+            src="/brand/wordmark.png"
+            alt="Qalaa"
+            width={80}
+            height={20}
+            priority
+            style={{ height: 18, width: "auto" }}
+            className="opacity-95 group-data-[collapsible=icon]:hidden"
+          />
+        </Link>
       </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-0.5">
-              <AnimatedBackground defaultValue={activeHref} className={NAV_ACTIVE_CLASS} transition={reduced ? { duration: 0 } : SLIDE}>
-                {NAV.map(navItem)}
-              </AnimatedBackground>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <SidebarContent className="gap-0 px-0">
+        {GROUPS.map((group) => (
+          <SidebarGroup key={group.label} className="py-1.5">
+            <SidebarGroupLabel className="eyebrow h-6 text-[10px] text-text-3">{group.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-px">
+                <AnimatedBackground defaultValue={activeHref} className={NAV_ACTIVE_CLASS} transition={transition}>
+                  {group.items.map(navItem)}
+                </AnimatedBackground>
+              </SidebarMenu>
+              {group.label === "Garrison" && agents.length > 0 && (
+                <ul className={cn("mt-1 flex flex-col gap-px", collapsed ? "items-center" : "ml-1.5 border-l border-sidebar-border pl-1.5")} aria-label="The garrison">
+                  {agents.map((a) => (
+                    <RosterRow key={a.id} agent={a} working={working.has(a.id)} collapsed={collapsed} reduced={reduced} />
+                  ))}
+                </ul>
+              )}
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
 
-        <SidebarGroup className="mt-auto">
+        <SidebarGroup className="mt-auto py-1.5">
           <SidebarGroupContent>
             <SidebarMenu>
-              <AnimatedBackground defaultValue={activeHref} className={NAV_ACTIVE_CLASS} transition={reduced ? { duration: 0 } : SLIDE}>
-                {navItem({ title: "Settings", href: "/settings", icon: Sliders })}
+              <AnimatedBackground defaultValue={activeHref} className={NAV_ACTIVE_CLASS} transition={transition}>
+                {navItem(SETTINGS)}
               </AnimatedBackground>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
-        <SidebarGroup className="p-0">
-          <SidebarGroupLabel className="eyebrow group-data-[collapsible=icon]:hidden">The garrison</SidebarGroupLabel>
-          <div className={cn("flex items-center gap-1.5 px-2 pb-1", collapsed && "flex-col gap-2 px-0")}>
-            {agents.map((a) => {
-              const status = liveStatus(a.status, working.has(a.id));
-              const busy = status === "investigating" || status === "acting";
-              return (
-                <Tooltip key={a.id}>
-                  <TooltipTrigger
-                    render={
-                      <Link
-                        href={`/agents/${a.id}`}
-                        className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      />
-                    }
-                  >
-                    <Magnetic intensity={collapsed ? 0.5 : 0.3} range={collapsed ? 56 : 36} actionArea="self">
-                      <motion.span
-                        className="relative flex rounded-full"
-                        whileHover={reduced ? undefined : { scale: collapsed ? 1.35 : 1.2 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 18 }}
-                      >
-                        {busy && !reduced && (
-                          <span className="absolute -inset-0.5 animate-ping rounded-full bg-lime/30 [animation-duration:2.2s]" />
-                        )}
-                        <AgentAvatar agent={a} status={status} size={collapsed ? 22 : 24} className="relative" />
-                        <AnimatePresence>
-                          {busy && (
-                            <motion.span
-                              initial={{ scale: 0, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              exit={{ scale: 0, opacity: 0 }}
-                              transition={{ type: "spring", stiffness: 380, damping: 20 }}
-                              className="absolute -right-1.5 -bottom-1.5 rounded-full bg-sidebar p-px"
-                            >
-                              <ThinkingOrb state={status === "acting" ? "working" : "searching"} size={20} theme="dark" style={{ width: 12, height: 12 }} />
-                            </motion.span>
-                          )}
-                        </AnimatePresence>
-                      </motion.span>
-                    </Magnetic>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <span className="font-medium">{a.name}</span>
-                    <span className="text-muted-foreground"> · {status.replace("-", " ")}</span>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
-          </div>
-        </SidebarGroup>
-        <div className={cn("flex items-center justify-between gap-2 px-2 pt-1", collapsed && "justify-center px-0")}>
+      <SidebarFooter className="gap-1 border-t border-sidebar-border px-2 py-2">
+        <div className={cn("flex h-6 items-center gap-2", collapsed ? "justify-center" : "px-1")}>
           <Tooltip>
             <TooltipTrigger
-              render={
-                <Status
-                  status={live.status}
-                  className={cn("h-5 gap-1.5 rounded-full border-0 bg-transparent px-1 py-0 text-[10px]", collapsed && "px-0")}
-                />
-              }
+              render={<Status status={live.status} className="h-5 gap-1.5 rounded-full border-0 bg-transparent px-0 py-0 text-[10px]" />}
             >
               <StatusIndicator />
               <StatusLabel className="mono-data text-text-2 group-data-[collapsible=icon]:hidden">{live.label}</StatusLabel>
@@ -347,10 +353,17 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
               {lastEventAt ? ` · last event ${ago(lastEventAt)}` : ""}
             </TooltipContent>
           </Tooltip>
-          {!collapsed && <LastEvent at={lastEventAt} />}
+          {!collapsed && (
+            <>
+              <span className="text-text-3/60" aria-hidden>
+                ·
+              </span>
+              <LastEvent at={lastEventAt} />
+            </>
+          )}
         </div>
         {canSignOut && (
-          <Button variant="ghost" size="sm" onClick={signOut} className="justify-start text-text-2 group-data-[collapsible=icon]:hidden">
+          <Button variant="ghost" size="sm" onClick={signOut} className="h-7 justify-start px-1 text-[12px] text-text-2 group-data-[collapsible=icon]:hidden">
             Sign out
           </Button>
         )}
@@ -358,7 +371,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           href="https://rareui.com"
           target="_blank"
           rel="noreferrer"
-          className="mono-data truncate px-2 pb-1 text-[9px] uppercase tracking-[0.12em] text-text-3/70 transition-colors hover:text-text-2 group-data-[collapsible=icon]:hidden"
+          className="mono-data truncate px-1 text-[10px] text-text-3/70 transition-colors duration-150 hover:text-text-2 group-data-[collapsible=icon]:hidden"
         >
           Bell &amp; orb by Rare UI
         </a>

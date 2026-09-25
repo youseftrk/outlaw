@@ -253,7 +253,7 @@ function MigrationCard({ m, servers }: { m: Migration; servers: Server[] }) {
 
       <div ref={containerRef} className="relative mt-4 flex items-center justify-between gap-6 rounded-[12px] bg-bg-0/50 p-3">
         <div ref={fromRef} className="z-10 rounded-[10px] bg-bg-2 px-3 py-2">
-          <p className="eyebrow text-[9px]">from</p>
+          <p className="eyebrow text-[10px]">from</p>
           <p className="mono-data text-[12px] text-text-1">{src?.hostname ?? m.sourceServerId}</p>
           <p className="text-[11px] text-text-3">{src ? `${src.region} · ${src.provider}` : ""}</p>
         </div>
@@ -262,7 +262,7 @@ function MigrationCard({ m, servers }: { m: Migration; servers: Server[] }) {
           <p className="text-[10px] text-text-3">{m.workloads.length} workloads</p>
         </div>
         <div ref={toRef} className="z-10 rounded-[10px] bg-bg-2 px-3 py-2 text-right">
-          <p className="eyebrow text-[9px]">to</p>
+          <p className="eyebrow text-[10px]">to</p>
           <p className="mono-data text-[12px] text-text-1">{dst?.hostname ?? (m.targetSpec ? `new ${m.targetSpec.role}` : "—")}</p>
           <p className="text-[11px] text-text-3">
             {dst ? `${dst.region} · ${dst.provider}` : m.targetSpec ? `${m.targetSpec.region} · ${m.targetSpec.provider}` : ""}
