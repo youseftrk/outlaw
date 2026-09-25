@@ -2,3 +2,4 @@ node_modules/
 renders/
 snapshots/
 .hyperframes/
+assets/demo/*.webm

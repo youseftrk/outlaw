@@ -39,23 +39,38 @@ node scripts/make-srt.mjs    # → explainer.srt + explainer.vtt
 
 ## Live-demo capture
 
-`scripts/capture-demo.mjs` screencasts the real app (`QALAA_RESET=1 npm run dev`
-on the authority-pivot branch) through the lifecycle — pending approval →
-approve → policy switch off → reject → traces — to `assets/demo/lifecycle.webm`.
+`scripts/capture-demo.mjs` drives the real app (`QALAA_RESET=1 QALAA_DEMO_SHOW_CODE=1 npm run dev`
+on `main`) through the lifecycle with real UI clicks on `/drill`, `/permissions`,
+`/record` — refused → asked → owner says yes → one-time code → allowed → taken
+back → refused → the record — and screencasts it to `assets/demo/lifecycle.webm`
+(+ 12 keyframe PNGs). The composition uses the transcoded, seekable
+`assets/demo/lifecycle.mp4` (54–104s).
 
 ```bash
-node scripts/capture-demo.mjs [out-dir]
+node scripts/capture-demo.mjs assets/demo
+ffmpeg -i assets/demo/lifecycle.webm -c:v libx264 -pix_fmt yuv420p -r 30 -an assets/demo/lifecycle.mp4
 ```
+
+## Voice-over (Fish Audio)
+
+```bash
+FISH_AUDIO_API_KEY=... bash scripts/make-vo.sh   # one mp3 per caption line → audio/vo/line-NN.mp3
+```
+
+Model `s2.1-pro-free`, voice `f76b60630a174b36a15f4bd9ed6708f0`. The key is read from the
+environment only and never written into the repo.
 
 ## Structure
 
-- `index.html` — the whole composition (114 s, one paused GSAP root timeline)
-- `audio/` — Cuelume-synthesized cue WAVs (+ `vo/` Fish Audio clips when funded)
+- `index.html` — the whole composition (182 s, one paused GSAP root timeline)
+- `assets/stamptype.js` — arlan.me/vault stamptype engine (canvas, tick-driven, seek-safe)
+- `assets/demo/` — real-app lifecycle footage + keyframes
+- `audio/` — Cuelume-synthesized cue WAVs + `vo/` Fish Audio narration clips
 - `fonts/` — Space Grotesk + JetBrains Mono variable woff2 (OFL, local only)
 - `assets/paper-shaders.js` — vendored `@paper-design/shaders` IIFE (GrainGradient, deterministic `setFrame`)
 - `assets/gsap.min.js` — vendored GSAP 3.14.2 (no runtime network)
 - `assets/brand/` — copied unmodified from `public/brand/`
-- `scripts/` — render-cues, make-srt, capture-demo
+- `scripts/` — render-cues, make-srt, capture-demo, make-vo
 - `SCRIPT.md` — timed narration/on-screen lines + sources
 - `CREDITS.md` — licenses for every third-party piece
 

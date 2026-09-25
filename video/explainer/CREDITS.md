@@ -6,19 +6,24 @@ Reproduced from Arlan Rakhmetzhanov's open-source motion vault
 (https://arlan.me/vault, MIT — https://opensource.org/licenses/MIT), mechanisms
 extracted from the published RSC source:
 
-- **color-depth** — the physical switch chrome (S3): layered radial-gradient
-  body, `inset` bevel shadows, gloss top-light bar on the knob.
+- **stamptype** — the hook (0–10s). The vault's kinetic-type poster engine
+  ported verbatim to `assets/stamptype.js` (canvas; highlight bars fly in on
+  axis-aligned jagged hops along the 4 breakpoint tracks, stamp trails live
+  exactly 16 frames, worlds overlap 12 frames as the free transition, hard
+  field swap at frame 5). Driven by the HyperFrames timeline: `draw(tick)` with
+  `tick = floor(t × 20)`, so every frame is a pure function of time. Three
+  worlds: lime bars on black → black bars on lime → refused-red bars on black.
+- **color-depth** — the physical switch chrome (38–54s): layered
+  radial-gradient body, `inset` bevel shadows, gloss top-light bar on the knob.
 - **kinetic-type cascade** — word/line reveals land in power3 long-tail settles
-  paced to the voice-over (all title scenes).
-- **waterfall stagger** — the five-step rows (S4) and the four solve chips (S3)
-  cascade in reading order.
-- **vector-editor** — planned for drop 2's scope diagram (selection chrome +
-  corner handles, DOM).
-- **ghosty-reveal** — planned for drop 2 (feathered mask-position bleed on the
-  record ledger + wordmark).
-- **typer** — planned for drop 2 (per-char wave flicker settling into bars on
-  the permission-request card fields).
-- **kinetic-typography** — planned for drop 2 (canvas tile-ripple on "stop").
+  paced to the voice-over (problem, who, close).
+- **waterfall stagger** — the four solve chips (38–54s), the demo ledger rows
+  (91s), and the house-rules card (130–156s) cascade in reading order.
+- **vector-editor** — the scope diagram (104–130s): selection chrome draws
+  clockwise edge by edge, tightens onto the granted action, corner handles pop;
+  a stray request slides into frame, snaps red, is refused and ejected.
+- **ken-burns hold** — the record page (95–104s) holds on a slow scale drift
+  while the ledger rows land.
 
 ## Sound — Cuelume (MIT)
 
@@ -28,9 +33,10 @@ OfflineAudioContext; committed WAVs are fixed thereafter). Only SFX source.
 
 ## Voice — Fish Audio
 
-Narration to be generated with fish.audio TTS (male, English), one clip per
-script line, mixed under the Cuelume cues. Blocked at production time:
-account `402 insufficient_balance`.
+Narration generated with fish.audio TTS, model `s2.1-pro-free`, reference
+voice `f76b60630a174b36a15f4bd9ed6708f0` (male, English) — one clip per caption
+line (`audio/vo/line-NN.mp3`, `scripts/make-vo.sh`), mixed under the Cuelume
+cues. Captions start exactly where each clip starts.
 
 ## Shader — @paper-design/shaders (Apache-2.0)
 

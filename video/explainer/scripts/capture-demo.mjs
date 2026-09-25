@@ -1,117 +1,113 @@
-// Capture the live Qalaa app lifecycle to webm for the explainer video.
-// Usage: node scripts/capture-demo.mjs [out-dir]
-// Requires the dev server running on :3000 (QALAA_RESET=1 npm run dev).
+// Record the live Qalaa authority lifecycle to assets/demo/*.webm via puppeteer
+// screencast. Requires the app at localhost:3000 (QALAA_RESET=1
+// QALAA_DEMO_SHOW_CODE=1 npm run dev). Beats: refused → ask → owner yes →
+// one-time code → allowed → take back → refused → the record.
 import puppeteer from "puppeteer-core";
-import { mkdirSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { mkdirSync } from "node:fs";
 
-const BASE = "http://localhost:3000";
-const OUT = resolve(process.argv[2] ?? "assets/demo");
-const CHROME = process.env.CHROME_PATH ?? "/home/ubuntu/.local/bin/google-chrome";
-
+const APP = "http://localhost:3000";
+const OUT = new URL("../assets/demo/", import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
-const log = (m) => console.log(`[capture ${(performance.now() / 1000).toFixed(1)}s] ${m}`);
+const CHROME = "/home/ubuntu/.local/bin/google-chrome";
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const browser = await puppeteer.launch({
-  executablePath: CHROME,
-  headless: true,
-  args: ["--no-sandbox", "--window-size=1920,1080", "--autoplay-policy=no-user-gesture-required"],
+  executablePath: CHROME, headless: "shell",
+  args: ["--no-sandbox", "--disable-dev-shm-usage", "--hide-scrollbars",
+    "--window-size=1920,1080", "--force-device-scale-factor=1"],
   defaultViewport: { width: 1920, height: 1080 },
 });
 const page = await browser.newPage();
+await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
 
-const api = async (path, init) => {
-  const r = await fetch(`${BASE}${path}`, init);
-  return r.json();
-};
-const post = (path, body) =>
-  api(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-
-async function waitFor(pred, label, timeoutMs = 90000, every = 750) {
-  const t0 = Date.now();
-  for (;;) {
-    const v = await pred();
-    if (v) return v;
-    if (Date.now() - t0 > timeoutMs) throw new Error(`timeout waiting: ${label}`);
-    await new Promise((r) => setTimeout(r, every));
-  }
+async function clickText(sel, text) {
+  return page.evaluate((s, t) => {
+    const els = [...document.querySelectorAll(s)];
+    const el = els.find((e) => e.textContent.trim().toLowerCase().includes(t.toLowerCase()) && !e.disabled);
+    if (el) { el.scrollIntoView({ block: "center" }); el.click(); return el.textContent.trim(); }
+    return null;
+  }, sel, text);
 }
 
-// ---- record: full lifecycle in one take ----
-const take = resolve(OUT, "lifecycle.webm");
-const rec = await page.screencast({ path: take, speed: 1 });
-log("recording → lifecycle.webm");
+const reset = await fetch(`${APP}/api/authority/reset`, { method: "POST" }).then((r) => r.status);
+console.log("reset", reset);
 
-await page.goto(`${BASE}/`, { waitUntil: "networkidle2" });
-await new Promise((r) => setTimeout(r, 3500)); // dashboard settles
+await page.goto(`${APP}/`, { waitUntil: "domcontentloaded", timeout: 30000 });
+await sleep(1500);
+const rec = await page.screencast({ path: `${OUT}lifecycle.webm`, speed: 1 });
+const beats = [];
+const beat = (n) => { beats.push({ name: n, t: Date.now() }); console.log("beat", n); };
+const t0 = Date.now();
+const shot = async (n) => page.screenshot({ path: `${OUT}shot-${n}.png` });
 
-// trigger an incident that drives an agent toward a gated action
-await post("/api/director", { scenario: "leaked-token" });
-log("director: leaked-token injected");
+// 1. the door — refused
+await page.goto(`${APP}/drill`, { waitUntil: "domcontentloaded" });
+await sleep(1800);
+await shot("01-door-refused");
+console.log("try:", await clickText("button", "Try it"));
+await sleep(2600); await shot("02-refused-result"); beat("refused");
 
-let approval = await waitFor(async () => {
-  const d = await api("/api/governance/approvals");
-  const list = d.approvals ?? d;
-  return (list ?? []).find((a) => a.status === "pending");
-}, "pending approval", 120000, 1000);
-log(`approval pending: ${approval.id} — ${approval.summary}`);
+// 2. ask
+console.log("ask:", await clickText("button", "Ask "));
+await sleep(2600); await shot("03-asked"); beat("asked");
 
-// approvals tab: the ask, then the human says yes
-await page.goto(`${BASE}/governance?tab=approvals`, { waitUntil: "networkidle2" });
-await new Promise((r) => setTimeout(r, 3000));
-await page.evaluate(() => document.querySelector("main")?.scrollIntoView());
-await new Promise((r) => setTimeout(r, 1200));
+// 3. owner says yes
+await page.goto(`${APP}/permissions`, { waitUntil: "domcontentloaded" });
+await sleep(1800); await shot("04-owner-desk");
+console.log("yes:", await clickText("button", "Yes, allow it"));
+await sleep(2600); await shot("05-accepted"); beat("accepted");
 
-const approved = await page.evaluate(() => {
-  const btn = [...document.querySelectorAll("button")].find((b) => b.textContent?.trim().includes("Approve"));
-  if (!btn) return false;
-  btn.click();
-  return true;
+// 4. one-time code — UI shows the issued code in demo mode
+const issued = await page.evaluate(() => {
+  const s = [...document.querySelectorAll("span.mono-data")].map((e) => e.textContent.trim()).find((t) => /^\d{4,6}$/.test(t));
+  return s || null;
 });
-log(`clicked approve: ${approved}`);
-await new Promise((r) => setTimeout(r, 2500));
+console.log("issued code:", issued);
+if (issued) {
+  await page.type('input[placeholder="6-digit code"]', issued, { delay: 90 });
+  await shot("06-code-typed");
+  await clickText("button[type=submit]", "");
+  await page.evaluate(() => {
+    const b = [...document.querySelectorAll("form button")].find((x) => !x.disabled);
+    b?.click();
+  });
+  await sleep(2600); await shot("07-permission-on"); beat("code");
+}
 
-// the record: traces
-await page.goto(`${BASE}/governance?tab=traces`, { waitUntil: "networkidle2" });
-await new Promise((r) => setTimeout(r, 4000));
+// 5. same door — allowed
+await page.goto(`${APP}/drill`, { waitUntil: "domcontentloaded" });
+await sleep(1800);
+await clickText("button", "Try it");
+await sleep(2600); await shot("08-allowed"); beat("allowed");
 
-// policies: the switch — toggle one off (take power back)
-await page.goto(`${BASE}/governance?tab=policies`, { waitUntil: "networkidle2" });
-await new Promise((r) => setTimeout(r, 2500));
-await page.evaluate(() => {
-  const sw = document.querySelector('button[role="switch"][aria-checked="true"]') ??
-    document.querySelector('button[role="switch"]');
-  sw?.scrollIntoView({ block: "center" });
-  sw?.click();
+// 6. take it back — owner switch on the permissions card
+await page.goto(`${APP}/permissions`, { waitUntil: "domcontentloaded" });
+await sleep(1800);
+const flipped = await page.evaluate(() => {
+  const sw = document.querySelector('[aria-label="Take this permission back"]');
+  if (sw) { sw.scrollIntoView({ block: "center" }); sw.click(); return true; }
+  return false;
 });
-log("toggled a policy switch");
-await new Promise((r) => setTimeout(r, 2500));
+await sleep(1200);
+const confirmed = await clickText("button", "Take it back") || await clickText("button", "Revoke") || await clickText("button", "confirm");
+console.log("revoke:", flipped, confirmed);
+await sleep(2600); await shot("09-revoked"); beat("revoked");
 
-// second incident → second ask → owner refuses
-await post("/api/director", { scenario: "exfil" });
-log("director: exfil injected");
-approval = await waitFor(async () => {
-  const d = await api("/api/governance/approvals");
-  const list = d.approvals ?? d;
-  return (list ?? []).find((a) => a.status === "pending");
-}, "second pending approval", 120000, 1000);
-log(`approval pending: ${approval.id} — ${approval.summary}`);
+// 7. very next attempt — refused again
+await page.goto(`${APP}/drill`, { waitUntil: "domcontentloaded" });
+await sleep(1800);
+await clickText("button", "Try it");
+await sleep(2600); await shot("10-refused-again"); beat("refused2");
 
-await page.goto(`${BASE}/governance?tab=approvals`, { waitUntil: "networkidle2" });
-await new Promise((r) => setTimeout(r, 2500));
-await page.evaluate(() => {
-  const btn = [...document.querySelectorAll("button")].find((b) => b.textContent?.trim().includes("Reject"));
-  btn?.click();
-});
-log("clicked reject");
-await new Promise((r) => setTimeout(r, 2500));
-
-// final: the record shows everything
-await page.goto(`${BASE}/governance?tab=traces`, { waitUntil: "networkidle2" });
-await new Promise((r) => setTimeout(r, 5000));
+// 8. the record
+await page.goto(`${APP}/record`, { waitUntil: "domcontentloaded" });
+await sleep(2400); await shot("11-record"); beat("record");
+await page.evaluate(() => window.scrollTo({ top: 500, behavior: "smooth" }));
+await sleep(2200); await shot("12-record-scroll");
 
 await rec.stop();
-log("stopped recording");
-writeFileSync(resolve(OUT, "capture-notes.json"), JSON.stringify({ tookAt: Date.now(), approval1: true }, null, 2));
+const total = ((Date.now() - t0) / 1000).toFixed(1);
+const start = beats[0]?.t ?? t0;
+for (const b of beats) console.log(`${b.name}@${((b.t - start) / 1000).toFixed(1)}s`);
+console.log("total", total, "s →", OUT);
 await browser.close();
-console.log("DONE:", take);
