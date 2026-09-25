@@ -52,6 +52,17 @@ Detection and response are deterministic and always on. An LLM adds narrated rea
 
 Settings → Agent brain → pick a preset (Groq is free, no card, fastest), paste a key, **Save & test**. Presets: Groq, Gemini, Mistral, Cerebras, OpenRouter, Hugging Face router, or any OpenAI-compatible endpoint. Keys live in `.data/secrets.json` (gitignored) and never reach the browser.
 
+## Optional: auth
+
+Off by default — nothing to configure for the demo or the desktop app. To put the whole UI and API (including the SSE stream) behind a single operator password, do one of:
+
+- **Env var**: `QALAA_AUTH_PASSWORD=your-secret npm run dev` (or `npm start`).
+- **Settings → Access**: type a password (≥8 chars), **Save**. It is stored as a scrypt hash in `.data/secrets.json` and takes effect immediately; a Settings password wins over the env var.
+
+When enabled, page requests redirect to `/login`, `/api/**` returns `401 {"error":"unauthorized"}`, and a successful login sets an HttpOnly `qalaa_session` cookie (HMAC-SHA256, 12 h, renewed while you keep using the app). Five wrong passwords per minute per IP are rate-limited. **Sign out** appears at the bottom of the sidebar.
+
+Reset: **Settings → Access → Clear password** while signed in, or stop the server and delete the `"auth"` key from `.data/secrets.json` (deleting `auth.sessionSecret` also invalidates every existing session). If the password came from `QALAA_AUTH_PASSWORD`, just unset the variable.
+
 ## Demo script (≈8 minutes)
 
 0. Before you go on: `⌘K` → **Reset the demo** (fresh seed, quiet world). The gang's response time depends on how busy the world is, so start clean.
@@ -70,8 +81,9 @@ Keyboard: `⌘K` command palette · deck `←` `→` `F` `Esc` · `/deck?slide=N
 ```
 app/           pages (App Router) + app/api/** route handlers
 components/    ui/ (shadcn + registries), vendor/, kibo-ui/, shell/, compositions/
-lib/           types.ts (contract), api.ts, hooks/, format.ts
-server/        runtime, world model, agents, governance, fleet, messaging, research, insights, range
+lib/           types.ts (contract), api.ts, hooks/, format.ts, auth/ (session + gate, Web Crypto)
+server/        runtime, world model, agents, governance, fleet, messaging, research, insights, range, auth
+proxy.ts       optional login gate (Next 16 proxy) — no-op unless a password is configured
 desktop/       Electron main + preload
 docs/          SPEC.md (system), DESIGN.md (design direction), COMPONENTS.md (inventory)
 ```

@@ -4,6 +4,7 @@ import { store } from "@/server/store";
 import { bus } from "@/server/bus";
 import { LLM_PRESETS } from "@/server/agents/llm";
 import { applySshSettingsPatch, sshSettingsView } from "@/server/fleet/adapters/ssh-config";
+import { authEnabled, authSource } from "@/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +12,12 @@ export const dynamic = "force-dynamic";
 /** Settings as the client may see them: secrets replaced by booleans/counts. */
 function redacted() {
   const s = store.s.settings;
-  return { ...s, llm: { ...s.llm, apiKeySet: !!store.secrets.llmApiKey }, ssh: sshSettingsView(s.ssh) };
+  return {
+    ...s,
+    llm: { ...s.llm, apiKeySet: !!store.secrets.llmApiKey },
+    ssh: sshSettingsView(s.ssh),
+    auth: { enabled: authEnabled(), source: authSource() },
+  };
 }
 
 export async function GET() {

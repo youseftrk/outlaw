@@ -5,6 +5,7 @@
 import type {
   Agent,
   Approval,
+  AuthSettings,
   Bootstrap,
   CVE,
   AttackTechnique,
@@ -105,6 +106,13 @@ const unwrap =
 
 export const api = {
   bootstrap: () => get<Bootstrap>("/bootstrap"),
+
+  auth: {
+    me: () => get<{ enabled: boolean; authenticated: boolean }>("/auth/me"),
+    login: (password: string) => post<{ ok: true }>("/auth/login", { password }),
+    logout: () => post<{ ok: true }>("/auth/logout"),
+  },
+
   health: () => get<{ ok: boolean; uptimeSec: number; tick: number; clients: number }>("/health"),
 
   agents: {
@@ -219,6 +227,7 @@ export const api = {
     /** runs `echo qalaa-ok` over ssh against `serverId`; non-2xx (ApiError) when the host did not answer */
     testSsh: (serverId: string) =>
       post<NonNullable<Settings["ssh"]["lastTest"]> & { command: string }>("/settings/ssh/test", { serverId }),
+    setPassword: (password: string | null) => patch<{ auth: AuthSettings }>("/settings/auth", { password }),
   },
 };
 

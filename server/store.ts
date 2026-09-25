@@ -37,6 +37,7 @@ export interface QalaaSecrets {
   sshKeys?: Record<string, string>;
   /** `host:port` → base64 host key blob pinned by the strict / accept-new host-key policy */
   sshKnownHosts?: Record<string, string>;
+  auth?: { passwordHash?: string; sessionSecret?: string };
 }
 
 export interface QalaaState {
@@ -84,6 +85,7 @@ export const store = {
   dirty: false,
   lastWriteMs: 0,
   flushTimer: null as ReturnType<typeof setTimeout> | null,
+  persistEnabled,
 
   init(state: QalaaState): void {
     this.state = state;

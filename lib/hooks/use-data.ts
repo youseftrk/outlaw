@@ -45,5 +45,6 @@ export const useInsights = (window: InsightsWindow) =>
   useSWR<InsightsSummary>(`/insights?window=${window}`, fetcher, { ...opts, refreshInterval: 10000 });
 export const useRange = () => useSWR<RangeOverview>("/range", () => api.range.overview(), { ...opts, refreshInterval: 2000 });
 export const useSettings = () => useSWR<Settings>("/settings", fetcher, opts);
+export const useAuthMe = () => useSWR<{ enabled: boolean; authenticated: boolean }>("/auth/me", fetcher, opts);
 
 export { api };

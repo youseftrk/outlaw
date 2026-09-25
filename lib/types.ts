@@ -822,11 +822,21 @@ export interface SshSettingsPatch {
   forgetKnownHosts?: boolean;
 }
 
+export type AuthSource = "settings" | "env" | "off";
+
+export interface AuthSettings {
+  enabled: boolean;
+  /** where the password comes from; "off" = no login required */
+  source: AuthSource;
+}
+
 export interface Settings {
   llm: LLMSettings;
   ssh: SshSettings;
   operator: { name: string; phone: string; org: string };
   sim: { speed: number; autoRun: boolean; quietHours: boolean };
+  /** computed server-side from env + secrets; not persisted in state */
+  auth?: AuthSettings;
 }
 
 /* ─────────────────────────── API envelopes ─────────────────────────── */
