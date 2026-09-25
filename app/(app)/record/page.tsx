@@ -336,7 +336,7 @@ function ApprovalsTab() {
         <p className="eyebrow mb-2">Waiting ({pending.length})</p>
         {pending.length === 0 ? (
           <Card className="bezel-core relative gap-0 overflow-hidden border-0 p-8 text-center">
-            <DotPattern glow width={18} height={18} cr={0.8} className="[mask-image:radial-gradient(60%_80%_at_50%_50%,white,transparent)] text-lime/40" />
+            <DotPattern glow width={18} height={18} cr={0.8} className="opacity-60 text-lime/40" />
             <p className="relative font-display text-[22px] text-text-1">No approvals waiting.</p>
             <p className="relative mt-1 text-text-2">The garrison is running autonomously. You&apos;ll be asked for prod rebuilds and database moves.</p>
           </Card>

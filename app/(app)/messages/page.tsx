@@ -67,7 +67,11 @@ function MessagesInner() {
                           active && "bg-bg-2 ring-1 ring-line-strong",
                         )}
                       >
-                        {a ? <AgentAvatar agent={a} size={40} /> : <span className="aura size-10 rounded-full opacity-90" />}
+                        {a ? (
+                          <AgentAvatar agent={a} size={40} />
+                        ) : (
+                          <span className="grid size-10 place-items-center rounded-full bg-lime text-[13px] font-semibold text-bg-0">Q</span>
+                        )}
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-1.5">
                             <span className="truncate font-medium text-text-1">{a?.name ?? t.title}</span>
@@ -92,7 +96,7 @@ function MessagesInner() {
 
         <BlurFade delay={0.1} className="col-span-12 flex justify-center lg:col-span-8">
           <div className="relative w-[360px]">
-            <div className="aura pointer-events-none absolute inset-x-8 top-16 -z-10 h-[520px] rounded-full opacity-[0.16] blur-3xl" />
+            <div className="pointer-events-none absolute inset-x-8 top-16 -z-10 h-[520px] rounded-full bg-lime/10 blur-3xl" />
             <PhoneMockup className="drop-shadow-[0_40px_80px_rgba(0,0,0,0.55)]" finish="graphite">
               {thread ? <PhoneConversation thread={thread} agent={agent} /> : <div className="grid h-full place-items-center text-text-3">No threads yet.</div>}
             </PhoneMockup>

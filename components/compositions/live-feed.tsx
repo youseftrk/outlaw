@@ -46,7 +46,7 @@ export function LiveFeed({ limit = 14, types = FEED_TYPES, className }: { limit?
     return (
       <div className={cn("relative flex h-full min-h-40 flex-col items-center justify-center overflow-hidden p-6 text-center", className)}>
         <FlickeringGrid
-          className="absolute inset-0 -z-10 [mask-image:radial-gradient(70%_70%_at_50%_50%,white,transparent)] motion-reduce:hidden"
+          className="absolute inset-0 -z-10 motion-reduce:hidden"
           squareSize={3}
           gridGap={5}
           color="#99d6ea"

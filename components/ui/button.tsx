@@ -14,16 +14,16 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-[0_0_0_1px_rgba(208,255,120,0.18),0_6px_18px_-8px_rgba(208,255,120,0.55)] hover:bg-primary/90 hover:shadow-[0_0_0_1px_rgba(208,255,120,0.35),0_10px_26px_-8px_rgba(208,255,120,0.75)] [--sheen:rgba(255,255,255,0.55)]",
+          "bg-primary text-primary-foreground shadow-[0_0_0_1px_rgba(208,255,120,0.18),0_6px_18px_-8px_rgba(208,255,120,0.5)] hover:bg-primary/90 hover:shadow-[0_0_0_1px_rgba(208,255,120,0.35),0_10px_26px_-8px_rgba(208,255,120,0.7)]",
         outline:
-          "border-border bg-background hover:border-primary/40 hover:bg-muted hover:text-foreground hover:shadow-[0_0_0_1px_rgba(153, 214, 234,0.18),0_0_18px_-6px_rgba(153, 214, 234,0.5)] aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 [--sheen:rgba(153, 214, 234,0.28)]",
+          "border-border bg-background hover:border-primary/40 hover:bg-muted hover:text-foreground hover:shadow-[0_0_0_1px_rgba(153, 214, 234,0.18),0_0_18px_-6px_rgba(153, 214, 234,0.4)] aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:shadow-[0_0_0_1px_rgba(153, 214, 234,0.2)] [--sheen:rgba(153, 214, 234,0.22)]",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:shadow-[0_0_0_1px_rgba(153, 214, 234,0.2)]",
         ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 [--sheen:rgba(255,255,255,0.08)]",
+          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 hover:shadow-[0_0_0_1px_color-mix(in_oklab,var(--destructive)_35%,transparent)] focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40 [--sheen:color-mix(in_oklab,var(--destructive)_30%,transparent)]",
-        link: "overflow-visible text-primary underline-offset-4 hover:underline [--sheen:transparent]",
+          "bg-destructive/10 text-destructive hover:bg-destructive/20 hover:shadow-[0_0_0_1px_color-mix(in_oklab,var(--destructive)_35%,transparent)] focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+        link: "overflow-visible text-primary underline-offset-4 hover:underline",
       },
       size: {
         default: "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
@@ -83,6 +83,7 @@ function Button({
   const [ripples, setRipples] = React.useState<Ripple[]>([])
   const isIcon = typeof size === "string" && size.startsWith("icon")
   const isLink = variant === "link"
+  const cuelume = variant === "default" ? { "data-cuelume-press": "", "data-cuelume-release": "" } : {}
 
   const handlePointerDown = (event: Parameters<NonNullable<PrimitiveProps["onPointerDown"]>>[0]) => {
     onPointerDown?.(event)
@@ -103,6 +104,7 @@ function Button({
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       onPointerDown={handlePointerDown}
+      {...cuelume}
       whileTap={reduced || isLink ? undefined : { scale: isIcon ? 0.88 : 0.96 }}
       whileHover={reduced || isLink || isIcon ? undefined : { y: -1 }}
       transition={PRESS}
@@ -111,7 +113,7 @@ function Button({
       {!isLink && (
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[inherit] before:absolute before:inset-y-0 before:-left-full before:w-1/2 before:-skew-x-[18deg] before:bg-linear-to-r before:from-transparent before:via-(--sheen) before:to-transparent before:opacity-0 before:transition-[left,opacity] before:duration-500 before:ease-out group-hover/button:before:left-[150%] group-hover/button:before:opacity-100 motion-reduce:before:hidden"
+          className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[inherit]"
         >
         <AnimatePresence>
           {ripples.map((r) => (

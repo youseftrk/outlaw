@@ -14,6 +14,8 @@ import {
   Play,
   Siren,
   Sliders,
+  SpeakerHigh,
+  SpeakerSlash,
   ToggleLeft,
   UsersThree,
 } from "@phosphor-icons/react";
@@ -41,6 +43,7 @@ import { AnimatedBackground } from "@/components/ui/animated-background";
 import { SlidingNumber } from "@/components/ui/sliding-number";
 import { Status, StatusIndicator, StatusLabel } from "@/components/kibo-ui/status";
 import { AgentAvatar } from "@/components/shell/agent-avatar";
+import { useSound } from "@/components/shell/sound";
 import { api, useAuthMe, useBootstrap } from "@/lib/hooks/use-data";
 import { useLive, useLiveEvent } from "@/lib/hooks/use-live";
 import { useDesktopMac } from "@/lib/desktop";
@@ -225,6 +228,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { data: me } = useAuthMe();
   const { state: liveState, lastEventAt } = useLive();
   const working = useWorkingAgents();
+  const { muted, toggleMuted } = useSound();
   const unread = data?.threads.reduce((n, t) => n + t.unread, 0) ?? 0;
   const agents = data?.agents ?? [];
   const canSignOut = !!me?.enabled && !!me?.authenticated;
@@ -265,7 +269,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           tooltip={item.title}
           isActive={active}
           className="relative bg-transparent text-sidebar-foreground transition-colors duration-150 hover:text-sidebar-accent-foreground data-[active=true]:bg-transparent data-[active=true]:font-medium data-[active=true]:text-text-1 hover:data-[active=true]:bg-transparent"
-          render={<Link href={item.href} />}
+          render={<Link href={item.href} data-cuelume-hover="tick" />}
         >
           <Icon weight={active ? "fill" : "regular"} className={cn("size-4! transition-colors duration-150", active && "text-lime")} />
           <span>{item.title}</span>
@@ -363,6 +367,28 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
               <LastEvent at={lastEventAt} />
             </>
           )}
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  onClick={toggleMuted}
+                  aria-label={muted ? "Unmute interface sounds" : "Mute interface sounds"}
+                  aria-pressed={!muted}
+                  data-cuelume-hover="tick"
+                  className={cn(
+                    "ml-auto grid size-5 place-items-center rounded-full text-text-3 outline-none transition-colors duration-150 hover:text-text-1 focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                    !muted && "text-lime",
+                  )}
+                />
+              }
+            >
+              {muted ? <SpeakerSlash className="size-3.5" /> : <SpeakerHigh className="size-3.5" />}
+            </TooltipTrigger>
+            <TooltipContent side="right" hidden={!collapsed}>
+              {muted ? "Sounds muted" : "Sounds on"}
+            </TooltipContent>
+          </Tooltip>
         </div>
         {canSignOut && (
           <Button variant="ghost" size="sm" onClick={signOut} className="h-7 justify-start px-1 text-[12px] text-text-2 group-data-[collapsible=icon]:hidden">

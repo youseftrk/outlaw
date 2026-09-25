@@ -168,7 +168,7 @@ export function PhoneConversation({
           {agent ? (
             <AgentAvatar agent={agent} size={compact ? 28 : 44} face="mouth" />
           ) : (
-            <span className="aura size-9 rounded-full" />
+            <span className="grid size-9 place-items-center rounded-full bg-lime text-[12px] font-semibold text-bg-0">Q</span>
           )}
           <span className="mt-1 text-[12px] font-medium leading-none">
             {title}

@@ -81,7 +81,8 @@ git clone https://github.com/swamimalode07/rare-ui && cp rare-ui/{components/ui/
 | Text animation | Cult UI `text-animate` | `components/ui/text-animate.tsx` | MIT |
 | Sortable list | Cult UI `sortable-list` (dnd-kit, gsap) | `components/ui/sortable-list.tsx` | MIT |
 | Status / relative time / tags / ticker / spinner | Kibo UI `status`, `relative-time`, `tags`, `ticker`, `spinner` | `components/kibo-ui/{status,relative-time,tags,ticker,spinner}/index.tsx` | MIT |
-| Slide-deck backgrounds | React Bits `Aurora`, `Particles`, `DotGrid` (sub for removed `Squares`), `Dock` | `components/Aurora.tsx`, `components/Particles.tsx`, `components/DotGrid.tsx`, `components/Dock.tsx` | MIT + Commons Clause (no resale/redistribution of components themselves) |
+| Ambient backdrop | Paper Shaders `GrainGradient` | `components/shell/grain-backdrop.tsx` (`@paper-design/shaders-react@0.0.81`) | Apache-2.0 |
+| UI sound | `cuelume@0.2.2` via `SoundProvider` | `components/shell/sound.tsx` — muted by default, `data-cuelume-*` attrs, toggle in sidebar footer | MIT |
 | Agent avatars | libraries.dev `bot-avatars` | npm `0.1.1` | MIT |
 | "Thinking" indicator | libraries.dev `thinking-orbs` | npm `0.3.2` | MIT |
 | Border beam (pkg) | libraries.dev `border-beam` | npm `1.4.1` | MIT |
@@ -91,7 +92,7 @@ git clone https://github.com/swamimalode07/rare-ui && cp rare-ui/{components/ui/
 | Agent state orb (idle / listening / thinking) | Rare UI `matrix-orb` | `components/rare-ui/matrix-orb.tsx` (default colour → lime) | same as above |
 | Loading state (3×3 pixel grid, shimmer label, elapsed timer; `drive` / `dots` / `orbit`) | Beautiful UI `LoadingState` | `components/beautiful-ui/loading-state.tsx` (+ `pixel-on` / `shimmer-text` keyframes in `app/globals.css`; Surfer video variant dropped) | MIT (© 2026 Shane Levine) |
 | Letter-pulse text loader with glass orb (`/research` searching) | Opensource UI `text-loader` | `components/opensource-ui/text-loader.tsx` (schemes → `lime` / `sky`) | MIT |
-| iPhone device frame (`/phone`, `/messages`, deck) | Opensource UI `phone-mockup-card` | `components/ui/phone-mockup.tsx` (`finish`: graphite / titanium / black, `showDynamicIsland`) | MIT |
+| iPhone device frame (`/phone`, `/messages`) | Opensource UI `phone-mockup-card` | `components/ui/phone-mockup.tsx` (`finish`: graphite / titanium / black, `showDynamicIsland`) | MIT |
 
 Motion added in the UI polish pass (no new libraries): `components/ui/button.tsx` (Motion `whileTap` spring, primary sheen, icon-button ripple, `loading` prop → Spinner, `prefers-reduced-motion`), `components/ui/tabs.tsx` + `switch.tsx` (AnimatedBackground indicator), `components/app-sidebar.tsx` (AnimatedBackground active pill, Magnetic icons, BorderTrail wordmark, ThinkingOrb live roster, SlidingNumber unread badge, Kibo Status + RelativeTime footer), `components/compositions/kpi-card.tsx` (SlidingNumber + GlowingEffect), `components/shell/page-header.tsx` (TextEffect / BlurFade), `components/compositions/live-feed.tsx` (AnimatedList + FlickeringGrid empty state), replay CTA (BorderBeam).
 
