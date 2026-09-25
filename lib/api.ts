@@ -16,6 +16,7 @@ import type {
   Message,
   Migration,
   Policy,
+  QalaaEvent,
   RangeMode,
   RangeRun,
   RangeScenario,
@@ -76,6 +77,8 @@ export interface AgentDetail {
   messages: Message[];
   threats: Threat[];
   servers: Server[];
+  /** last 200 persisted events for this agent (ring buffer), oldest first */
+  events: QalaaEvent[];
 }
 export interface ThreatDetail {
   threat: Threat;
@@ -125,6 +128,7 @@ export const api = {
         messages: r.messages ?? [],
         threats: r.threats ?? [],
         servers: r.servers ?? [],
+        events: r.events ?? [],
       })),
     update: (id: string, body: { autonomy?: Autonomy; paused?: boolean; assignedServerIds?: string[] }) =>
       patch<Agent>(`/agents/${id}`, body),

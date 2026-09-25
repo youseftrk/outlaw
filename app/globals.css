@@ -407,6 +407,21 @@
 
 /* Deck print: one slide per page (Cmd+P → PDF). */
 @media print {
+  @page {
+    size: 1920px 1080px;
+    margin: 0;
+  }
+  html,
+  body {
+    background: #040e17;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .deck {
+    position: static !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
   .deck > section,
   .deck-chrome {
     display: none !important;
@@ -414,8 +429,33 @@
   .deck-print {
     display: block !important;
   }
-  @page {
-    size: 1920px 1080px;
-    margin: 0;
+  .deck-print > section {
+    height: 1080px;
+    width: 1920px;
+    break-after: page;
+    break-inside: avoid;
+    page-break-after: always;
+    page-break-inside: avoid;
+    background: #040e17;
+  }
+  .deck-print > section:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+  /* Entry animations never run for the hidden print copy — force their end state. */
+  .deck-print .opacity-0,
+  .deck-print [style*="opacity: 0"] {
+    opacity: 1 !important;
+  }
+  .deck-print [style*="blur("] {
+    filter: none !important;
+  }
+  .deck-print *,
+  .deck-print *::before,
+  .deck-print *::after {
+    animation: none !important;
+    transition: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }

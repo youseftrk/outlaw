@@ -468,12 +468,12 @@ function FleetInner() {
               <TableHeader>
                 <TableRow className="border-line hover:bg-transparent">
                   <TableHead className="text-text-3">Host</TableHead>
-                  <TableHead className="text-text-3">Role</TableHead>
-                  <TableHead className="text-text-3">Where</TableHead>
+                  <TableHead className="hidden text-text-3 md:table-cell">Role</TableHead>
+                  <TableHead className="hidden text-text-3 md:table-cell">Where</TableHead>
                   <TableHead className="text-text-3">Status</TableHead>
                   <TableHead className="w-[200px] text-text-3">Conformance</TableHead>
-                  <TableHead className="text-text-3">Protected by</TableHead>
-                  <TableHead className="text-right text-text-3">Seen</TableHead>
+                  <TableHead className="hidden text-text-3 md:table-cell">Protected by</TableHead>
+                  <TableHead className="hidden text-right text-text-3 md:table-cell">Seen</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -483,8 +483,8 @@ function FleetInner() {
                       <p className="mono-data text-text-1">{s.hostname}</p>
                       <p className="mono-data text-[11px] text-text-3">{s.ip}</p>
                     </TableCell>
-                    <TableCell className="text-text-2">{s.role}</TableCell>
-                    <TableCell className="text-[12px] text-text-2">
+                    <TableCell className="hidden text-text-2 md:table-cell">{s.role}</TableCell>
+                    <TableCell className="hidden text-[12px] text-text-2 md:table-cell">
                       {s.region} <span className="text-text-3">· {s.provider} · {s.env}</span>
                     </TableCell>
                     <TableCell>
@@ -505,7 +505,7 @@ function FleetInner() {
                         <span className="mono-data w-7 text-right text-[11px] text-text-2">{s.conformanceScore}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <span className="flex -space-x-1.5">
                         {s.protectedBy.map((id) => (
                           <span key={id} className="rounded-full ring-2 ring-bg-1">
@@ -514,7 +514,7 @@ function FleetInner() {
                         ))}
                       </span>
                     </TableCell>
-                    <TableCell className="mono-data text-right text-[11px] text-text-3">{ago(s.lastSeen)}</TableCell>
+                    <TableCell className="mono-data hidden text-right text-[11px] text-text-3 md:table-cell">{ago(s.lastSeen)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

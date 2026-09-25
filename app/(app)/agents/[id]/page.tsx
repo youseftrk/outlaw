@@ -22,7 +22,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { api, useAgent, useBootstrap } from "@/lib/hooks/use-data";
 import { useLive } from "@/lib/hooks/use-live";
 import { AGENT_STATUS_LABEL, SEVERITY_CLASS, THREAT_STATUS_CLASS, THREAT_STATUS_LABEL, VERDICT_CLASS, ago, clock, humanize } from "@/lib/format";
-import type { Autonomy, Trace } from "@/lib/types";
+import type { Autonomy, EventType, Trace } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { LoadingState } from "@/components/beautiful-ui/loading-state";
 
@@ -32,6 +32,8 @@ const AUTONOMY: { value: Autonomy; label: string; hint: string }[] = [
   { value: "act-with-approval", label: "Act with approval", hint: "Acts on low risk, asks for medium+." },
   { value: "autonomous", label: "Autonomous", hint: "Acts on servers; policy decides the exceptions." },
 ];
+
+const LOG_TYPES: EventType[] = ["agent.action", "trace.started", "trace.completed", "message.sent", "agent.status"];
 
 export default function AgentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -46,13 +48,12 @@ export default function AgentDetailPage() {
     if (data?.servers.length) return data.servers;
     return (boot?.servers ?? []).filter((s) => agent.assignedServerIds.includes(s.id) || s.protectedBy.includes(agent.id));
   }, [agent, data?.servers, boot?.servers]);
-  const log = React.useMemo(
-    () =>
-      events
-        .filter((e) => e.agentId === id && ["agent.action", "trace.started", "trace.completed", "message.sent", "agent.status"].includes(e.type))
-        .slice(-40),
-    [events, id],
-  );
+  const log = React.useMemo(() => {
+    const seen = new Set<string>();
+    return [...(data?.events ?? []), ...events]
+      .filter((e) => e.agentId === id && LOG_TYPES.includes(e.type) && !seen.has(e.id) && seen.add(e.id))
+      .slice(-40);
+  }, [data?.events, events, id]);
 
   const setAutonomy = async (value: Autonomy) => {
     if (!agent) return;
