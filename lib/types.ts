@@ -1,5 +1,5 @@
 /**
- * Outlaw — shared domain contract.
+ * Qalaa — shared domain contract.
  *
  * Consumed by the UI (client) and the backend (server/**, app/api/**).
  * Append-only: add fields/types, do not rename or remove without touching both sides.
@@ -711,7 +711,7 @@ export type EventType =
   | "insights.updated"
   | "system";
 
-export interface OutlawEvent<T = unknown> {
+export interface QalaaEvent<T = unknown> {
   id: ID;
   type: EventType;
   at: ISODate;

@@ -1,4 +1,4 @@
-# Outlaw — design direction
+# Qalaa — design direction
 
 Rule of the house: **no bespoke UI components.** Every visual element is a component sourced from the designeer.xyz / libraries.dev catalogs (inventory in `docs/COMPONENTS.md`), composed with Tailwind utilities and the tokens below. Pages are compositions, not inventions.
 
@@ -49,7 +49,7 @@ Grain: fixed, pointer-events-none SVG `feTurbulence` overlay at `opacity: 0.035`
 
 Top bar (h-14): `Breadcrumb`; right cluster: live pill (`Status` from Kibo: green "Live" when SSE connected, amber "Reconnecting"), `Kbd` ⌘K → `Command` palette (navigate, "Text Cassidy…", director scenarios, start range), approvals bell (`Badge` count → `Sheet` inbox), operator `Avatar`.
 
-Desktop (Electron, macOS): when `window.outlaw?.isDesktop && platform === "darwin"`, sidebar header gets `pt-9` for traffic lights and the top bar is `-webkit-app-region: drag` (buttons `no-drag`).
+Desktop (Electron, macOS): when `window.qalaa?.isDesktop && platform === "darwin"`, sidebar header gets `pt-9` for traffic lights and the top bar is `-webkit-app-region: drag` (buttons `no-drag`).
 
 Motion: `BlurFade` for page/card entry (stagger 40 ms), `InView` for below-fold; `motion` layout animations on lists; reduced motion respected. No linear/ease-in-out anywhere.
 
@@ -88,7 +88,7 @@ Servers: KPI strip (avg conformance, isolated, compromised, migrating) + table (
 Traces: filter by agent (avatars as `ToggleGroup`), verdict; list rows (intent, agent, risk `Progress` mini, verdict `Badge`, time) → detail panel: spans as vertical `Timeline`/`TracingBeam`; `policy` span shows the evaluation table; `tool` spans show input/output JSON in `Collapsible` mono; `llm` badge "Groq · gpt-oss-20b · 412 ms" or "Deterministic". Policies: rows with `Switch`, effect `Badge` (allow lime · deny critical · require-approval medium), priority, hits; editor `Dialog`. Approvals: inbox cards (agent avatar, tool, targets mono, risk) with Approve / Reject `Button`s; header `Button` "Export audit" (downloads JSON).
 
 ### `/messages` (+ `/phone` = phone only, full-bleed, for projecting)
-Two panes: thread list (BotAvatar 40, name, `lastPreview`, `RelativeTime`, unread lime dot, pinned) · `Iphone15Pro` mockup (Magic UI) holding the conversation as children/`src` slot: iOS header (avatar, "Cassidy", eyebrow "Outlaw · Agent"), day dividers, bubbles, typing indicator = `ThinkingOrb` size 20 inside a grey bubble, quick-reply chips (`Button` pill), input bar (`Input` + send icon). Bubble styles: agent = `bg-lime text-carbon rounded-[18px] rounded-bl-[6px]`; operator = `bg-gradient-to-b from-cerulean to-[#0FA3B3] text-white rounded-[18px] rounded-br-[6px]`; alerts add a left severity stripe; approval-request bubbles embed Approve/Reject `Button`s; attachments render as compact cards (threat/server/trace). Tapbacks: `HoverCard` → six emoji-free glyphs. Delivered/Read caption in mono 10 px.
+Two panes: thread list (BotAvatar 40, name, `lastPreview`, `RelativeTime`, unread lime dot, pinned) · `Iphone15Pro` mockup (Magic UI) holding the conversation as children/`src` slot: iOS header (avatar, "Cassidy", eyebrow "Qalaa · Agent"), day dividers, bubbles, typing indicator = `ThinkingOrb` size 20 inside a grey bubble, quick-reply chips (`Button` pill), input bar (`Input` + send icon). Bubble styles: agent = `bg-lime text-carbon rounded-[18px] rounded-bl-[6px]`; operator = `bg-gradient-to-b from-cerulean to-[#0FA3B3] text-white rounded-[18px] rounded-br-[6px]`; alerts add a left severity stripe; approval-request bubbles embed Approve/Reject `Button`s; attachments render as compact cards (threat/server/trace). Tapbacks: `HoverCard` → six emoji-free glyphs. Delivered/Read caption in mono 10 px.
 
 ### `/research`
 Left: `ChatContainer` + `Message` + `PromptInput` (prompt-kit) — "Ask Doc"; `PromptSuggestion` chips ("Enrich 185.220.101.4", "CVE-2026-… registry token refresh", "Map lateral movement techniques"). Right: result — summary (`Markdown`), findings list with severity dots, IOC table, CVE `Card`s (cvss mono), ATT&CK technique `Badge`s, actors. KB browser `Tabs` (CVEs · Techniques · Actors) with search `Input`.
@@ -103,8 +103,8 @@ Header card: eyebrow "Blind cyber range", display title "Autonomous swarm vs. AI
 LLM: provider `Select` (presets), base URL, model, API key (`Input type=password`, only "set" state shown), enable `Switch`, Test `Button` → result line; operator name/phone/org; sim speed `Slider`, quiet hours `Switch`; Desktop section shows platform + version.
 
 ### `/deck` — 14 slides, full-bleed, keyboard ← → , `F` fullscreen, `Esc` exit, dots progress, print = one slide per page
-1 Title (aura logo, wordmark, tagline sign image) · 2 "The night of July 11" (incident, sources) · 3 The problem (machine-speed attackers, 6-day detection) · 4 Outlaw thesis · 5 Meet the gang (6 avatars) · 6 How it works (`AnimatedBeam` diagram telemetry→Cassidy→tools→governance→texts) · 7 Autonomous on servers · 8 Governance traces · 9 Texts, not tickets (phone mockup) · 10 The blind range · 11 Results (live numbers from last run) · 12 Security research · 13 Roadmap (real adapters, SIEM, iMessage/SMS, multi-tenant) · 14 Close.
-Backgrounds alternate: thermal gradient + grain (React Bits `Aurora`/Magic UI `FlickeringGrid` at low opacity), lime sign panels (`liquid-gooey` merging blocks) with carbon serif text. Headlines Instrument Serif; body Geist 22 px; footer mono "outlaw · 2026".
+1 Title (aura logo, wordmark, tagline sign image) · 2 "The night of July 11" (incident, sources) · 3 The problem (machine-speed attackers, 6-day detection) · 4 Qalaa thesis · 5 Meet the gang (6 avatars) · 6 How it works (`AnimatedBeam` diagram telemetry→Cassidy→tools→governance→texts) · 7 Autonomous on servers · 8 Governance traces · 9 Texts, not tickets (phone mockup) · 10 The blind range · 11 Results (live numbers from last run) · 12 Security research · 13 Roadmap (real adapters, SIEM, iMessage/SMS, multi-tenant) · 14 Close.
+Backgrounds alternate: thermal gradient + grain (React Bits `Aurora`/Magic UI `FlickeringGrid` at low opacity), lime sign panels (`liquid-gooey` merging blocks) with carbon serif text. Headlines Instrument Serif; body Geist 22 px; footer mono "qalaa · 2026".
 
 ## 5. Copy voice
 Sentence case. Plain verbs. Buttons say what happens ("Approve rebuild", not "Submit"). Agents write in first person, short, like a competent colleague: "Locked pkg-cache-01's registry — someone minted an admin token without a session. Doc is pulling evidence." Errors say what happened and what to do. Empty states invite action ("No approvals waiting. The gang is riding autonomously.").

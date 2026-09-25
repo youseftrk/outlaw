@@ -39,7 +39,7 @@ export interface SeedHistory {
 }
 
 export function seedHistory(nowIso: string, servers: Server[], agents: Agent[]): SeedHistory {
-  const rng = makeRng("outlaw-2026:history");
+  const rng = makeRng("qalaa-2026:history");
   const now = new Date(nowIso).getTime();
   const threats: Threat[] = [];
   const traces: Trace[] = [];
@@ -192,9 +192,9 @@ export function seedHistory(nowIso: string, servers: Server[], agents: Agent[]):
     });
   }
   threads.push({
-    id: "thr-outlaw",
+    id: "thr-qalaa",
     agentId: "agt-cassidy",
-    title: "Outlaw",
+    title: "Qalaa",
     lastMessageAt: nowIso,
     lastPreview: "Daily digest — 60 threats handled this week, zero touched prod data.",
     unread: 0,
@@ -202,7 +202,7 @@ export function seedHistory(nowIso: string, servers: Server[], agents: Agent[]):
   });
   messages.push({
     id: "MSG-9001",
-    threadId: "thr-outlaw",
+    threadId: "thr-qalaa",
     from: "system",
     kind: "report",
     text: "Weekly digest — 60 threats handled, 0 approvals needed, fleet conformance holding. The gang rides autonomous.",

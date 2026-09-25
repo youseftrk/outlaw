@@ -157,7 +157,7 @@ export async function handleOperatorMessage(threadId: string, text: string): Pro
       // freeform → narrator (LLM) or template
       if (llmConfigured()) {
         const { text: t, usage } = await llmChat(
-          "You are Cassidy of Outlaw answering the operator in one or two short sentences. Only use observable fleet state.",
+          "You are Cassidy of Qalaa answering the operator in one or two short sentences. Only use observable fleet state.",
           `Operator asks: ${cmd.raw}\nState: ${statusCopy()()}`
         );
         if (usage) span.llm = usage;

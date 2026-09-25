@@ -76,7 +76,7 @@ export function SiteHeader() {
           <BreadcrumbList className="text-text-2">
             <BreadcrumbItem>
               <BreadcrumbLink render={<Link href="/" />} className="app-no-drag">
-                Outlaw
+                Qalaa
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />

@@ -7,7 +7,7 @@ import type { Agent, Severity, Threat } from "@/lib/types";
 import { llmChat, llmConfigured } from "./llm";
 import { store } from "../store";
 
-const SYSTEM = `You write one-line operator texts for Outlaw, an agent-run threat-intel platform. First person, short, concrete. Name hosts and ids. No jargon, no exclamation marks.`;
+const SYSTEM = `You write one-line operator texts for Qalaa, an agent-run threat-intel platform. First person, short, concrete. Name hosts and ids. No jargon, no exclamation marks.`;
 
 export async function narrate(
   agent: Agent,

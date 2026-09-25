@@ -1,4 +1,4 @@
-# Outlaw — build handoff
+# Qalaa — build handoff
 
 State of the world as of `c8f5039` on `main`. Everything in "Verified" was exercised live on Windows with screenshots and API output; the gaps section is honest about what was *not* done — don't present those as working.
 
@@ -7,7 +7,7 @@ State of the world as of `c8f5039` on `main`. Everything in "Verified" was exerc
 - **14 routes**: `/` command center · `/agents` + `/agents/[id]` · `/threats` + `/threats/[id]` · `/fleet` (servers, conformance, migrations) · `/governance` (traces, policies, approvals, audit export) · `/messages` + `/phone` (iMessage-style) · `/research` (CVE/ATT&CK/actor KB + Doc investigations) · `/insights` · `/range` (blind benchmark) · `/settings` · `/deck` (brand slideshow, fullscreen + deep links `?slide=N`).
 - **Deterministic agent gang**: Cassidy, Sundance, Doc, Belle, Ringo, Calamity — all `autonomous` by default, patrol servers, conform baselines, run migrations, detect/respond to telemetry, text the operator, and every action is policy-evaluated + fully traced.
 - **Blind range (hf-2026)**: world re-arms to the July-2026 incident snapshot on run start; agents see only telemetry — scenario internals are provably unreachable (import boundary enforced by `scripts/check-blind-boundary.mjs`, part of `npm test`). Every step needs real preconditions; `blocked` is only credited when an agent's actual tool call closed that step's precondition. Measured on a fresh seed: 1×→S, 2×→A, 4×→A, 8×→B, baseline→F (14/14 — the real outcome).
-- **Electron**: dev mode (`OUTLAW_URL`) and packaged mode (spawns `.next/standalone/server.js` via `ELECTRON_RUN_AS_NODE`, waits on `/api/health`) both verified on Windows with captured windows. macOS config in place: `titleBarStyle: "hiddenInset"`, traffic lights (18,18), vibrancy `under-window`.
+- **Electron**: dev mode (`QALAA_URL`) and packaged mode (spawns `.next/standalone/server.js` via `ELECTRON_RUN_AS_NODE`, waits on `/api/health`) both verified on Windows with captured windows. macOS config in place: `titleBarStyle: "hiddenInset"`, traffic lights (18,18), vibrancy `under-window`.
 - **Checks**: `npx tsc --noEmit` clean · `npm test` 30/30 (blind boundary clean) · `npm run build` green, 30 API routes, all pages prerender.
 
 ## Not finished / left to build

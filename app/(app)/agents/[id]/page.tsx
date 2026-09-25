@@ -186,7 +186,7 @@ export default function AgentDetailPage() {
               <Terminal className="max-h-[520px] min-h-[320px] w-full max-w-none border-line bg-bg-0" startOnView={false} sequence={false}>
                 {log.length === 0 && (
                   <AnimatedSpan className="text-text-3">
-                    {`$ tail -f /var/log/outlaw/${agent.id}.log`} — waiting for {agent.name} to move…
+                    {`$ tail -f /var/log/qalaa/${agent.id}.log`} — waiting for {agent.name} to move…
                   </AnimatedSpan>
                 )}
                 {log.map((e) => (

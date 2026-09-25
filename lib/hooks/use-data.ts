@@ -1,6 +1,6 @@
 "use client";
 
-/** SWR hooks over the Outlaw API. Keys mirror API paths so live events can invalidate them by prefix. */
+/** SWR hooks over the Qalaa API. Keys mirror API paths so live events can invalidate them by prefix. */
 import useSWR, { type SWRConfiguration } from "swr";
 import { api, fetcher, type AgentDetail, type RangeOverview, type ServerDetail, type ThreatDetail } from "@/lib/api";
 import type {

@@ -1,8 +1,8 @@
 /**
- * Typed event bus → OutlawEvent. Fan-out to SSE subscribers with replay
+ * Typed event bus → QalaaEvent. Fan-out to SSE subscribers with replay
  * from the events ring buffer (?since=<eventId>).
  */
-import type { EventType, OutlawEvent, Severity, ID } from "@/lib/types";
+import type { EventType, QalaaEvent, Severity, ID } from "@/lib/types";
 import { ids } from "./ids";
 import { store } from "./store";
 import { listeners } from "./shared";
@@ -16,11 +16,11 @@ export interface EmitOpts {
   href?: string;
 }
 
-type Listener = (ev: OutlawEvent) => void;
+type Listener = (ev: QalaaEvent) => void;
 
 export const bus = {
-  emit<T>(type: EventType, payload: T, opts: EmitOpts = {}): OutlawEvent<T> {
-    const ev: OutlawEvent<T> = {
+  emit<T>(type: EventType, payload: T, opts: EmitOpts = {}): QalaaEvent<T> {
+    const ev: QalaaEvent<T> = {
       id: ids.event(),
       type,
       at: store.now(),
@@ -30,16 +30,16 @@ export const bus = {
       href: opts.href,
       payload,
     };
-    store.pushEvent(ev as OutlawEvent);
+    store.pushEvent(ev as QalaaEvent);
     store.markDirty();
     for (const fn of listeners()) {
       try {
-        fn(ev as OutlawEvent);
+        fn(ev as QalaaEvent);
       } catch {
         /* listener errors must not break the emitter */
       }
     }
-    return ev as OutlawEvent<T>;
+    return ev as QalaaEvent<T>;
   },
 
   subscribe(fn: Listener): () => void {
@@ -52,7 +52,7 @@ export const bus = {
   },
 
   /** Events after the given event id (ring-buffer replay for ?since=). */
-  replay(since?: string): OutlawEvent[] {
+  replay(since?: string): QalaaEvent[] {
     const events = store.s.events;
     if (!since) return events.slice(-50);
     const idx = events.findIndex((e) => e.id === since);

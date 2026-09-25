@@ -306,7 +306,7 @@ const IMPL: Record<number, StepImpl> = {
 
 /** last attempt clockMs per run/step — globalThis-shared (route context
  * creates the entry, ticker context reads it). */
-const lastAttempt = (G.__outlawRangeAttempts ??= new Map<string, Map<number, number>>());
+const lastAttempt = (G.__qalaaRangeAttempts ??= new Map<string, Map<number, number>>());
 
 function scenarioFor(run: RangeRun): RangeScenario | undefined {
   return run.scenarioId === HF_2026.id ? HF_2026 : undefined;

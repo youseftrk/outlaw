@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode } from "react"
 
-/** Magic UI `iphone` (15 Pro frame), adapted for Outlaw: a `children` slot renders live UI inside the screen. */
+/** Magic UI `iphone` (15 Pro frame), adapted for Qalaa: a `children` slot renders live UI inside the screen. */
 
 const PHONE_WIDTH = 433
 const PHONE_HEIGHT = 882

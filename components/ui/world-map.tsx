@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Aceternity UI `world-map` (dotted-map + motion), adapted for Outlaw:
+ * Aceternity UI `world-map` (dotted-map + motion), adapted for Qalaa:
  * - always-dark palette driven by brand tokens (no next-themes dependency)
  * - per-arc colour, plus standalone `markers` (protected servers) with status colours
  * - dotted map memoised (it was rebuilt on every render upstream)

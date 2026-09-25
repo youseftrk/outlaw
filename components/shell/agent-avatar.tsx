@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Maps an Outlaw agent onto libraries.dev `bot-avatars` (sourced component).
+ * Maps a Qalaa agent onto libraries.dev `bot-avatars` (sourced component).
  * Each agent has a fixed body shape + brand colour so they're recognisable everywhere.
  */
 import { BotAvatar } from "bot-avatars";

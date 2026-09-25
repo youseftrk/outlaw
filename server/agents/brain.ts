@@ -495,7 +495,7 @@ function finishThreat(threat: Threat): void {
 
 /** patrol timers — globalThis-shared: range arming (route context) staggers
  * them, the ticker context reads them. */
-const patrolAt = (G.__outlawPatrolAt ??= {});
+const patrolAt = (G.__qalaaPatrolAt ??= {});
 /** agentId → last tick "acting" may show — held ≥2 ticks so the UI sees it */
 const actUntil = new Map<ID, number>();
 

@@ -4,12 +4,12 @@
  */
 import { rt } from "@/app/api/_lib/util";
 import { bus } from "@/server/bus";
-import type { OutlawEvent } from "@/lib/types";
+import type { QalaaEvent } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export function formatEvent(ev: OutlawEvent): string {
+export function formatEvent(ev: QalaaEvent): string {
   return `event: ${ev.type}\nid: ${ev.id}\ndata: ${JSON.stringify(ev)}\n\n`;
 }
 

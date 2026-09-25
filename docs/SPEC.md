@@ -1,4 +1,4 @@
-# Outlaw — system spec
+# Qalaa — system spec
 
 Threat-intelligence platform run by AI agents. Agents protect a customer's infrastructure, conform servers to baseline, run migrations, hunt threats, and text the operator through an iMessage-style channel. Every agent decision is a governance trace.
 
@@ -33,10 +33,10 @@ docs/           SPEC.md, COMPONENTS.md (attribution of vendored components)
 
 | module | responsibility |
 |---|---|
-| `runtime.ts` | singleton on `globalThis.__outlaw` (survives HMR). `getRuntime()` lazily boots: load/seed state, start tick loop (1000 ms / `settings.sim.speed`). Also started from `instrumentation.ts` `register()` when `NEXT_RUNTIME === "nodejs"`. |
-| `store.ts` | in-memory state (all entities in `Bootstrap` + traces, messages, telemetry ring buffer 2 000, events ring buffer 5 000, range runs, research queries) + debounced JSON snapshot to `.data/state.json` (write ≤ every 5 s when dirty, load on boot; `OUTLAW_RESET=1` or director `reset-demo` regenerates the seed). |
-| `bus.ts` | typed event emitter → `OutlawEvent`; SSE fan-out with per-client queue, heartbeat comment every 15 s, `?since=<eventId>` replay from ring buffer. |
-| `rng.ts`, `ids.ts`, `time.ts` | seeded PRNG (mulberry32, seed `"outlaw-2026"`), id prefixes (`T-1042` threats, `TR-` traces, `A-` approvals, `M-` migrations, `MSG-`, `EV-`, `RR-` range runs, `srv-…`, `agt-<name>`), sim clock helpers. |
+| `runtime.ts` | singleton on `globalThis.__qalaa` (survives HMR). `getRuntime()` lazily boots: load/seed state, start tick loop (1000 ms / `settings.sim.speed`). Also started from `instrumentation.ts` `register()` when `NEXT_RUNTIME === "nodejs"`. |
+| `store.ts` | in-memory state (all entities in `Bootstrap` + traces, messages, telemetry ring buffer 2 000, events ring buffer 5 000, range runs, research queries) + debounced JSON snapshot to `.data/state.json` (write ≤ every 5 s when dirty, load on boot; `QALAA_RESET=1` or director `reset-demo` regenerates the seed). |
+| `bus.ts` | typed event emitter → `QalaaEvent`; SSE fan-out with per-client queue, heartbeat comment every 15 s, `?since=<eventId>` replay from ring buffer. |
+| `rng.ts`, `ids.ts`, `time.ts` | seeded PRNG (mulberry32, seed `"qalaa-2026"`), id prefixes (`T-1042` threats, `TR-` traces, `A-` approvals, `M-` migrations, `MSG-`, `EV-`, `RR-` range runs, `srv-…`, `agt-<name>`), sim clock helpers. |
 | `world/world.ts` | **the simulated environment** (§3). Single mutation surface used by both the range engine and agent tools. Exposes `observe()` = the agent-visible view (§3.2). |
 | `seed/*` | deterministic fleet, agents, policies, 7 days of history (≈60 resolved threats, traces, messages, migrations), world state (incl. exposed tokens in public datasets, vulnerable registry, open sandbox egress — mirrors reality). |
 | `agents/roster.ts` | the six agents (§4). |
@@ -50,7 +50,7 @@ docs/           SPEC.md, COMPONENTS.md (attribution of vendored components)
 | `governance/approvals.ts` | approval lifecycle; expiry 10 sim-min → `expired`; decision resumes or denies the waiting tool call. |
 | `fleet/conformance.ts` | check catalogue per role (§6.1), scoring, remediation mapping. |
 | `fleet/migrations.ts` | migration state machine (§6.2). |
-| `messaging/threads.ts`, `messaging/commands.ts`, `messaging/composer.ts` | one thread per agent + "Outlaw" system thread; operator command parser (§8); message composition (alerts, approval requests, reports, quick replies). |
+| `messaging/threads.ts`, `messaging/commands.ts`, `messaging/composer.ts` | one thread per agent + "Qalaa" system thread; operator command parser (§8); message composition (alerts, approval requests, reports, quick replies). |
 | `research/kb.ts`, `research/engine.ts` | offline knowledge base (≥ 25 CVEs incl. the 9 registry CVEs class, ATT&CK techniques for every stage, 6 actors incl. "Autonomous eval-harness swarm") + lookup/enrichment engine; research runs as Doc traces. |
 | `insights/aggregate.ts` | `InsightsSummary` for 24h / 7d / 30d. |
 | `range/engine.ts`, `range/scenarios/hf-2026.ts`, `range/scoring.ts`, `range/noise.ts`, `range/director.ts` | blind cyber range (§9), background noise telemetry, director scenarios. |
@@ -148,7 +148,7 @@ Every threat: Cassidy `map_attack` (kill chain from techniques), status transiti
 OpenAI-compatible `POST {baseUrl}/chat/completions`. Presets: groq `https://api.groq.com/openai/v1` `openai/gpt-oss-20b`; gemini `https://generativelanguage.googleapis.com/v1beta/openai` `gemini-2.5-flash`; mistral `https://api.mistral.ai/v1` `mistral-small-latest`; cerebras `https://api.cerebras.ai/v1` `llama3.1-8b`; openrouter `https://openrouter.ai/api/v1` `meta-llama/llama-3.3-70b-instruct:free`; huggingface `https://router.huggingface.co/v1` `meta-llama/Meta-Llama-3.1-8B-Instruct`; custom. Key persisted to `.data/secrets.json` (never returned; client sees `apiKeySet`). Timeout 8 s, 1 retry, global limiter 1 call / 3 s (excess → fallback templates). Used for: reason-span narration, Cassidy's operator copy, Doc's research summaries, freeform operator questions in threads (context = relevant observable state only). Record `LLMUsage` on the span (`fallback: true` when templates used). `POST /api/settings/llm/test` sends "Reply with one word: ready" and stores `lastTest`.
 
 ## 8. Messaging
-One `Thread` per agent + `thr-outlaw` system thread (digests, range results). Operator commands (case-insensitive, in any thread; Cassidy replies unless addressed agent owns the tool): `status`, `report`, `help`, `approve <A-id>`, `reject <A-id>`, `isolate <host>`, `release <host>`, `block <ip>`, `revoke <token-id|all exposed>`, `quarantine <dataset>`, `rotate <secret-kind|host>`, `cordon <cluster>`, `migrate <host> to <region>`, `pause|resume [agent]`, `who's on <host>`, `what happened on <host>` (freeform → narrator). Unknown text → narrator freeform answer (LLM) or template "I didn't catch that — try `help`". Every operator command produces a trace with `input.from = "operator"`. Messages carry `quickReplies` for approvals and `attachments` linking threats/servers/traces. `deliveredAt` set immediately, `readAt` when `POST .../read`.
+One `Thread` per agent + `thr-qalaa` system thread (digests, range results). Operator commands (case-insensitive, in any thread; Cassidy replies unless addressed agent owns the tool): `status`, `report`, `help`, `approve <A-id>`, `reject <A-id>`, `isolate <host>`, `release <host>`, `block <ip>`, `revoke <token-id|all exposed>`, `quarantine <dataset>`, `rotate <secret-kind|host>`, `cordon <cluster>`, `migrate <host> to <region>`, `pause|resume [agent]`, `who's on <host>`, `what happened on <host>` (freeform → narrator). Unknown text → narrator freeform answer (LLM) or template "I didn't catch that — try `help`". Every operator command produces a trace with `input.from = "operator"`. Messages carry `quickReplies` for approvals and `attachments` linking threats/servers/traces. `deliveredAt` set immediately, `readAt` when `POST .../read`.
 
 ## 9. Blind cyber range (`server/range`)
 Scenario `hf-2026` "Autonomous agent swarm vs. AI model hub", based on the July 2026 OpenAI–Hugging Face incident (sources: openai.com/index/hugging-face-model-evaluation-security-incident, huggingface.co/blog/security-incident-july-2026, OpenAI technical report PDF, trufflesecurity.com/blog/the-stolen-keys-openai-used-to-breach-hugging-face, en.wikipedia.org/wiki/OpenAI–HuggingFace_incident). Baseline: detected "Jul 14" (≈6 days after escape), disclosed "Jul 16", ≈33 % infra rebuilt, 4+ credential classes harvested, internal datasets accessed.
@@ -180,7 +180,7 @@ Director (`POST /api/director`): `brute-force`, `c2-beacon`, `exfil`, `prompt-in
 | method path | body → response |
 |---|---|
 | GET `/bootstrap` | → `Bootstrap` |
-| GET `/events?since=` | SSE stream of `OutlawEvent` (`event: <type>`, `id: <eventId>`, `data: <json>`) |
+| GET `/events?since=` | SSE stream of `QalaaEvent` (`event: <type>`, `id: <eventId>`, `data: <json>`) |
 | GET `/agents` · GET `/agents/[id]` · PATCH `/agents/[id]` | list · `{agent, traces, messages, threats, servers}` · `{autonomy?, paused?, assignedServerIds?}` |
 | GET `/threats?status=&severity=&category=&limit=` · GET `/threats/[id]` · POST `/threats/[id]/action` | list · `{threat, traces, servers, messages, iocs}` · `{action:"false-positive"|"escalate"|"close"}` |
 | GET `/fleet/servers` · GET `/fleet/servers/[id]` · POST `/fleet/servers/[id]/conformance` | list · `{server, threats, traces, migrations}` · runs checks via Ringo → `{traceId}` |
@@ -205,4 +205,4 @@ Errors: `{ error: string }` with 400/404/409. Validate bodies with zod.
 - SSE route emits heartbeat and replays `since`.
 
 ## 12. Desktop (`desktop/`)
-Electron (CommonJS). `main.cjs`: `BrowserWindow` 1440×900 min 1100×700, `titleBarStyle: "hiddenInset"`, `trafficLightPosition: {x: 18, y: 18}`, `backgroundColor: "#04101a"`, `vibrancy: "under-window"` (mac only), `webPreferences: { preload, contextIsolation: true }`. Dev: load `http://localhost:3000` (`OUTLAW_URL` override). Packaged: spawn `node .next/standalone/server.js` on a free port with `HOSTNAME=127.0.0.1`, wait for `/api/health`, load it; kill on quit. `preload.cjs` exposes `window.outlaw = { isDesktop: true, platform }`. Scripts: `desktop` = concurrently `next dev` + `wait-on http://localhost:3000` → `electron .`; `desktop:build:mac` = `next build` → `scripts/prepare-standalone.mjs` (copy `.next/static` → `.next/standalone/.next/static`, `public` → `.next/standalone/public`) → `electron-builder --mac dmg --arm64 --x64` (unsigned; `mac.identity: null`). `next.config.ts`: `output: "standalone"`. Verify on Windows: `electron .` opens against the dev server.
+Electron (CommonJS). `main.cjs`: `BrowserWindow` 1440×900 min 1100×700, `titleBarStyle: "hiddenInset"`, `trafficLightPosition: {x: 18, y: 18}`, `backgroundColor: "#04101a"`, `vibrancy: "under-window"` (mac only), `webPreferences: { preload, contextIsolation: true }`. Dev: load `http://localhost:3000` (`QALAA_URL` override). Packaged: spawn `node .next/standalone/server.js` on a free port with `HOSTNAME=127.0.0.1`, wait for `/api/health`, load it; kill on quit. `preload.cjs` exposes `window.qalaa = { isDesktop: true, platform }`. Scripts: `desktop` = concurrently `next dev` + `wait-on http://localhost:3000` → `electron .`; `desktop:build:mac` = `next build` → `scripts/prepare-standalone.mjs` (copy `.next/static` → `.next/standalone/.next/static`, `public` → `.next/standalone/public`) → `electron-builder --mac dmg --arm64 --x64` (unsigned; `mac.identity: null`). `next.config.ts`: `output: "standalone"`. Verify on Windows: `electron .` opens against the dev server.

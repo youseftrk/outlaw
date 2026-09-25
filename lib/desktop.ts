@@ -4,7 +4,7 @@ import * as React from "react";
 
 declare global {
   interface Window {
-    outlaw?: { isDesktop: boolean; platform: NodeJS.Platform | string; version?: string };
+    qalaa?: { isDesktop: boolean; platform: NodeJS.Platform | string; version?: string };
   }
 }
 
@@ -12,13 +12,13 @@ declare global {
 export function useDesktopMac() {
   const [mac, setMac] = React.useState(false);
   React.useEffect(() => {
-    setMac(Boolean(window.outlaw?.isDesktop && window.outlaw.platform === "darwin"));
+    setMac(Boolean(window.qalaa?.isDesktop && window.qalaa.platform === "darwin"));
   }, []);
   return mac;
 }
 
 export function useIsDesktop() {
   const [desktop, setDesktop] = React.useState(false);
-  React.useEffect(() => setDesktop(Boolean(window.outlaw?.isDesktop)), []);
+  React.useEffect(() => setDesktop(Boolean(window.qalaa?.isDesktop)), []);
   return desktop;
 }

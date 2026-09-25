@@ -9,15 +9,15 @@
  */
 import * as React from "react";
 import { useSWRConfig } from "swr";
-import type { EventType, OutlawEvent } from "@/lib/types";
+import type { EventType, QalaaEvent } from "@/lib/types";
 
 type ConnectionState = "connecting" | "live" | "reconnecting";
 
 interface LiveContextValue {
   state: ConnectionState;
-  events: OutlawEvent[];
+  events: QalaaEvent[];
   lastEventAt: string | null;
-  subscribe: (types: EventType[] | "*", handler: (e: OutlawEvent) => void) => () => void;
+  subscribe: (types: EventType[] | "*", handler: (e: QalaaEvent) => void) => () => void;
 }
 
 const LiveContext = React.createContext<LiveContextValue | null>(null);
@@ -48,13 +48,13 @@ const INVALIDATIONS: Partial<Record<EventType, string[]>> = {
 export function LiveProvider({ children }: { children: React.ReactNode }) {
   const { mutate } = useSWRConfig();
   const [state, setState] = React.useState<ConnectionState>("connecting");
-  const [events, setEvents] = React.useState<OutlawEvent[]>([]);
+  const [events, setEvents] = React.useState<QalaaEvent[]>([]);
   const [lastEventAt, setLastEventAt] = React.useState<string | null>(null);
-  const handlers = React.useRef(new Set<{ types: EventType[] | "*"; fn: (e: OutlawEvent) => void }>());
+  const handlers = React.useRef(new Set<{ types: EventType[] | "*"; fn: (e: QalaaEvent) => void }>());
   const lastId = React.useRef<string | null>(null);
   // Events arrive in bursts (one tick can emit dozens of spans). Buffer state updates and
   // coalesce SWR invalidations so the UI re-renders a few times a second, not per event.
-  const buffer = React.useRef<OutlawEvent[]>([]);
+  const buffer = React.useRef<QalaaEvent[]>([]);
   const pendingKeys = React.useRef(new Set<string>());
   const flushTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const invalidateTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -94,9 +94,9 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         if (!closed) retry = setTimeout(connect, 1500);
       };
       const onMessage = (raw: MessageEvent) => {
-        let evt: OutlawEvent;
+        let evt: QalaaEvent;
         try {
-          evt = JSON.parse(raw.data) as OutlawEvent;
+          evt = JSON.parse(raw.data) as QalaaEvent;
         } catch {
           return;
         }
@@ -147,7 +147,7 @@ export function useLive() {
   return ctx;
 }
 
-export function useLiveEvent(types: EventType[] | "*", handler: (e: OutlawEvent) => void) {
+export function useLiveEvent(types: EventType[] | "*", handler: (e: QalaaEvent) => void) {
   const { subscribe } = useLive();
   const ref = React.useRef(handler);
   ref.current = handler;

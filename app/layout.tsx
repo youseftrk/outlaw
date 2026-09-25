@@ -21,10 +21,10 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Outlaw", template: "%s · Outlaw" },
+  title: { default: "Qalaa", template: "%s · Qalaa" },
   description:
     "Threat intelligence run by AI agents. Every AI agent, protected — with a governance trace for every decision.",
-  applicationName: "Outlaw",
+  applicationName: "Qalaa",
   icons: { icon: "/icon.svg" },
 };
 

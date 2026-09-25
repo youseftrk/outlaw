@@ -1,6 +1,6 @@
 "use client";
 /**
- * Aceternity UI `timeline`, adapted for Outlaw: demo heading removed, compact spacing,
+ * Aceternity UI `timeline`, adapted for Qalaa: demo heading removed, compact spacing,
  * brand beam colours, per-entry tone (observed / blocked / prevented) and meta line.
  * Keeps the upstream mechanic: a scroll-progress beam fills the rail as you read down.
  */

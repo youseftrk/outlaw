@@ -21,13 +21,13 @@ function PhoneInner() {
   const selected = params.get("thread");
   const sorted = [...(threads ?? [])].sort((a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt));
   const thread = sorted.find((t) => t.id === selected);
-  const agent = thread && thread.id !== "thr-outlaw" ? boot?.agents.find((a) => a.id === thread.agentId) : undefined;
+  const agent = thread && thread.id !== "thr-qalaa" ? boot?.agents.find((a) => a.id === thread.agentId) : undefined;
 
   return (
     <main className="thermal relative grid min-h-svh place-items-center overflow-hidden p-6">
       <FlickeringGrid className="absolute inset-0 -z-0 opacity-30 [mask-image:radial-gradient(60%_60%_at_50%_50%,black,transparent)]" squareSize={3} gridGap={8} color="#24c7d6" maxOpacity={0.25} flickerChance={0.08} />
       <span className="grain fixed inset-0" />
-      <Link href="/messages" className="absolute right-5 top-5 z-10 grid size-9 place-items-center rounded-full bg-bg-1/70 text-text-2 backdrop-blur hover:text-text-1" aria-label="Back to Outlaw">
+      <Link href="/messages" className="absolute right-5 top-5 z-10 grid size-9 place-items-center rounded-full bg-bg-1/70 text-text-2 backdrop-blur hover:text-text-1" aria-label="Back to Qalaa">
         <X weight="bold" className="size-4" />
       </Link>
       <div className="relative z-10 w-[400px] max-w-full">
@@ -39,7 +39,7 @@ function PhoneInner() {
               <h1 className="px-5 text-[28px] font-semibold tracking-tight">Messages</h1>
               <ul className="mt-3 flex flex-col">
                 {sorted.map((t) => {
-                  const a = t.id === "thr-outlaw" ? undefined : boot?.agents.find((x) => x.id === t.agentId);
+                  const a = t.id === "thr-qalaa" ? undefined : boot?.agents.find((x) => x.id === t.agentId);
                   return (
                     <li key={t.id}>
                       <button

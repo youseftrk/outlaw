@@ -126,7 +126,7 @@ export function PhoneConversation({
         <div className="flex flex-1 flex-col items-center">
           {agent ? <AgentAvatar agent={agent} size={compact ? 28 : 44} face="mouth" /> : <span className="aura size-9 rounded-full" />}
           <span className="mt-1 text-[12px] font-medium leading-none">{title}</span>
-          <span className="mt-0.5 text-[10px] text-text-3">Outlaw · {agent ? agent.role : "system"} ›</span>
+          <span className="mt-0.5 text-[10px] text-text-3">Qalaa · {agent ? agent.role : "system"} ›</span>
         </div>
         <div className="flex w-10 justify-end gap-2 text-cerulean">
           <VideoCamera weight="regular" className="size-4" />

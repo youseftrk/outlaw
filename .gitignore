@@ -40,7 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# outlaw runtime + desktop artifacts
+# qalaa runtime + desktop artifacts
 .data/
 dist/
 release/

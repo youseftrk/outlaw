@@ -1,5 +1,5 @@
 /**
- * Typed client for the Outlaw API (see docs/SPEC.md §10).
+ * Typed client for the Qalaa API (see docs/SPEC.md §10).
  * Client components use the SWR hooks in lib/hooks; server components may call these directly.
  */
 import type {

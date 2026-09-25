@@ -1,4 +1,4 @@
-/** Thread helpers (SPEC §8): one thread per agent + thr-outlaw system. */
+/** Thread helpers (SPEC §8): one thread per agent + thr-qalaa system. */
 import type { ID, Message, Thread } from "@/lib/types";
 import { bus } from "../bus";
 import { store } from "../store";

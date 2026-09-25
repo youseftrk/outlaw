@@ -99,7 +99,7 @@ function TitleSlide() {
           <span className="aura absolute inset-0 rounded-full opacity-50 blur-3xl" />
           <Image src="/brand/logo.svg" alt="" width={140} height={140} priority className="relative drop-shadow-[0_20px_50px_rgba(21,197,220,0.45)]" />
         </span>
-        <Image src="/brand/wordmark.png" alt="Outlaw" width={520} height={128} priority className="-mt-6 h-auto w-[min(520px,60vw)]" />
+        <Image src="/brand/wordmark.png" alt="Qalaa" width={520} height={128} priority className="-mt-6 h-auto w-[min(520px,60vw)]" />
         <Image src="/brand/tagline-sign.png" alt="Every AI Agent, Protected" width={560} height={261} priority className="mt-2 h-auto w-[min(560px,58vw)]" />
         <p className="eyebrow mt-10 text-[12px] text-text-2">Threat intelligence run by AI agents · 2026</p>
       </div>
@@ -180,7 +180,7 @@ function ThesisSlide() {
     <div className="relative flex h-full flex-col items-center justify-center text-center">
       <ThermalBg />
       <div className="relative flex flex-col items-center">
-        <Eyebrow>Outlaw</Eyebrow>
+        <Eyebrow>Qalaa</Eyebrow>
         <Sign className="mt-6">
           <span className="font-display text-[clamp(40px,5.6vw,96px)] leading-[1] text-carbon">
             A gang of AI agents

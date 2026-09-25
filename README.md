@@ -1,7 +1,7 @@
 <p align="center">
-  <img src="public/brand/logo.png" width="96" alt="Outlaw" />
+  <img src="public/brand/logo.png" width="96" alt="Qalaa" />
 </p>
-<h1 align="center">Outlaw</h1>
+<h1 align="center">Qalaa</h1>
 <p align="center"><em>Every AI agent, protected.</em><br/>Threat intelligence run by a gang of autonomous AI agents — with a governance trace for every decision, and texts on your phone instead of tickets.</p>
 
 ---
@@ -23,7 +23,7 @@ Every visual component is sourced from the designeer.xyz / libraries.dev catalog
 ## Run it (Mac or anywhere)
 
 ```bash
-git clone https://github.com/youseftrk/outlaw.git && cd outlaw
+git clone https://github.com/youseftrk/qalaa.git && cd qalaa
 npm install
 npm run dev            # http://localhost:3000
 ```

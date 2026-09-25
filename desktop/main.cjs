@@ -1,11 +1,11 @@
 /**
- * Outlaw — Electron main process (SPEC §12).
+ * Qalaa — Electron main process (SPEC §12).
  *
- * Dev:    OUTLAW_URL=http://localhost:3000 electron .
+ * Dev:    QALAA_URL=http://localhost:3000 electron .
  * Packed: spawns .next/standalone/server.js on a free port, waits for
  *         /api/health, then loads it.
  *
- * Debug:  OUTLAW_SHOT=<path.png> captures the window ~4s after load and quits.
+ * Debug:  QALAA_SHOT=<path.png> captures the window ~4s after load and quits.
  *         (env var, not a flag — Chromium on Windows eats "/x" and URL-like
  *         positional args.)
  */
@@ -15,8 +15,8 @@ const path = require("path");
 const fs = require("fs");
 const net = require("net");
 
-const DEV_URL = process.env.OUTLAW_URL || null;
-const SHOT = process.env.OUTLAW_SHOT || null;
+const DEV_URL = process.env.QALAA_URL || null;
+const SHOT = process.env.QALAA_SHOT || null;
 
 let serverProc = null;
 let mainWin = null;
@@ -64,8 +64,8 @@ async function standaloneUrl() {
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
   });
-  serverProc.stderr?.on("data", (d) => console.error("[outlaw-server]", String(d).trim()));
-  serverProc.on("exit", (code) => console.log(`[outlaw-server] exited ${code}`));
+  serverProc.stderr?.on("data", (d) => console.error("[qalaa-server]", String(d).trim()));
+  serverProc.on("exit", (code) => console.log(`[qalaa-server] exited ${code}`));
   const ok = await waitFor(`${url}/api/health`);
   if (!ok) throw new Error(`standalone server did not come up on ${url}`);
   return url;
@@ -80,7 +80,7 @@ async function createWindow() {
     minWidth: 1100,
     minHeight: 700,
     backgroundColor: "#040e17",
-    title: "Outlaw",
+    title: "Qalaa",
     show: false,
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 18, y: 18 },
@@ -99,9 +99,9 @@ async function createWindow() {
         const img = await mainWin.webContents.capturePage();
         fs.mkdirSync(path.dirname(SHOT), { recursive: true });
         fs.writeFileSync(SHOT, img.toPNG());
-        console.log(`[outlaw] screenshot → ${SHOT}`);
+        console.log(`[qalaa] screenshot → ${SHOT}`);
       } catch (e) {
-        console.error("[outlaw] screenshot failed:", e);
+        console.error("[qalaa] screenshot failed:", e);
       } finally {
         app.quit();
       }
@@ -113,7 +113,7 @@ app.whenReady().then(async () => {
   try {
     await createWindow();
   } catch (e) {
-    console.error("[outlaw] failed to start:", e);
+    console.error("[qalaa] failed to start:", e);
     app.quit();
   }
 });

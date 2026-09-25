@@ -67,7 +67,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton
               size="lg"
               className="app-no-drag data-[slot=sidebar-menu-button]:p-1.5! hover:bg-transparent"
-              render={<Link href="/" aria-label="Outlaw home" />}
+              render={<Link href="/" aria-label="Qalaa home" />}
             >
               <span className="relative grid size-8 shrink-0 place-items-center">
                 <span className="aura absolute inset-0 rounded-full opacity-40 blur-md" />
@@ -75,7 +75,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
               </span>
               <Image
                 src="/brand/wordmark.png"
-                alt="Outlaw"
+                alt="Qalaa"
                 width={90}
                 height={22}
                 priority

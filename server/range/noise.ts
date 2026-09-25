@@ -41,11 +41,11 @@ const KINDS: NoiseKind[] = [
   { cls: "anomalous-egress", roles: [], signal: "net.egress-restricted-subnet", sev: "high", weight: 0.05 },
 ];
 
-let rng = makeRng("outlaw-2026:noise");
+let rng = makeRng("qalaa-2026:noise");
 let noiseTick = 0;
 
 export function noiseReset(): void {
-  rng = makeRng("outlaw-2026:noise");
+  rng = makeRng("qalaa-2026:noise");
   noiseTick = 0;
 }
 

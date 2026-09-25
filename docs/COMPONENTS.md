@@ -1,6 +1,6 @@
 # Components inventory
 
-All UI in Outlaw is sourced from the designeer.xyz catalogs ([designeer.xyz/components](https://designeer.xyz/components) / [libraries.dev](https://libraries.dev)) — installed via shadcn-compatible registries where available, vendored from source repos otherwise. No hand-written UI components.
+All UI in Qalaa is sourced from the designeer.xyz catalogs ([designeer.xyz/components](https://designeer.xyz/components) / [libraries.dev](https://libraries.dev)) — installed via shadcn-compatible registries where available, vendored from source repos otherwise. No hand-written UI components.
 
 > Note: `lightpanda` has no Windows build, so fetching was done via the libraries' shadcn registries and `curl` from their GitHub repos.
 

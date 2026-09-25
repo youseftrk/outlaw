@@ -4,7 +4,7 @@
  * Config shape (would live in .data/secrets.json / settings):
  * ```ts
  * interface SshAdapterConfig {
- *   user: string;                 // e.g. "outlaw-agent"
+ *   user: string;                 // e.g. "qalaa-agent"
  *   keyRef: string;               // secret id holding the ed25519 private key
  *   port?: number;                // default 22
  *   bastion?: { host: string; user: string; keyRef: string };
@@ -20,7 +20,7 @@
  * - `isolate` = apply an egress-deny nftables set + drop established conns
  * - `release` = remove that set
  * - `rotateSecret` = write to the host's secret manager agent socket
- * - `snapshot` = `outlaw-agent collect --quick` tarball to object storage
+ * - `snapshot` = `qalaa-agent collect --quick` tarball to object storage
  * - `migrate` = drain workloads via the orchestrator API, not raw ssh
  */
 import type { ID } from "@/lib/types";

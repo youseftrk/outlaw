@@ -1,5 +1,5 @@
 {
-  "name": "outlaw",
+  "name": "qalaa",
   "version": "0.1.0",
   "private": true,
   "main": "desktop/main.cjs",
@@ -10,7 +10,7 @@
     "lint": "eslint",
     "test": "node scripts/check-blind-boundary.mjs && vitest run",
     "typecheck": "tsc --noEmit",
-    "desktop": "concurrently -k \"next dev\" \"wait-on http-get://localhost:3000 && cross-env OUTLAW_URL=http://localhost:3000 electron .\"",
+    "desktop": "concurrently -k \"next dev\" \"wait-on http-get://localhost:3000 && cross-env QALAA_URL=http://localhost:3000 electron .\"",
     "desktop:build:mac": "next build && node scripts/prepare-standalone.mjs && electron-builder --mac dmg --arm64 --x64",
     "desktop:build:win": "next build && node scripts/prepare-standalone.mjs && electron-builder --win dir"
   },
@@ -84,8 +84,8 @@
     "wait-on": "^9.1.0"
   },
   "build": {
-    "appId": "xyz.outlaw.app",
-    "productName": "Outlaw",
+    "appId": "xyz.qalaa.app",
+    "productName": "Qalaa",
     "files": [
       "desktop/**",
       "public/**",

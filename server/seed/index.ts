@@ -1,12 +1,12 @@
-/** Deterministic seed — assembles the full OutlawState (SPEC §0, §2). */
-import type { OutlawState } from "../store";
+/** Deterministic seed — assembles the full QalaaState (SPEC §0, §2). */
+import type { QalaaState } from "../store";
 import { seedWorld } from "./worldState";
 import { seedFleet } from "./fleet";
 import { seedAgents } from "./agents";
 import { seedPolicies } from "./policies";
 import { seedHistory } from "./history";
 
-export function buildSeed(nowMs: number): OutlawState {
+export function buildSeed(nowMs: number): QalaaState {
   const nowIso = new Date(nowMs).toISOString();
   const world = seedWorld(nowIso);
 

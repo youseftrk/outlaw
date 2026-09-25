@@ -213,9 +213,9 @@ export default function SettingsPage() {
               Save
             </Button>
           </Section>
-          <Section title="Desktop" description={desktop ? "Running inside the Outlaw desktop shell." : "Running in a browser. `npm run desktop` opens the native shell."}>
+          <Section title="Desktop" description={desktop ? "Running inside the Qalaa desktop shell." : "Running in a browser. `npm run desktop` opens the native shell."}>
             <p className="mono-data text-[12px] text-text-3">
-              {typeof window !== "undefined" && window.outlaw ? `${window.outlaw.platform} · v${window.outlaw.version ?? "dev"}` : "web"}
+              {typeof window !== "undefined" && window.qalaa ? `${window.qalaa.platform} · v${window.qalaa.version ?? "dev"}` : "web"}
             </p>
           </Section>
         </BlurFade>
