@@ -15,6 +15,7 @@ import { tickRange, resetAttempts, baselineActive } from "./range/engine";
 import { tickNoise, noiseReset } from "./range/noise";
 import { tickMigrations, checkIncidentMigrations } from "./fleet/migrations";
 import { tickApprovals, decide } from "./governance/approvals";
+import { syncSshSettings } from "./fleet/adapters/ssh-config";
 import type { AgentStatus } from "@/lib/types";
 
 export interface QalaaRuntime {
@@ -114,6 +115,7 @@ export function getRuntime(): QalaaRuntime {
   store.init(state);
   store.loadSecrets();
   store.s.settings.llm.apiKeySet = !!store.secrets.llmApiKey;
+  syncSshSettings();
 
   brainReset();
   resetAttempts();

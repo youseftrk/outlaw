@@ -12,11 +12,9 @@ import { evaluate } from "../governance/policy";
 import { addSpan, endSpan, policySpan } from "../governance/traces";
 import { createApproval, waitForDecision } from "../governance/approvals";
 import { toolSpec } from "./tools";
-import { SimAdapter } from "../fleet/adapters/sim";
+import { adapterFor } from "../fleet/adapters";
 import { refreshServerConformance } from "../fleet/conformance";
 import { telemetryWindow } from "../telemetry";
-
-const adapter = new SimAdapter();
 
 export interface ToolArgs {
   serverId?: ID;
@@ -135,7 +133,7 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
     }
     case "rotate_credentials": {
       if (args.serverId) {
-        const r = await adapter.rotateSecret(args.serverId, "*", by);
+        const r = await adapterFor(args.serverId).rotateSecret(args.serverId, "*", by);
         return { ok: r.ok, summary: r.summary };
       }
       const r = world.rotateSecret(args.secretKind ?? "cloud", by);
@@ -167,7 +165,7 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
       return { ok: true, summary: findings.length ? findings.join("; ") : "worker clean", evidence: { findings } };
     }
     case "isolate_host": {
-      const r = await adapter.isolate(args.serverId!, by);
+      const r = await adapterFor(args.serverId).isolate(args.serverId!, by);
       return { ok: r.ok, summary: r.summary };
     }
     case "block_egress": {
@@ -183,7 +181,7 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
     case "lock_registry":
       return world.lockRegistry(by);
     case "patch_service": {
-      const r = await adapter.applyPatch(args.serverId!, "latest-known-cves", by);
+      const r = await adapterFor(args.serverId).applyPatch(args.serverId!, "latest-known-cves", by);
       if (r.ok && args.serverId) {
         const srv = store.server(args.serverId);
         if (srv) refreshServerConformance(srv);
@@ -201,7 +199,7 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
       return { ok: r.ok, summary: r.summary };
     }
     case "snapshot_evidence":
-      return adapter.snapshot(args.serverId ?? "");
+      return adapterFor(args.serverId).snapshot(args.serverId ?? "");
     case "enrich_ioc":
       return { ok: true, summary: `enriched IOCs for ${args.threatId ?? "threat"}`, evidence: { threatId: args.threatId } };
     case "map_attack":
@@ -228,7 +226,7 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
     case "remediate_drift":
       return world.remediateConfig(args.serverId!, by);
     case "migrate_workload": {
-      const r = await adapter.migrate(args.serverId!, undefined, [args.workload ?? "workloads"]);
+      const r = await adapterFor(args.serverId).migrate(args.serverId!, undefined, [args.workload ?? "workloads"]);
       return { ok: r.ok, summary: r.summary };
     }
     case "notify_human":

@@ -21,7 +21,9 @@ import type {
   ResearchKind,
   ResearchQuery,
   Server,
+  ServerAdapterKind,
   Settings,
+  SshSettingsPatch,
   Thread,
   Threat,
   Trace,
@@ -137,6 +139,9 @@ export const api = {
         migrations: r.migrations ?? [],
       })),
     runConformance: (id: string) => post<{ traceId: string }>(`/fleet/servers/${id}/conformance`),
+    /** flip a server between the simulated world and a real host (`sshTarget` = reachable host[:port]; "" clears) */
+    updateServer: (id: string, body: { adapter?: ServerAdapterKind; sshTarget?: string }) =>
+      patch<{ server: Server }>(`/fleet/servers/${id}`, body).then((r) => r.server),
     migrations: () => get<{ migrations: Migration[] }>("/fleet/migrations").then(unwrap<Migration[]>("migrations")),
     createMigration: (body: {
       sourceServerId: string;
@@ -206,10 +211,14 @@ export const api = {
     get: () => get<Settings>("/settings"),
     update: (body: {
       llm?: Partial<Settings["llm"]> & { apiKey?: string };
+      ssh?: SshSettingsPatch;
       operator?: Partial<Settings["operator"]>;
       sim?: Partial<Settings["sim"]>;
     }) => patch<Settings>("/settings", body),
     testLlm: () => post<Settings["llm"]["lastTest"]>("/settings/llm/test"),
+    /** runs `echo qalaa-ok` over ssh against `serverId`; non-2xx (ApiError) when the host did not answer */
+    testSsh: (serverId: string) =>
+      post<NonNullable<Settings["ssh"]["lastTest"]> & { command: string }>("/settings/ssh/test", { serverId }),
   },
 };
 

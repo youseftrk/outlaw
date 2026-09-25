@@ -76,9 +76,15 @@ export interface ConformanceCheck {
   remediationTool?: ToolName;
 }
 
+/** which fleet adapter executes tools on this server; `sim` (default) mutates the world model, `ssh` reaches a real host */
+export type ServerAdapterKind = "sim" | "ssh";
+
 export interface Server {
   id: ID;
   hostname: string;
+  adapter?: ServerAdapterKind;
+  /** reachable `host[:port]` for the ssh adapter (mirrors `hostMap[id]`); unset → the host is unreachable */
+  sshTarget?: string;
   role: ServerRole;
   provider: Provider;
   region: Region;
@@ -781,8 +787,44 @@ export interface LLMSettings {
   lastTest?: { ok: boolean; at: ISODate; latencyMs?: number; error?: string; sample?: string };
 }
 
+export type SshHostKeyPolicy = "strict" | "accept-new";
+
+/** Redacted view of the SshAdapterConfig kept in .data/secrets.json — key material never leaves the server. */
+export interface SshSettings {
+  user: string;
+  port: number;
+  hostKeyPolicy: SshHostKeyPolicy;
+  sudo: boolean;
+  timeoutMs: number;
+  /** a private key is stored for `keyRef` */
+  keySet: boolean;
+  bastion?: { host: string; port: number; user: string; keySet: boolean };
+  /** serverId → reachable host[:port] */
+  hostMap: Record<ID, string>;
+  /** pinned host keys (strict / accept-new) */
+  knownHostsCount: number;
+  orchestratorUrl?: string;
+  lastTest?: { ok: boolean; at: ISODate; serverId?: ID; latencyMs?: number; error?: string; sample?: string };
+}
+
+/** PATCH /api/settings `ssh` body. Keys are write-only ("" clears); `bastion: null` / `orchestratorUrl: null` remove. */
+export interface SshSettingsPatch {
+  user?: string;
+  port?: number;
+  hostKeyPolicy?: SshHostKeyPolicy;
+  sudo?: boolean;
+  timeoutMs?: number;
+  privateKey?: string;
+  bastion?: { host?: string; port?: number; user?: string; privateKey?: string } | null;
+  hostMap?: Record<ID, string>;
+  orchestratorUrl?: string | null;
+  /** drop every pinned host key (e.g. after a legitimate host re-key) */
+  forgetKnownHosts?: boolean;
+}
+
 export interface Settings {
   llm: LLMSettings;
+  ssh: SshSettings;
   operator: { name: string; phone: string; org: string };
   sim: { speed: number; autoRun: boolean; quietHours: boolean };
 }
