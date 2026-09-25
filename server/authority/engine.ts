@@ -279,7 +279,7 @@ export function authorize(input: AuthorizeInput): AuthorizeResult {
   }
 
   const candidates = store.s.leases
-    .filter((l) => l.requestingEntityId === entityId && l.ownerEntityId === ownerEntityId)
+    .filter((l) => l.requestingEntityId === entityId && l.ownerEntityId === ownerEntityId && l.capability === input.capability)
     .sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status) || b.requestedAt.localeCompare(a.requestedAt));
 
   let best: { refusal: { code: RefusalCode; message: string }; lease?: AuthorityLease } | null = null;
@@ -652,7 +652,7 @@ export function resetAuthority(nowIso: string): { ok: true } {
 export function suggest(input: { incidentId?: ID; agentId?: ID; capability?: Capability; serverId?: ID }): PermissionSuggestion | { error: string } {
   let capability = input.capability ?? "observe";
   let serverId = input.serverId;
-  let incidentId = input.incidentId;
+  const incidentId = input.incidentId;
   if (incidentId) {
     const t = store.threat(incidentId);
     if (!t) return { error: `incident ${incidentId} not found` };
