@@ -21,6 +21,7 @@ import { AnimatedSpan, Terminal } from "@/components/ui/terminal";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { api, useAgent, useBootstrap } from "@/lib/hooks/use-data";
 import { useLive } from "@/lib/hooks/use-live";
+import { agentPowers } from "@/lib/agent-powers";
 import { AGENT_STATUS_LABEL, SEVERITY_CLASS, THREAT_STATUS_CLASS, THREAT_STATUS_LABEL, VERDICT_CLASS, ago, clock, humanize } from "@/lib/format";
 import type { Autonomy, EventType, Trace } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -100,7 +101,7 @@ export default function AgentDetailPage() {
             {agent.name}
           </span>
         }
-        description={agent.mandate}
+        description={`${agent.mandate} ${agent.description}`}
         actions={
           <Button variant="secondary" nativeButton={false} render={<Link href={`/messages?thread=thr-${agent.id.replace("agt-", "")}`} />}>
             Text {agent.name}
@@ -161,14 +162,33 @@ export default function AgentDetailPage() {
           </ToggleGroup>
 
           <div className="mt-5">
-            <p className="eyebrow">Toolbelt</p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {agent.tools.map((t) => (
-                <span key={t} className="mono-data rounded-full border border-line px-2 py-0.5 text-[10px] text-text-2">
-                  {t}
-                </span>
+            <p className="eyebrow">What it may ask permission to do</p>
+            <ul className="mt-2 flex flex-col gap-2">
+              {agentPowers(agent.tools).map((p) => (
+                <li key={p.capability} className="flex items-start gap-2 text-[12px]">
+                  <span className={cn("mt-0.5 shrink-0 rounded-full border px-2 py-0.5 text-[11px]", p.stepUp ? "border-lime/40 text-lime" : "border-line text-text-2")}>
+                    {p.label}
+                  </span>
+                  <span className="text-text-2">
+                    {p.plain}
+                    {p.stepUp && <span className="text-text-3"> · needs the owner&apos;s yes and a human code</span>}
+                  </span>
+                </li>
               ))}
-            </div>
+            </ul>
+            <p className="mt-3 text-[12px] text-text-3">
+              None of this is standing power. On another organisation&apos;s system {agent.name} must ask first, and the owner can take the permission back at any moment.
+            </p>
+            <details className="mt-3">
+              <summary className="cursor-pointer text-[11px] text-text-3">Technical tools</summary>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {agent.tools.map((t) => (
+                  <span key={t} className="mono-data rounded-full border border-line px-2 py-0.5 text-[10px] text-text-3">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </details>
           </div>
 
           <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-line pt-4 text-[12px]">

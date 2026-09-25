@@ -5,14 +5,14 @@
  * return { ok, summary, evidence }.
  */
 import type { Agent, AuthorityScope, AuthorizeInput, Capability, ID, Severity, ToolName, Trace } from "@/lib/types";
-import { TOOL_CAPABILITY, CAPABILITY_LABEL } from "@/lib/types";
+import { TOOL_CAPABILITY, CAPABILITY_LABEL, REFUSAL_LABEL } from "@/lib/types";
 import { bus } from "../bus";
 import { store } from "../store";
 import * as world from "../world/world";
 import { evaluate } from "../governance/policy";
 import { addSpan, endSpan, policySpan, projectRisk } from "../governance/traces";
 import { createApproval, waitForDecision } from "../governance/approvals";
-import { authorize, request as requestLease, waitForLease, record as recordDecision, describeScope, LEASE_WAIT_MAX_SIM_SEC, entityName } from "../authority/engine";
+import { authorize, request as requestLease, waitForLease, record as recordDecision, describeScope, LEASE_WAIT_MAX_SIM_SEC, entityName, agentsQuiet } from "../authority/engine";
 import { toolSpec } from "./tools";
 import { adapterFor } from "../fleet/adapters";
 import { refreshServerConformance } from "../fleet/conformance";
@@ -308,7 +308,8 @@ async function authorityFor(
   const input: AuthorizeInput = { actorId: agent.id, capability: capability as Capability, ...target.input };
   let auth = authorize(input);
 
-  if (!auth.allow && ASK_AGAIN.has(auth.code)) {
+  const patrol = !trace.threatId;
+  if (!auth.allow && ASK_AGAIN.has(auth.code) && !(patrol && agentsQuiet())) {
     // create/reuse one pending request, then wait up to 10 sim-min for activation
     const req = requestLease({
       requestingEntityId: agent.entityId ?? "ent-response",
@@ -344,7 +345,7 @@ async function authorityFor(
       capability: capability as Capability,
       target: `${tool} on ${describeScope(target.scope)}`,
       checks: auth.checks,
-      summary: `${agent.name} ran ${tool} under ${auth.lease.id}.`,
+      summary: `${agent.name} was allowed to ${CAPABILITY_LABEL[capability as Capability].toLowerCase()} on ${describeScope(target.scope)} under ${auth.lease.id}.`,
     });
     return { allow: true, lease: auth.lease };
   }
@@ -360,7 +361,7 @@ async function authorityFor(
     target: `${tool} on ${describeScope(target.scope)}`,
     refusalCode: auth.code,
     checks: auth.checks,
-    summary: `${agent.name} refused ${tool} — ${auth.code}: ${auth.message}`,
+    summary: `${agent.name} was refused: ${REFUSAL_LABEL[auth.code].toLowerCase()} to ${CAPABILITY_LABEL[capability as Capability].toLowerCase()} on ${describeScope(target.scope)}. ${auth.message}`,
   });
   return { allow: false, code: auth.code, message: auth.message, lease: auth.lease, checks: auth.checks };
 }
