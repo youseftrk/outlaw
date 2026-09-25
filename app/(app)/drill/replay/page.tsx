@@ -187,7 +187,7 @@ export default function RangePage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="Blind cyber range · agents don't know it's a drill"
+        eyebrow="Replay · the agents don't know it's a drill"
         title={scenario?.name ?? "July 2026 replay"}
         description={scenario?.description}
         actions={

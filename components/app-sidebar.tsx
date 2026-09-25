@@ -8,12 +8,13 @@ import {
   Broadcast,
   ChatsCircle,
   ChartLineUp,
-  Crosshair,
-  Gavel,
   HardDrives,
-  MagnifyingGlass,
+  Key,
+  Notebook,
+  Play,
+  Siren,
   Sliders,
-  Target,
+  ToggleLeft,
   UsersThree,
 } from "@phosphor-icons/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -51,27 +52,28 @@ type NavItem = { title: string; href: string; icon: typeof Broadcast };
 
 const GROUPS: { label: string; items: NavItem[] }[] = [
   {
-    label: "Watch",
+    label: "The switch",
     items: [
-      { title: "Command center", href: "/", icon: Broadcast },
-      { title: "Threats", href: "/threats", icon: Crosshair },
-      { title: "Fleet", href: "/fleet", icon: HardDrives },
-      { title: "Messages", href: "/messages", icon: ChatsCircle },
+      { title: "Home", href: "/", icon: ToggleLeft },
+      { title: "Permissions", href: "/permissions", icon: Key },
+      { title: "What happened", href: "/record", icon: Notebook },
     ],
   },
   {
     label: "Garrison",
     items: [
       { title: "Agents", href: "/agents", icon: UsersThree },
-      { title: "Research", href: "/research", icon: MagnifyingGlass },
+      { title: "Incidents", href: "/incidents", icon: Siren },
+      { title: "Systems", href: "/systems", icon: HardDrives },
+      { title: "Messages", href: "/messages", icon: ChatsCircle },
     ],
   },
   {
-    label: "Govern",
+    label: "Prove it",
     items: [
-      { title: "Governance", href: "/governance", icon: Gavel },
-      { title: "Insights", href: "/insights", icon: ChartLineUp },
-      { title: "Range", href: "/range", icon: Target },
+      { title: "Run a drill", href: "/drill", icon: Play },
+      { title: "Why Qalaa", href: "/why", icon: ChartLineUp },
+      { title: "Live wire", href: "/insights", icon: Broadcast },
     ],
   },
 ];

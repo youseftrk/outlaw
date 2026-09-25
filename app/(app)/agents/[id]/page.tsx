@@ -241,7 +241,7 @@ export default function AgentDetailPage() {
               <ul className="flex flex-col gap-1">
                 {data?.threats.map((t) => (
                   <li key={t.id}>
-                    <Link href={`/threats/${t.id}`} className="flex items-center gap-3 rounded-[12px] px-3 py-2 transition-colors hover:bg-bg-2">
+                    <Link href={`/incidents/${t.id}`} className="flex items-center gap-3 rounded-[12px] px-3 py-2 transition-colors hover:bg-bg-2">
                       <span className={cn("eyebrow w-14 text-[10px]", SEVERITY_CLASS[t.severity])}>{t.severity}</span>
                       <span className="min-w-0 flex-1 truncate text-text-1">{t.title}</span>
                       <span className={cn("text-[12px]", THREAT_STATUS_CLASS[t.status])}>{THREAT_STATUS_LABEL[t.status]}</span>
@@ -257,7 +257,7 @@ export default function AgentDetailPage() {
               <ul className="grid grid-cols-1 gap-1 md:grid-cols-2">
                 {servers.map((s) => (
                   <li key={s.id}>
-                    <Link href={`/fleet?server=${s.id}`} className="flex items-center gap-3 rounded-[12px] px-3 py-2 transition-colors hover:bg-bg-2">
+                    <Link href={`/systems?server=${s.id}`} className="flex items-center gap-3 rounded-[12px] px-3 py-2 transition-colors hover:bg-bg-2">
                       <span className="mono-data min-w-0 flex-1 truncate text-text-1">{s.hostname}</span>
                       <span className="text-[12px] text-text-3">{s.role}</span>
                       <span className="mono-data text-[11px] text-text-2">{s.conformanceScore}</span>

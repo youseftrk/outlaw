@@ -55,9 +55,9 @@ export default function InsightsPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="What your agents have been protecting"
-        title="Insights"
-        description="The company view: what the garrison caught, what it prevented before it mattered, and how well the fleet conforms."
+        eyebrow="What the agents have been doing"
+        title="Live wire"
+        description="The wider view: what the garrison caught, what it prevented, and how healthy the systems are."
         actions={
           <ToggleGroup
             value={[window]}
@@ -111,7 +111,7 @@ export default function InsightsPage() {
         </BlurFade>
 
         <BlurFade delay={0.15} className="col-span-12 md:col-span-6 xl:col-span-4">
-          <Panel eyebrow="Fleet" title="Conformance average" className="h-full">
+          <Panel eyebrow="Systems" title="Health average" className="h-full">
             <ChartContainer config={radialConfig} className="mx-auto h-[200px] w-full aspect-auto">
               <RadialBarChart data={radial} startAngle={210} endAngle={-30} innerRadius={70} outerRadius={95}>
                 <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
@@ -173,7 +173,7 @@ export default function InsightsPage() {
             <ul className="flex flex-col gap-1">
               {(data?.topProtected ?? []).map((t, i) => (
                 <li key={t.serverId}>
-                  <Link href={`/fleet?server=${t.serverId}`} className="flex items-center gap-3 rounded-[10px] px-2 py-1.5 hover:bg-bg-2">
+                  <Link href={`/systems?server=${t.serverId}`} className="flex items-center gap-3 rounded-[10px] px-2 py-1.5 hover:bg-bg-2">
                     <span className="mono-data w-5 text-[11px] text-text-3">{i + 1}</span>
                     <span className="mono-data min-w-0 flex-1 truncate text-text-1">{hostname(t.serverId)}</span>
                     <span className="text-[11px] text-text-3">{role(t.serverId)}</span>

@@ -25,7 +25,7 @@ export default function AgentsPage() {
       <PageHeader
         eyebrow="The garrison"
         title="Agents"
-        description="Six autonomous agents with distinct mandates. Every action they take on a server is evaluated by policy and traced."
+        description="Six agents, each with one job. None of them holds standing power: every action on someone else's system needs a permission, and every step is written down."
       />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {!agents &&

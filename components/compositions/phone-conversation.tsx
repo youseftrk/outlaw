@@ -58,13 +58,13 @@ function deliverySuffix(d: NonNullable<Message["delivery"]>[number]) {
 function Attachment({ a }: { a: NonNullable<Message["attachments"]>[number] }) {
   const href =
     a.type === "threat-card"
-      ? `/threats/${a.refId}`
+      ? `/incidents/${a.refId}`
       : a.type === "server-card"
-        ? `/fleet?server=${a.refId}`
+        ? `/systems?server=${a.refId}`
         : a.type === "trace-link"
-          ? `/governance?tab=traces&trace=${a.refId}`
+          ? `/record?tab=traces&trace=${a.refId}`
           : a.type === "migration-card"
-            ? `/fleet?tab=migrations`
+            ? `/systems?tab=migrations`
             : `/range`;
   return (
     <Link

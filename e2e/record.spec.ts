@@ -10,7 +10,7 @@ test.describe("governance approvals", () => {
     const approval = await createApproval(request);
     expect(approval.toolName).toBe("block_egress");
 
-    await page.goto("/governance");
+    await page.goto("/record");
     await page.getByRole("button", { name: /approvals? waiting/ }).click();
 
     const sheet = page.getByRole("dialog");

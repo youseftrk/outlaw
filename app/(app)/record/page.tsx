@@ -6,14 +6,16 @@ import { toast } from "sonner";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, DownloadSimple, X } from "@phosphor-icons/react";
 
+import { RecordList } from "@/components/authority/record-list";
 import { PageHeader } from "@/components/shell/page-header";
+import { useRecords } from "@/lib/hooks/use-authority";
 import { AgentAvatar } from "@/components/shell/agent-avatar";
 import { KpiCard } from "@/components/compositions/kpi-card";
 import { TraceView } from "@/components/compositions/trace-view";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DotPattern } from "@/components/ui/dot-pattern";
 import { TextEffect } from "@/components/ui/text-effect";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -413,41 +415,74 @@ function ApprovalsTab() {
   );
 }
 
+function PermissionsRecordTab() {
+  const { data: records = [] } = useRecords("?limit=200");
+  const refused = records.filter((r) => r.kind === "refused").length;
+  const allowed = records.filter((r) => r.kind === "allowed").length;
+  const revoked = records.filter((r) => r.kind === "revoked").length;
+  return (
+    <div className="grid grid-cols-12 gap-4">
+      <div className="col-span-12 xl:col-span-8">
+        <RecordList records={records} />
+      </div>
+      <aside className="col-span-12 flex flex-col gap-3 xl:col-span-4">
+        <Card className="bezel-core">
+          <CardHeader>
+            <CardTitle className="text-[14px]">How to read this</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2 text-[13px] text-text-2">
+            <p>Every line is written by the server the moment something happens. Nobody on the screen can add, change or remove one.</p>
+            <p>
+              So far: <span className="text-text-1">{allowed}</span> allowed, <span className="text-text-1">{refused}</span> refused,{" "}
+              <span className="text-text-1">{revoked}</span> taken back.
+            </p>
+            <p className="text-text-3">Refused is a good word here. It means the switch worked.</p>
+          </CardContent>
+        </Card>
+      </aside>
+    </div>
+  );
+}
+
 function GovernanceInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const tab = params.get("tab") ?? "traces";
+  const tab = params.get("tab") ?? "permissions";
   const traceId = params.get("trace");
   const { data: boot } = useBootstrap();
   const { data: traces } = useTraces("?limit=200");
+  const { data: records = [] } = useRecords("?limit=200");
   const denials = traces?.filter((t) => t.verdict === "denied").length ?? 0;
   const pending = boot?.approvals.filter((a) => a.status === "pending").length ?? 0;
-  const llmSpans = traces?.reduce((n, t) => n + t.spans.filter((s) => s.llm && !s.llm.fallback).length, 0) ?? 0;
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="Traces · policies · approvals"
-        title="Governance"
-        description="Every agent decision is a trace: what it saw, what it reasoned, which policies fired, what it did, and how it turned out."
+        eyebrow="Written by the server, readable by anyone"
+        title="What happened"
+        description="Who asked, who said yes, what was allowed, what was refused, and when a permission was taken back. Every agent step is here too."
         actions={
           <Button variant="secondary" size="sm" nativeButton={false} render={<a href={api.governance.exportUrl} download />} className="gap-1.5">
-            <DownloadSimple weight="bold" className="size-3.5" /> Export audit
+            <DownloadSimple weight="bold" className="size-3.5" /> Download the record
           </Button>
         }
       />
       <BlurFade delay={0.05} className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <KpiCard label="Traces" value={traces?.length ?? 0} tone="cerulean" hint="last 200 shown" />
-        <KpiCard label="Policies" value={boot?.policies.length ?? 0} tone="neutral" hint={`${boot?.policies.filter((p) => p.enabled).length ?? 0} enabled`} />
-        <KpiCard label="Policy denials" value={denials} tone="warm" />
-        <KpiCard label="Awaiting approval" value={pending} tone="lime" hint={`${llmSpans} LLM-narrated spans`} />
+        <KpiCard label="Permission events" value={records.length} tone="lime" hint="asked, allowed, refused, taken back" />
+        <KpiCard label="Agent steps" value={traces?.length ?? 0} tone="cerulean" hint="last 200 shown" />
+        <KpiCard label="Stopped by a rule" value={denials} tone="warm" />
+        <KpiCard label="Needs a person" value={pending} tone="neutral" hint={`${boot?.policies.filter((p) => p.enabled).length ?? 0} rules on`} />
       </BlurFade>
-      <Tabs value={tab} onValueChange={(v) => router.replace(`/governance?tab=${v}`)} className="gap-3">
+      <Tabs value={tab} onValueChange={(v) => router.replace(`/record?tab=${v}`)} className="gap-3">
         <TabsList className="w-fit bg-bg-2">
-          <TabsTrigger value="traces">Traces</TabsTrigger>
-          <TabsTrigger value="policies">Policies</TabsTrigger>
-          <TabsTrigger value="approvals">Approvals{pending ? ` (${pending})` : ""}</TabsTrigger>
+          <TabsTrigger value="permissions">Permissions</TabsTrigger>
+          <TabsTrigger value="traces">Agent steps</TabsTrigger>
+          <TabsTrigger value="policies">Rules</TabsTrigger>
+          <TabsTrigger value="approvals">Needs a person{pending ? ` (${pending})` : ""}</TabsTrigger>
         </TabsList>
+        <TabsContent value="permissions">
+          <PermissionsRecordTab />
+        </TabsContent>
         <TabsContent value="traces">
           <TracesTab initialTraceId={traceId} />
         </TabsContent>
@@ -464,7 +499,7 @@ function GovernanceInner() {
 
 export default function GovernancePage() {
   return (
-    <React.Suspense fallback={<LoadingState label="Loading governance" variant="orbit" />}>
+    <React.Suspense fallback={<LoadingState label="Loading the record" variant="orbit" />}>
       <GovernanceInner />
     </React.Suspense>
   );

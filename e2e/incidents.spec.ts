@@ -7,12 +7,12 @@ test.describe("threats", () => {
     const open = await (await request.get("/api/threats?open=true&limit=1")).json();
     if (open.threats.length === 0) await director(request, "brute-force");
 
-    await page.goto("/threats");
+    await page.goto("/incidents");
     const firstRow = page.getByRole("row").filter({ has: page.getByRole("link", { name: /.+/ }) }).first();
     const link = firstRow.getByRole("link").first();
     await expect(link).toBeVisible();
     await link.click();
-    await expect(page).toHaveURL(/\/threats\/T-\d+$/);
+    await expect(page).toHaveURL(/\/incidents\/T-\d+$/);
 
     await expect(page.getByText("Kill chain")).toBeVisible();
     await expect(page.getByText(/stages stopped/)).toBeVisible();
@@ -27,7 +27,7 @@ test.describe("threats", () => {
     if (!(await escalate.isVisible())) {
       const { threats } = await (await request.get("/api/threats?open=true&limit=1")).json();
       expect(threats.length).toBeGreaterThan(0);
-      await page.goto(`/threats/${threats[0].id}`);
+      await page.goto(`/incidents/${threats[0].id}`);
     }
     await expect(escalate).toBeVisible();
 

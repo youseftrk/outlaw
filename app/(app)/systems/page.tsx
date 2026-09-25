@@ -183,7 +183,7 @@ function ServerSheet({ serverId, onClose }: { serverId: string | null; onClose: 
                   <ul className="mt-2 flex flex-col gap-1">
                     {data.threats.slice(0, 8).map((t) => (
                       <li key={t.id}>
-                        <Link href={`/threats/${t.id}`} className="flex items-center gap-3 rounded-[10px] px-2 py-1.5 hover:bg-bg-2">
+                        <Link href={`/incidents/${t.id}`} className="flex items-center gap-3 rounded-[10px] px-2 py-1.5 hover:bg-bg-2">
                           <span className="min-w-0 flex-1 truncate text-text-1">{t.title}</span>
                           <span className={cn("text-[12px]", THREAT_STATUS_CLASS[t.status])}>{THREAT_STATUS_LABEL[t.status]}</span>
                           <span className="mono-data text-[11px] text-text-3">{ago(t.detectedAt)}</span>
@@ -443,9 +443,9 @@ function FleetInner() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="Servers · conformance · migrations"
-        title="Fleet"
-        description="Rahhal conforms every host to baseline, patches what's known, and moves workloads when a server can't be trusted."
+        eyebrow="Who owns what"
+        title="Systems"
+        description="Every system here belongs to an organisation. Agents may only touch it with that owner's permission — Rahhal keeps each host healthy within those bounds."
         actions={<NewMigrationDialog servers={servers ?? []} />}
       />
 
@@ -456,7 +456,7 @@ function FleetInner() {
         <KpiCard label="Migrating · rebuilding" value={count("migrating") + count("rebuilding")} tone="neutral" />
       </BlurFade>
 
-      <Tabs value={tab} onValueChange={(v) => router.replace(`/fleet${v === "migrations" ? "?tab=migrations" : ""}`)} className="gap-3">
+      <Tabs value={tab} onValueChange={(v) => router.replace(`/systems${v === "migrations" ? "?tab=migrations" : ""}`)} className="gap-3">
         <TabsList className="w-fit bg-bg-2">
           <TabsTrigger value="servers">Servers ({servers?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="migrations">Migrations ({migrations?.length ?? 0})</TabsTrigger>
@@ -478,7 +478,7 @@ function FleetInner() {
               </TableHeader>
               <TableBody>
                 {list.map((s) => (
-                  <TableRow key={s.id} className="cursor-pointer border-line hover:bg-bg-2" onClick={() => router.replace(`/fleet?server=${s.id}`)}>
+                  <TableRow key={s.id} className="cursor-pointer border-line hover:bg-bg-2" onClick={() => router.replace(`/systems?server=${s.id}`)}>
                     <TableCell>
                       <p className="mono-data text-text-1">{s.hostname}</p>
                       <p className="mono-data text-[11px] text-text-3">{s.ip}</p>
@@ -537,14 +537,14 @@ function FleetInner() {
         </TabsContent>
       </Tabs>
 
-      <ServerSheet serverId={selected} onClose={() => router.replace(tab === "migrations" ? "/fleet?tab=migrations" : "/fleet")} />
+      <ServerSheet serverId={selected} onClose={() => router.replace(tab === "migrations" ? "/systems?tab=migrations" : "/systems")} />
     </div>
   );
 }
 
 export default function FleetPage() {
   return (
-    <React.Suspense fallback={<LoadingState label="Loading fleet" variant="orbit" />}>
+    <React.Suspense fallback={<LoadingState label="Loading systems" variant="orbit" />}>
       <FleetInner />
     </React.Suspense>
   );

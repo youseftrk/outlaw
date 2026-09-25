@@ -105,7 +105,7 @@ export function ApprovalItem({
           <Button size="sm" variant="secondary" disabled={busy} onClick={() => onDecide("reject")}>
             <X weight="bold" /> {deciding === "reject" ? "Rejecting…" : "Reject"}
           </Button>
-          <Button size="sm" variant="link" className="ml-auto text-text-2" nativeButton={false} render={<Link href={`/governance?tab=traces&trace=${a.traceId}`} />}>
+          <Button size="sm" variant="link" className="ml-auto text-text-2" nativeButton={false} render={<Link href={`/record?tab=traces&trace=${a.traceId}`} />}>
             Open trace
           </Button>
         </div>

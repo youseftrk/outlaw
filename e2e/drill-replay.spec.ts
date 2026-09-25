@@ -12,7 +12,7 @@ test.describe("range", () => {
   });
 
   test("a protected replay runs to completion and shows a grade", async ({ page, request }) => {
-    await page.goto("/range");
+    await page.goto("/drill/replay");
     const start = page.getByRole("button", { name: "Start the replay" });
     await expect(start).toBeEnabled();
 

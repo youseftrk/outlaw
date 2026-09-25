@@ -61,9 +61,9 @@ export default function ThreatsPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="Detections · kill chains · response"
-        title="Threats"
-        description="Everything the garrison has seen, what they did about it, and the trace behind each decision."
+        eyebrow="What the agents responded to"
+        title="Incidents"
+        description="Every incident the garrison handled, what each agent did, and which permission it acted under."
       />
 
       <BlurFade delay={0.05} className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -128,7 +128,7 @@ export default function ThreatsPage() {
                 <TableRow
                   key={t.id}
                   className="cursor-pointer border-line hover:bg-bg-2"
-                  onClick={() => router.push(`/threats/${t.id}`)}
+                  onClick={() => router.push(`/incidents/${t.id}`)}
                 >
                   <TableCell>
                     <span className={cn("flex items-center gap-2 text-[12px]", SEVERITY_CLASS[t.severity])}>
@@ -137,7 +137,7 @@ export default function ThreatsPage() {
                     </span>
                   </TableCell>
                   <TableCell className="max-w-[180px] md:max-w-[420px]">
-                    <Link href={`/threats/${t.id}`} className="block truncate font-medium text-text-1 hover:text-lime" onClick={(e) => e.stopPropagation()}>
+                    <Link href={`/incidents/${t.id}`} className="block truncate font-medium text-text-1 hover:text-lime" onClick={(e) => e.stopPropagation()}>
                       {t.title}
                     </Link>
                     <span className="mono-data text-[11px] text-text-3">

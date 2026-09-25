@@ -36,7 +36,7 @@ export default function ThreatDetailPage() {
     }
   };
 
-  if (!data) return <LoadingState label="Loading threat" variant="dots" />;
+  if (!data) return <LoadingState label="Loading incident" variant="dots" />;
   const { threat, traces, servers, messages } = data;
 
   const arcs =
@@ -107,7 +107,7 @@ export default function ThreatDetailPage() {
               <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-line pt-3">
                 <span className="eyebrow mr-1">ATT&CK</span>
                 {threat.attack.techniqueIds.map((t) => (
-                  <Badge key={t} variant="outline" className="mono-data border-line text-text-2" render={<Link href={`/research?q=${t}`} />}>
+                  <Badge key={t} variant="outline" className="mono-data border-line text-text-2">
                     {t}
                   </Badge>
                 ))}
@@ -135,7 +135,7 @@ export default function ThreatDetailPage() {
                 <dt className="text-text-3">Targets</dt>
                 {servers.map((s) => (
                   <dd key={s.id}>
-                    <Link href={`/fleet?server=${s.id}`} className="mono-data text-text-1 hover:text-lime">
+                    <Link href={`/systems?server=${s.id}`} className="mono-data text-text-1 hover:text-lime">
                       {s.hostname}
                     </Link>
                     <span className="text-text-3"> · {s.status}</span>
@@ -189,9 +189,7 @@ export default function ThreatDetailPage() {
                       <TableRow key={`${i.type}-${i.value}`} className="border-line">
                         <TableCell className="text-text-2">{i.type}</TableCell>
                         <TableCell className="mono-data text-text-1">
-                          <Link href={`/research?q=${encodeURIComponent(i.value)}`} className="hover:text-lime">
-                            {i.value}
-                          </Link>
+                          {i.value}
                         </TableCell>
                         <TableCell className="mono-data text-text-2">{Math.round(i.confidence * 100)}%</TableCell>
                         <TableCell className="text-[11px] text-text-3">{i.tags.join(", ")}</TableCell>
