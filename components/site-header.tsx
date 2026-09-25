@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Command as CommandIcon } from "@phosphor-icons/react";
+import { Command as CommandIcon } from "@phosphor-icons/react";
 
 import {
   Breadcrumb,
@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Status, StatusIndicator, StatusLabel } from "@/components/kibo-ui/status";
 import { CommandPalette } from "@/components/shell/command-palette";
 import { ApprovalsSheet } from "@/components/shell/approvals-sheet";
+import { NotificationBell } from "@/components/rare-ui/notification-bell";
 import { useLive } from "@/lib/hooks/use-live";
 import { useBootstrap } from "@/lib/hooks/use-data";
 import { cn } from "@/lib/utils";
@@ -122,20 +123,14 @@ export function SiteHeader() {
             <Kbd className="bg-bg-2 text-[10px]">⌘K</Kbd>
           </Button>
 
-          <Button
-            variant="outline"
-            size="icon-sm"
+          <NotificationBell
+            count={pending}
+            size={28}
+            color="lime"
             aria-label={`${pending} approvals waiting`}
-            className="relative h-7 w-7 border-line bg-bg-1 text-text-2 hover:text-text-1"
+            className="overflow-visible border border-line bg-bg-1 text-text-2 hover:text-text-1"
             onClick={() => setApprovalsOpen(true)}
-          >
-            <Bell weight="light" className="size-4" />
-            {pending > 0 && (
-              <span className="mono-data absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-lime px-1 text-[10px] font-semibold text-carbon">
-                {pending}
-              </span>
-            )}
-          </Button>
+          />
 
           <Link href="/settings" aria-label="Operator settings" className="ml-1 rounded-full">
             <Avatar className="size-7 ring-1 ring-line">

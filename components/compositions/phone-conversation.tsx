@@ -122,9 +122,9 @@ export function PhoneConversation({
   const title = agent?.name ?? thread.title;
 
   return (
-    <div className={cn("flex h-full flex-col bg-[#040c14] text-text-1", className)}>
+    <div className={cn("flex h-full flex-col bg-bg-0 text-text-1", className)}>
       {/* iOS-style header */}
-      <div className={cn("flex items-center gap-2 border-b border-white/[0.06] bg-[#0a1a28]/90 px-3 backdrop-blur-xl", compact ? "pt-3 pb-2" : "pt-12 pb-2")}>
+      <div className={cn("flex items-center gap-2 border-b border-white/[0.06] bg-bg-1/90 px-3 backdrop-blur-xl", compact ? "pt-3 pb-2" : "pt-12 pb-2")}>
         {onBack ? (
           <button type="button" onClick={onBack} className="text-cerulean" aria-label="Back to threads">
             <CaretLeft weight="bold" className="size-5" />
@@ -249,7 +249,7 @@ export function PhoneConversation({
       </ChatMessageList>
 
       <form
-        className="flex items-end gap-2 border-t border-white/[0.06] bg-[#0a1a28]/90 px-3 pt-2 pb-5 backdrop-blur-xl"
+        className="flex items-end gap-2 border-t border-white/[0.06] bg-bg-1/90 px-3 pt-2 pb-5 backdrop-blur-xl"
         onSubmit={(e) => {
           e.preventDefault();
           void send(draft);
@@ -265,7 +265,7 @@ export function PhoneConversation({
             }
           }}
           placeholder="iMessage"
-          className="min-h-9 max-h-28 flex-1 resize-none rounded-[18px] border border-white/10 bg-[#040c14] px-3.5 py-2 text-[13.5px] text-text-1 placeholder:text-text-3 focus-visible:ring-1 focus-visible:ring-cerulean"
+          className="min-h-9 max-h-28 flex-1 resize-none rounded-[18px] border border-white/10 bg-bg-0 px-3.5 py-2 text-[13.5px] text-text-1 placeholder:text-text-3 focus-visible:ring-1 focus-visible:ring-cerulean"
         />
         <Button type="submit" size="icon-sm" disabled={!draft.trim() || sending} className="size-8 rounded-full bg-lime text-carbon hover:bg-lime/85" aria-label="Send">
           <ArrowUp weight="bold" className="size-4" />

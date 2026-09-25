@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { ThinkingOrb } from "thinking-orbs";
+import { MatrixOrb } from "@/components/rare-ui/matrix-orb";
 
 import { PageHeader } from "@/components/shell/page-header";
 import { AgentAvatar } from "@/components/shell/agent-avatar";
@@ -113,8 +114,20 @@ export default function AgentDetailPage() {
               {AGENT_STATUS_LABEL[agent.status]}
             </Badge>
           </div>
-          {agent.currentTask && <p className="mt-2 text-cerulean">{agent.currentTask}</p>}
-          <p className="mono-data mt-2 text-[11px] text-text-3">heartbeat {ago(agent.heartbeatAt)}</p>
+          <div className="mt-2 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              {agent.currentTask && <p className="text-cerulean">{agent.currentTask}</p>}
+              <p className="mono-data mt-2 text-[11px] text-text-3">heartbeat {ago(agent.heartbeatAt)}</p>
+            </div>
+            <MatrixOrb
+              state={agent.status === "investigating" ? "thinking" : agent.status === "acting" ? "listening" : "idle"}
+              size={72}
+              dots={9}
+              color={agent.status === "paused" ? "#75787b" : "#d0ff78"}
+              labels={{ idle: agent.status === "paused" ? "Paused" : "Standing by", listening: "Acting", thinking: "Investigating" }}
+              className="shrink-0 gap-1"
+            />
+          </div>
 
           <div className="mt-5 flex items-center justify-between">
             <div>
