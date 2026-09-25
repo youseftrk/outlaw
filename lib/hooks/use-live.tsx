@@ -149,7 +149,6 @@ export function useLive() {
 
 export function useLiveEvent(types: EventType[] | "*", handler: (e: QalaaEvent) => void) {
   const { subscribe } = useLive();
-  const ref = React.useRef(handler);
-  ref.current = handler;
-  React.useEffect(() => subscribe(types, (e) => ref.current(e)), [subscribe, types]);
+  const onEvent = React.useEffectEvent(handler);
+  React.useEffect(() => subscribe(types, (e) => onEvent(e)), [subscribe, types]);
 }

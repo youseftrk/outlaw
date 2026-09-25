@@ -4,7 +4,7 @@
  * events ring (5000), range runs and research queries.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import type {
   Agent,
   Approval,

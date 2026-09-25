@@ -135,6 +135,7 @@ function useTextStream({
         onError?.(error)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- prompt-kit upstream: `onError` is read at call time so an inline callback does not restart the stream
   }, [])
 
   const markComplete = useCallback(() => {
@@ -251,6 +252,7 @@ function useTextStream({
   }, [textStream, isComplete, processStringTypewriter])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prompt-kit upstream: streaming starts when the source changes
     startStreaming()
 
     return () => {
