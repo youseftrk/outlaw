@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { AuthorityPath } from "@/components/authority/authority-path";
 import { DrillGuide } from "@/components/authority/drill-guide";
+import { OnboardCard } from "@/components/authority/onboard-card";
 import { PermissionCard, type Directory } from "@/components/authority/permission-card";
 import { RecordList } from "@/components/authority/record-list";
 import { TryDoor } from "@/components/authority/try-door";
@@ -21,6 +22,7 @@ import { CAPABILITY_LABEL } from "@/lib/types";
 const DEMO = { agentId: "agt-hisn", capability: "contain" as const, serverId: "srv-dataset-worker-02" };
 
 const STAGE_COPY = {
+  onboard: { who: "You are the owner", say: "Start where every organisation starts: put one system under Qalaa. Say who owns it and what data lives on it. That is the whole setup." },
   "no-permission": { who: "You are watching", say: "Hisn, one of the agents, wants to contain a system that belongs to another organisation. Nobody has said yes. Try the door." },
   asked: { who: "You are now the owner", say: "The request is on your desk. It says exactly what the agent may do, where, why and for how long. Say yes, or no." },
   "owner-accepted": { who: "You are now the owner", say: "One more thing for a high-risk action: a one-time code, sent to a person. Enter it to switch the permission on." },
@@ -48,7 +50,7 @@ export default function DrillPage() {
   const { servers, agents } = dir;
 
   const server = servers.find((s) => s.id === DEMO.serverId);
-  const owner = entities.find((e) => e.id === server?.ownerEntityId);
+  const owner = entities.find((e) => e.id === (drill?.system.ownerEntityId ?? server?.ownerEntityId));
   const agent = agents.find((a) => a.id === DEMO.agentId);
   const requester = entities.find((e) => e.id === agent?.entityId) ?? entities.find((e) => e.operatesAgents);
 
@@ -84,9 +86,9 @@ export default function DrillPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="The whole story in six steps"
+        eyebrow="The whole story, start to finish"
         title="Run a drill"
-        description="Refused, asked, allowed, done, taken back, refused again. Everything you see here is decided by the server, not by the screen."
+        description="Onboard a system, then: refused, asked, allowed, done, taken back, refused again. Everything you see here is decided by the server, not by the screen."
         actions={
           <Button variant="ghost" size="sm" className="text-text-2" nativeButton={false} render={<Link href="/drill/replay" />}>
             Replay a real incident instead <ArrowUpRight className="size-3.5" />
@@ -105,6 +107,8 @@ export default function DrillPage() {
                 <p className="font-display text-[22px] leading-snug text-text-1">{copy.say}</p>
               </motion.div>
             </AnimatePresence>
+
+            {step === "onboard" && drill && <OnboardCard system={drill.system} />}
 
             {showDoor && server && owner && agent && (
               <TryDoor

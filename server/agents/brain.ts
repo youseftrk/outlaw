@@ -48,6 +48,7 @@ function iocFromSignal(sig: TelemetrySignal): IOC[] {
   if (typeof a.tokenId === "string") iocs.push({ type: "token", value: a.tokenId, confidence: 0.9, firstSeen: sig.at, tags: [] });
   if (typeof a.tokenIds === "string") for (const v of a.tokenIds.split(",").filter(Boolean)) iocs.push({ type: "token", value: v.trim(), confidence: 0.85, firstSeen: sig.at, tags: [] });
   if (typeof a.dataset === "string") iocs.push({ type: "dataset", value: a.dataset, confidence: 0.85, firstSeen: sig.at, tags: [] });
+  if (typeof a.datasets === "string") for (const v of a.datasets.split(",").filter(Boolean)) iocs.push({ type: "dataset", value: v.trim(), confidence: 0.85, firstSeen: sig.at, tags: [] });
   if (typeof a.cve === "string") iocs.push({ type: "cve", value: a.cve, confidence: 0.95, firstSeen: sig.at, tags: [] });
   if (typeof a.domain === "string") iocs.push({ type: "domain", value: a.domain, confidence: 0.8, firstSeen: sig.at, tags: [] });
   return iocs;
@@ -575,10 +576,13 @@ async function patrols(): Promise<void> {
       const trace = startTrace(bawwab, "patrol: registry plugin inventory", {});
       const o = addSpan(trace, "observe", "registry plugin/config check", { input: { patrol: "registry" } });
       endSpan(o);
-      await runTool(bawwab, "lock_registry", {}, trace, { severity: "medium" });
-      endTrace(trace, "completed");
-      actUntil.set(bawwab.id, store.s.tick + 2);
-      agentSay(bawwab, `Registry was wide open — plugin installs allowed. Locked pkg-cache-01 until someone explains that.`, { kind: "status", severity: "low" });
+      // detached like plan steps: a protected call may wait on an owner's answer and must not stall the tick
+      void (async () => {
+        await runTool(bawwab, "lock_registry", {}, trace, { severity: "medium" });
+        endTrace(trace, "completed");
+        actUntil.set(bawwab.id, store.s.tick + 2);
+        agentSay(bawwab, `Registry was wide open — plugin installs allowed. Locked pkg-cache-01 until someone explains that.`, { kind: "status", severity: "low" });
+      })();
     } else {
       patrolNote(bawwab, `Bawwab checked pkg-cache-01 — registry ${w.registry.locked ? "locked" : "clean"}`, `/fleet?server=${w.registry.serverId}`);
     }
@@ -610,12 +614,14 @@ async function patrols(): Promise<void> {
         continue;
       }
       const trace = startTrace(rahhal, `remediate ${remediable[0].name} on ${srv.hostname}`, {});
-      for (const c of remediable.slice(0, 2)) {
-        await runTool(rahhal, c.remediationTool!, { serverId: srv.id }, trace, { severity: "low" });
-      }
-      refreshServerConformance(srv);
-      endTrace(trace, "completed");
-      actUntil.set(rahhal.id, store.s.tick + 2);
+      void (async () => {
+        for (const c of remediable.slice(0, 2)) {
+          await runTool(rahhal, c.remediationTool!, { serverId: srv.id }, trace, { severity: "low" });
+        }
+        refreshServerConformance(srv);
+        endTrace(trace, "completed");
+        actUntil.set(rahhal.id, store.s.tick + 2);
+      })();
     }
   }
 }

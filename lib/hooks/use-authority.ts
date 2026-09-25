@@ -17,8 +17,10 @@ import type {
   DrillState,
   Entity,
   HouseRules,
+  OnboardInput,
   PermissionSuggestion,
   RefusalCode,
+  Server,
 } from "@/lib/types";
 
 const opts: SWRConfiguration = { revalidateOnFocus: false, dedupingInterval: 1000, keepPreviousData: true, refreshInterval: 4000 };
@@ -118,7 +120,8 @@ export const authorityApi = {
       if (!res.ok) throw new ApiError(res.status, res.statusText);
       return (await res.json()) as HouseRules;
     }),
-  reset: () => post<{ ok: true }>("/authority/reset"),
+  reset: (opts?: { fromOnboarding?: boolean }) => post<{ ok: true }>("/authority/reset", opts ?? {}),
+  onboard: (body: OnboardInput & { by?: string }) => post<{ server: Server; record: DecisionRecord }>("/authority/onboard", body),
 };
 
 /** Invalidate every authority key after a mutation (live events also do this; this makes the UI feel instant). */
