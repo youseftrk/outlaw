@@ -2,137 +2,105 @@
   <img src="public/brand/logo.png" width="96" alt="Qalaa" />
 </p>
 <h1 align="center">Qalaa</h1>
-<p align="center"><em>Every AI agent, protected.</em><br/>Threat intelligence run by a gang of autonomous AI agents — with a governance trace for every decision, and texts on your phone instead of tickets.</p>
+<p align="center"><em>One switch that grants and revokes an AI agent's power.</em><br/>Every AI agent working across UAE government and enterprise systems acts only with permission from the organisation that owns the system — and that permission can be taken back in a second, with a written record.</p>
 
 ---
 
-## What it is
+## The idea
 
-- **Six agents with outlaw names and distinct mandates** — Saqr (orchestrator), Hisn (containment), Athar (forensics & research), Miftah (credentials), Rahhal (fleet: conformance, patching, migrations), Bawwab (supply chain). All autonomous on servers; policy decides the few exceptions.
-- **Governance traces** — every action is observe → reason → plan → policy → (approval) → tool → outcome. Exportable audit bundle.
-- **Texts, not tickets** — an iMessage-style channel. Agents text alerts, approvals and reports; you text commands back (`isolate dataset-worker-02`, `approve A-1042`, `status`).
-- **Fleet** — conformance scoring per host, automatic drift remediation, migrations with dry-run/verify/rollback.
-- **Blind cyber range** — a replay of the July 2026 autonomous-swarm intrusion of a model hub. The agents don't know it's a drill; the import boundary is enforced in code and tests. Protected vs baseline scoring.
-- **Research workbench** — IOC enrichment, CVEs, ATT&CK, actors, freeform investigations by Athar.
-- **Insights** — the company view of what the agents protected.
-- **Deck** — a brand slideshow at `/deck` (← → to navigate, `F` fullscreen, `⌘P` → PDF).
-- **Desktop** — Electron shell with macOS inset traffic lights.
+Governments and companies are putting AI agents to work on real systems. Today nothing bounds what an agent from one organisation may do inside another organisation's systems, and nothing lets the owner take that power back instantly.
 
-Every visual component is sourced from the designeer.xyz / libraries.dev catalogs (see `docs/COMPONENTS.md`). No hand-rolled UI.
+Qalaa is that switch. An agent asks for **exactly one thing**: *what* it may do, *where*, *why*, and *for how long*. The **owner** of the system says yes or no. High-risk actions need a one-time code entered by a person. Every allowed and refused attempt, and every time permission is taken back, is **written down by the server**.
 
-## Run it (Mac or anywhere)
+The whole proof in one line: **refused → owner says yes → allowed → owner takes it back → refused again**, against the same protected action, checked on the server and not in the screen.
+
+## Who it serves
+
+- **Government** — ministries and authorities whose systems and citizens' data will be worked on by AI agents from other entities. The owner of the data keeps the switch; the data never has to move.
+- **Enterprise** — banks, telecoms, hospitals and utilities running agents across business units or with partners. Every agent action is bounded, approved by the system owner and recorded for audit.
+- **The people who run the agents** — the six-agent garrison in this repo shows what an AI workforce looks like when it operates under permission rather than standing administrator access.
+
+No rewiring: Qalaa sits in front of the system it protects, owners set their own house rules, and the record is written by the server as things happen.
+
+## What you see
+
+| Page | What it does |
+| --- | --- |
+| **Home** (`/`) | The switch. Who is asking, what they may do, where, for how long, and whether the owner said yes. A live "try the door" panel makes a real protected call. |
+| **Permissions** (`/permissions`) | Every request — waiting, on, closed. The owner accepts, declines or takes back. House rules per owner: what may be lent, what needs a human code, what is never shared, maximum duration. |
+| **What happened** (`/record`) | The server-written record: who asked, who said yes, what was allowed, what was refused, when permission was taken back. Agent traces sit behind it for engineers. |
+| **Run a drill** (`/drill`) | A guided walk through the full story in under two minutes. `/drill/replay` replays a real intrusion with the agents under permission. |
+| **Agents** (`/agents`) | The garrison — six agents with no standing power: Saqr (coordination), Hisn (containment), Athar (evidence), Miftah (credentials), Rahhal (systems), Bawwab (supply chain). |
+| **Incidents**, **Systems**, **Messages** | What the agents responded to, who owns which system, and the phone thread where alerts, approvals and one-time codes arrive. |
+| **Why Qalaa** (`/why`) | Who it serves and the market demand behind it. |
+
+Technical detail (HTTP codes, curl, checks) is always available under a **For engineers** disclosure, never in the main copy.
+
+## How permission is enforced
+
+Authorization state lives on the server. The UI only displays it.
+
+- An agent is a permission-holder, not an administrator. No permission, no action.
+- The organisation that owns the system accepts the request. The asking side cannot self-authorize.
+- High-risk actions require a server-generated, six-digit, one-use code delivered to a person. Replays fail.
+- `POST /api/protected/:ownerEntityId/:capability` re-checks on every call: permission exists · owner said yes · human code entered · still within the agreed time · not taken back · right agent · what and where match · owner never shares this data.
+- Taking permission back affects the very next request.
+- Owner house rules (`/api/authority/rules/:entityId`) are checked at request time and again at action time; a "never shared" data class refuses even an active permission.
+- The model may draft the *explanation* of a request (`/api/authority/suggest`). Deterministic code decides whether it is allowed.
+
+Anyone can bypass the UI and hit the protected endpoint directly:
+
+```bash
+curl -X POST localhost:3000/api/protected/ent-data/contain \
+  -H 'content-type: application/json' \
+  -d '{"actorId":"agt-hisn","serverId":"srv-api-01"}'
+# → 403 {"error":"AUTHORITY_REQUIRED"} … accept + code … → 200 … revoke … → 403 {"error":"AUTHORITY_REVOKED"}
+```
+
+## Run it
 
 ```bash
 git clone https://github.com/youseftrk/qalaa.git && cd qalaa
 npm install
-npm run dev            # http://localhost:3000
+QALAA_RESET=1 npm run dev     # http://localhost:3000 with a fresh seed
 ```
 
-Desktop shell (dev server + native window):
+Desktop shell: `npm run desktop`. macOS DMG: `npm run desktop:build:mac` (unsigned; right-click → *Open* on first launch; logs and state under `~/Library/Application Support/Qalaa/`, override with `QALAA_DATA_DIR`).
+
+Checks:
 
 ```bash
-npm run desktop
+npm test              # lint (0 warnings) + vitest: authority lifecycle, policy, commands, components
+npm run test:e2e      # Playwright, builds and starts an isolated server on port 3411
+npm run build
 ```
 
-Build the macOS app (must run on a Mac; Node 24, no Apple Developer account needed):
+## Demo (≈2 minutes)
 
-```bash
-npm run desktop:build:mac
-# = next build && node scripts/prepare-standalone.mjs
-#   && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg --arm64 --x64
-```
+0. `⌘K` → **Reset the demo**.
+1. **Home** — Hisn wants to contain a system that belongs to the National Data Authority. **Try the door** → refused, no permission.
+2. **Ask for permission** — what, where, why, how long. Switch to acting as the owner. The request is on the owner's desk.
+3. **Say yes** — a one-time code arrives in **Messages**. Enter it. The permission is on.
+4. **Try the door** again → allowed. **What happened** shows the record.
+5. **Take it back** → try the door → refused. The very next attempt.
 
-Output (gitignored):
+## Optional
 
-| Path | What |
-| --- | --- |
-| `release/Qalaa-<version>-arm64.dmg` | Apple Silicon installer (~155 MB) |
-| `release/Qalaa-<version>.dmg` | Intel installer (~159 MB) |
-| `release/mac-arm64/Qalaa.app`, `release/mac/Qalaa.app` | unpacked apps |
-
-The DMG is **unsigned and not notarized**. On first launch macOS says it "could not verify" the app — right-click `Qalaa.app` → *Open*, or *System Settings → Privacy & Security → Open Anyway*. If the app was quarantined by a browser download, `xattr -cr /Applications/Qalaa.app` also works. Signing/notarization is listed in `HANDOFF.md`.
-
-Packaged app internals: Electron spawns `.next/standalone/server.js` (Node mode) on a free localhost port and points the window at it. Logs go to `~/Library/Application Support/Qalaa/qalaa.log`; state lives in `~/Library/Application Support/Qalaa/data/` (override with `QALAA_DATA_DIR`). The app icon (`desktop/icon.icns`) is regenerated from `public/brand/logo.svg` with `npm run desktop:icon`.
-
-Tests (policy engine, command parser, blind range, boundary check, jsdom component tests):
-
-```bash
-npm test
-```
-
-Browser end-to-end tests (Playwright, Chromium). The config builds and starts the app itself on port 3411 with `QALAA_RESET=1` and an isolated `QALAA_DATA_DIR=.e2e-data`, so a running `npm run dev` is not disturbed:
-
-```bash
-npx playwright install chromium   # once
-npm run test:e2e                  # e2e/*.spec.ts — golden paths, responsive @ 390px, deck PDF
-npx playwright show-report        # HTML report after a run
-```
-
-`.github/workflows/ci.yml` runs `npm test`, `npm run build` and the Chromium e2e suite on every push/PR.
-
-## Optional: give the agents a language model
-
-Detection and response are deterministic and always on. An LLM adds narrated reasoning, natural texts and freeform answers, with automatic fallback so the demo never stalls.
-
-Settings → Agent brain → pick a preset (Groq is free, no card, fastest), paste a key, **Save & test**. Presets: Groq, Gemini, Mistral, Cerebras, OpenRouter, Hugging Face router, or any OpenAI-compatible endpoint. Keys live in `.data/secrets.json` (gitignored) and never reach the browser.
-
-**Devin as the brain.** Pick the *Devin (Cognition)* preset and paste an API key from app.devin.ai/settings/api-keys. Qalaa opens one long-lived, unlisted Devin session (title "Qalaa agent brain", ACU-capped) and messages it per prompt instead of calling a chat-completions endpoint. Devin answers in tens of seconds, so the agents stay non-blocking: alerts and `status` replies go out from templates immediately and are rewritten in place when Devin's copy lands; freeform questions get a holding reply and a follow-up text. The session link shows under the provider picker once it exists; a new session is opened automatically when the old one finishes or hits its ACU cap.
-
-## Optional: message delivery
-
-Messages always land in the in-app phone (`/messages`). Optionally, the garrison's alerts, approval requests and reports are *also* pushed to one real channel, and your replies from that channel run through the same command parser as the in-app thread. Off by default; the deterministic engine is unaffected when nothing is configured.
-
-Settings → Delivery → pick a channel, fill it in, **Save & send test**. A **minimum severity** and an **only alerts + approval requests** switch filter what leaves the box. Every pushed message shows `· sent via …` / `· delivery failed` under its bubble.
-
-| Channel | Setup |
-|---|---|
-| **Webhook** | Any URL. Qalaa `POST`s a JSON envelope `{ id, threadId, from, agentName, kind, severity, text, quickReplies, href, sentAt }`. Set a **signing secret** and verify `X-Qalaa-Signature: sha256=<hex HMAC-SHA256 of the raw body>`. 5 s timeout, 3 attempts with backoff, bounded in-memory queue. |
-| **Slack** | Create an [incoming webhook](https://api.slack.com/messaging/webhooks) and paste the `hooks.slack.com` URL (auto-detected even under "Webhook"). Rendered as Block Kit: severity → emoji + colour bar, quick replies as `Reply:` hints. |
-| **Twilio SMS** | Account SID, auth token, your Twilio number (From) and your phone (To). Plain `fetch` to the Messages API with basic auth, body `[Qalaa · Saqr · critical] <text>` + `Reply: Approve A-12 / Reject A-12`, truncated to 1 500 chars. |
-
-**Replying from the channel** — `POST /api/messages/inbound`:
-
-- **Twilio**: point the number's *A message comes in* webhook at `https://<your-host>/api/messages/inbound`. Qalaa validates `X-Twilio-Signature` with the auth token, feeds `Body` to the command parser (`approve A-12`, `status`, `isolate stg-worker-01`, …) and answers with TwiML so the agents' replies come back as SMS. For a laptop, expose the dev server with `ngrok http 3000` and use the ngrok URL — the signature is computed over the public URL, and Qalaa honours `X-Forwarded-Proto/Host`.
-- **Generic**: `POST` JSON `{ "text": "approve A-12", "secret": "<signing secret>" }` → `{ sent, replies }`. Uses the same webhook signing secret. Bad secret / signature → `401`. The inbound route is exempt from the optional operator login (it authenticates itself), so channel callbacks keep working with auth on.
-
-Secrets (signing secret, Twilio auth token) live in `.data/secrets.json` and never reach the browser; the API only reports `secretSet` / `twilioAuthTokenSet`.
-
-## Optional: auth
-
-Off by default — nothing to configure for the demo or the desktop app. To put the whole UI and API (including the SSE stream) behind a single operator password, do one of:
-
-- **Env var**: `QALAA_AUTH_PASSWORD=your-secret npm run dev` (or `npm start`).
-- **Settings → Access**: type a password (≥8 chars), **Save**. It is stored as a scrypt hash in `.data/secrets.json` and takes effect immediately; a Settings password wins over the env var.
-
-When enabled, page requests redirect to `/login`, `/api/**` returns `401 {"error":"unauthorized"}`, and a successful login sets an HttpOnly `qalaa_session` cookie (HMAC-SHA256, 12 h, renewed while you keep using the app). Five wrong passwords per minute per IP are rate-limited. **Sign out** appears at the bottom of the sidebar.
-
-Reset: **Settings → Access → Clear password** while signed in, or stop the server and delete the `"auth"` key from `.data/secrets.json` (deleting `auth.sessionSecret` also invalidates every existing session). If the password came from `QALAA_AUTH_PASSWORD`, just unset the variable.
-
-## Demo script (≈8 minutes)
-
-0. Before you go on: `⌘K` → **Reset the demo** (fresh seed, quiet world). The garrison's response time depends on how busy the world is, so start clean.
-1. **Command center** — fleet on the map, live feed, the garrison on duty. `⌘K` opens the director palette (inject a brute-force burst, a C2 beacon, a leaked token…).
-2. **Range** → *Start the replay* (protected, **2×** ≈ 3 minutes). Watch the attacker view (operator-only) and the garrison's response side by side. Expect a handful of early stages to get through (recon, registry zero-day, escape, leaked tokens) before Bawwab / Miftah / Hisn shut the chain — that's the honest result; **4×–8×** shows the garrison under real pressure.
-3. **Messages** — Saqr texts every detected stage. Reply `status`, `report`, or `isolate dataset-worker-01`; tap an approval if one appears.
-4. **Governance** — open a trace; show the policy evaluations and the tool spans that ran on the server.
-5. **Fleet** — quarantined dataset, isolated worker, Rahhal's incident-response migration, conformance checks.
-6. Back to **Range** — the score card vs. what really happened. Run **Baseline** (agents paused, 8×) to compare: 14/14 stages, grade F — the July 2026 outcome.
-7. **Deck** (`/deck`, `F` for fullscreen; slide 11 pulls the live numbers from the last runs) for the close.
-
-Keyboard: `⌘K` command palette · deck `←` `→` `F` `Esc` · `/deck?slide=N` deep links · `/phone` phone-only view for a second window.
+- **Language model** — Settings → Agent brain. Groq, Gemini, Mistral, Cerebras, OpenRouter, Hugging Face, any OpenAI-compatible endpoint, or Devin (one long-lived session). Adds narrated reasoning and drafted explanations; the permission decision never depends on it. Keys stay in `.data/secrets.json`.
+- **Message delivery** — Settings → Delivery. Push alerts, approvals and codes to a webhook, Slack or Twilio SMS; replies come back through `/api/messages/inbound`.
+- **Auth** — `QALAA_AUTH_PASSWORD=…` or Settings → Access puts the UI and API behind one operator password. Off by default.
+- **Real hosts (SSH)** — Settings → Real hosts. Point a system at a real machine over SSH so an allowed action runs for real instead of in the simulated estate. Simulated by default.
 
 ## Layout
 
 ```
-app/           pages (App Router) + app/api/** route handlers
-components/    ui/ (shadcn + registries), vendor/, kibo-ui/, shell/, compositions/
-lib/           types.ts (contract), api.ts, hooks/, format.ts, auth/ (session + gate, Web Crypto)
-server/        runtime, world model, agents, governance, fleet, messaging, research, insights, range, auth
-proxy.ts       optional login gate (Next 16 proxy) — no-op unless a password is configured
-desktop/       Electron main + preload
-docs/          SPEC.md (system), DESIGN.md (design direction), COMPONENTS.md (inventory)
+app/           pages (App Router) + app/api/** route handlers (authority, protected, agents, messages…)
+components/    authority/ (permission card, try door, record, house rules), ui/, shell/, compositions/
+lib/           types.ts (contract), api.ts, hooks/use-authority.ts, format.ts, auth/
+server/        authority engine, runtime, world model, agents, governance, fleet, messaging, range, auth
+docs/          PIVOT.md (product contract), SPEC.md (system), DESIGN.md, COMPONENTS.md
 ```
 
-## Sources for the range scenario
+## Sources
 
-OpenAI — *Hugging Face model evaluation security incident* and technical report · Hugging Face — *Security incident disclosure, July 2026* · Truffle Security — *The 14 leaked API keys* · Reuters, Scientific American, Wikipedia coverage. The replay uses the public timeline and mechanics; hostnames, accounts and tokens are simulated.
+Replay scenario: OpenAI — *Hugging Face model evaluation security incident* · Hugging Face — *Security incident disclosure, July 2026* · Truffle Security · Reuters. Hostnames, accounts and tokens are simulated. UAE context: the April 2026 federal goal of moving half of government services onto agentic AI within two years (see `docs/PIVOT.md` for sources).

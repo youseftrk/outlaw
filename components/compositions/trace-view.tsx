@@ -154,7 +154,7 @@ export function TraceView({ trace, agentName, compact = false }: { trace: Trace;
                 {humanize(trace.verdict)}
               </Badge>
               {trace.threatId && (
-                <Badge variant="outline" className="mono-data border-line text-text-2" render={<Link href={`/threats/${trace.threatId}`} />}>
+                <Badge variant="outline" className="mono-data border-line text-text-2" render={<Link href={`/incidents/${trace.threatId}`} />}>
                   {trace.threatId}
                 </Badge>
               )}

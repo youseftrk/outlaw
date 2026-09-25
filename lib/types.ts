@@ -102,6 +102,10 @@ export interface Server {
   checks: ConformanceCheck[];
   /** agent ids */
   protectedBy: ID[];
+  /** the entity that owns this system and must accept any agent permission on it (docs/PIVOT.md) */
+  ownerEntityId?: ID;
+  /** what kind of data lives here; owners can mark classes as never shared */
+  dataClasses?: DataClass[];
   lastSeen: ISODate;
   createdAt: ISODate;
   /** rolling cpu/net signal for sparklines, newest last, 0–100 */
@@ -338,6 +342,8 @@ export interface Agent {
   description: string;
   status: AgentStatus;
   autonomy: Autonomy;
+  /** the entity that operates this agent — the one that asks for permissions (docs/PIVOT.md) */
+  entityId?: ID;
   /** 1–5 */
   trustLevel: number;
   tools: ToolName[];
@@ -727,6 +733,9 @@ export type EventType =
   | "range.step"
   | "range.run"
   | "insights.updated"
+  | "authority.requested"
+  | "authority.updated"
+  | "authority.decision"
   | "system";
 
 export interface QalaaEvent<T = unknown> {
@@ -888,6 +897,9 @@ export interface Bootstrap {
   migrations: Migration[];
   settings: Settings;
   range: { scenarios: RangeScenario[]; activeRun: RangeRun | null };
+  /** set once server/authority is wired (docs/PIVOT.md) */
+  entities?: Entity[];
+  leases?: AuthorityLease[];
   serverTime: ISODate;
 }
 
@@ -898,3 +910,260 @@ export type DirectorScenario =
   | "prompt-injection"
   | "leaked-token"
   | "reset-demo";
+
+/* ─────────────────────────── Authority (docs/PIVOT.md) ───────────────────────────
+ * Qalaa — one switch that grants and revokes an AI agent's power.
+ * An agent holds no standing power. It may act on an entity's systems only under
+ * an ACTIVE permission (lease) that the owning entity accepted. The check lives
+ * server-side in server/authority/engine.ts and runs on every protected call.
+ */
+
+export type EntityKind = "government" | "enterprise" | "operator";
+
+/** An organisation that owns systems/data, or that operates agents. */
+export interface Entity {
+  id: ID;
+  name: string;
+  shortName: string;
+  kind: EntityKind;
+  /** e.g. "Abu Dhabi, UAE" */
+  jurisdiction: string;
+  /** what this entity is responsible for, one line, plain language */
+  mandate: string;
+  /** agents employed by this entity (agent.entityId === id) */
+  operatesAgents: boolean;
+  createdAt: ISODate;
+}
+
+/** Capability groups an agent may be granted on another entity's systems. */
+export type Capability = "observe" | "contain" | "credentials" | "data" | "repair";
+
+export const CAPABILITY_LABEL: Record<Capability, string> = {
+  observe: "Look",
+  contain: "Contain",
+  credentials: "Reset access",
+  data: "Quarantine data",
+  repair: "Repair",
+};
+
+/** Tool → capability group. Tools without a target (notify_human, request_approval) are not gated. */
+export const TOOL_CAPABILITY: Partial<Record<ToolName, Capability>> = {
+  query_telemetry: "observe",
+  scan_public_secrets: "observe",
+  audit_tokens: "observe",
+  inspect_worker: "observe",
+  snapshot_evidence: "observe",
+  enrich_ioc: "observe",
+  map_attack: "observe",
+  run_conformance: "observe",
+  scan_dataset: "observe",
+  isolate_host: "contain",
+  block_egress: "contain",
+  cordon_cluster: "contain",
+  lock_registry: "contain",
+  kill_process: "contain",
+  harden_sandbox: "contain",
+  revoke_token: "credentials",
+  rotate_credentials: "credentials",
+  disable_account: "credentials",
+  quarantine_dataset: "data",
+  patch_service: "repair",
+  remediate_drift: "repair",
+  rebuild_node: "repair",
+  migrate_workload: "repair",
+};
+
+/** Capabilities whose activation needs a human one-time code. */
+export const STEP_UP_CAPABILITIES: Capability[] = ["contain", "credentials", "repair"];
+
+/** Where a permission applies. Empty scope = the owner's whole estate. */
+export interface AuthorityScope {
+  serverIds?: ID[];
+  clusters?: string[];
+  envs?: Environment[];
+}
+
+export type AuthorityStatus =
+  | "pending" // asked, owner has not answered
+  | "pending-step-up" // owner said yes, human code outstanding
+  | "active"
+  | "expired"
+  | "revoked"
+  | "declined";
+
+/** One permission: who may do what, where, for how long, granted by whom. Request and lease are the same object through its life. */
+export interface AuthorityLease {
+  id: ID;
+  /** who asks — the entity that operates the agent */
+  requestingEntityId: ID;
+  /** who owns the systems and must say yes */
+  ownerEntityId: ID;
+  /** the agent that will act (optional: an entity may ask on behalf of all its agents) */
+  agentId?: ID;
+  capability: Capability;
+  scope: AuthorityScope;
+  /** plain-language reason, e.g. "Incident T-1042: contain the beaconing worker" */
+  justification: string;
+  incidentId?: ID;
+  /** sim-seconds the permission is valid once active */
+  durationSec: number;
+  status: AuthorityStatus;
+  requestedAt: ISODate;
+  acceptedAt?: ISODate;
+  acceptedBy?: string;
+  activatedAt?: ISODate;
+  expiresAt?: ISODate;
+  revokedAt?: ISODate;
+  revokedBy?: string;
+  revokeReason?: string;
+  declinedAt?: ISODate;
+  stepUpRequired: boolean;
+  stepUpCompletedAt?: ISODate;
+  /** number of protected calls allowed under this lease */
+  uses: number;
+}
+
+/** Server-generated one-time code bound to one lease. Never returned by GET; delivered via the operator's thread. */
+export interface StepUpChallenge {
+  id: ID;
+  leaseId: ID;
+  /** sha-256 hex of the code — the plain code lives only in the delivered message */
+  codeHash: string;
+  issuedAt: ISODate;
+  expiresAt: ISODate;
+  consumedAt?: ISODate;
+  attempts: number;
+}
+
+export type DecisionKind =
+  | "asked" // request created
+  | "accepted" // owner said yes
+  | "step-up-sent"
+  | "step-up-passed"
+  | "step-up-failed"
+  | "activated"
+  | "allowed" // protected call went through
+  | "refused" // protected call refused
+  | "revoked"
+  | "expired"
+  | "declined"
+  | "rules-changed"
+  | "reset";
+
+export type RefusalCode =
+  | "AUTHORITY_REQUIRED"
+  | "AUTHORITY_PENDING"
+  | "AUTHORITY_REVOKED"
+  | "AUTHORITY_EXPIRED"
+  | "SCOPE_MISMATCH"
+  | "CAPABILITY_MISMATCH"
+  | "REQUESTER_MISMATCH"
+  | "STEP_UP_REQUIRED"
+  | "NEVER_SHARED"
+  | "RULES_EXCEEDED";
+
+/** Kinds of data a system can hold. Owners can mark some as never shared, whatever the permission says. */
+export type DataClass = "personal-data" | "health-data" | "financial-data" | "security-telemetry" | "infrastructure";
+
+export const DATA_CLASS_LABEL: Record<DataClass, string> = {
+  "personal-data": "People's personal data",
+  "health-data": "Health records",
+  "financial-data": "Financial records",
+  "security-telemetry": "Security signals",
+  infrastructure: "Infrastructure",
+};
+
+/** An owner's house rules: the ceiling any permission on its systems must fit under. */
+export interface HouseRules {
+  entityId: ID;
+  /** capabilities the owner is willing to lend at all */
+  allowed: Capability[];
+  /** capabilities that also need a one-time human code before they start */
+  stepUp: Capability[];
+  /** data that is never shared, even under an active permission */
+  neverShared: DataClass[];
+  maxDurationSec: number;
+}
+
+/** One plain-language check the engine ran, in order. Returned with every allow/refuse. */
+export interface AuthorityCheck {
+  label: string;
+  passed: boolean;
+}
+
+/** Deterministic suggestion for the smallest permission that fits the owner's rules. */
+export interface PermissionSuggestion {
+  requestingEntityId: ID;
+  ownerEntityId: ID;
+  agentId?: ID;
+  capability: Capability;
+  scope: AuthorityScope;
+  durationSec: number;
+  justification: string;
+  incidentId?: ID;
+  terms: { label: string; allowed: boolean; why: string }[];
+  source: "rules" | "model";
+}
+
+export type DrillStep = "no-permission" | "asked" | "owner-accepted" | "code-needed" | "allowed" | "acted" | "revoked" | "expired";
+
+/** Server-derived guidance for the demo: where the story is and what happens next. */
+export interface DrillState {
+  step: DrillStep;
+  title: string;
+  next: string;
+  leaseId?: ID;
+}
+
+/** Append-only, server-written record of every decision. Shown to people as "the record". */
+export interface DecisionRecord {
+  id: ID;
+  at: ISODate;
+  kind: DecisionKind;
+  /** who did it: agent id, entity id, or "operator" */
+  actor: string;
+  actorName: string;
+  leaseId?: ID;
+  incidentId?: ID;
+  requestingEntityId?: ID;
+  ownerEntityId?: ID;
+  capability?: Capability;
+  /** the concrete thing touched, e.g. "srv-dataset-worker-02" or "isolate_host on dataset-worker-02" */
+  target?: string;
+  refusalCode?: RefusalCode;
+  /** one plain-language sentence */
+  summary: string;
+  /** the checks the engine ran for allow/refuse records */
+  checks?: AuthorityCheck[];
+  /** free-form evidence from the engine (never used for authorization) */
+  detail?: Record<string, unknown>;
+}
+
+export interface AuthorizeInput {
+  /** agent id (preferred) or requesting entity id */
+  actorId: ID;
+  capability: Capability;
+  /** target server / cluster resolves to the owning entity */
+  serverId?: ID;
+  cluster?: string;
+  ownerEntityId?: ID;
+}
+
+export type AuthorizeResult =
+  | { allow: true; lease: AuthorityLease; ownerEntityId: ID; checks: AuthorityCheck[] }
+  | { allow: false; code: RefusalCode; ownerEntityId?: ID; lease?: AuthorityLease; message: string; checks: AuthorityCheck[] };
+
+/** Server-driven view of one permission's journey, for the Authority Path graph. */
+export interface AuthorityPathNode {
+  id: string;
+  kind: "entity" | "agent" | "state" | "record";
+  label: string;
+  sublabel?: string;
+  status: "done" | "current" | "todo" | "refused";
+  at?: ISODate;
+}
+export interface AuthorityPath {
+  leaseId: ID;
+  nodes: AuthorityPathNode[];
+  edges: { from: string; to: string; label?: string }[];
+}

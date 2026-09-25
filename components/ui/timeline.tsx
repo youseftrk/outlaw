@@ -57,11 +57,11 @@ export const Timeline = ({ data, className }: { data: TimelineEntry[]; className
         ))}
         <div
           style={{ height: height + "px" }}
-          className="absolute left-[15px] top-0 w-[2px] overflow-hidden bg-[linear-gradient(to_bottom,var(--tw-gradient-stops))] from-transparent from-[0%] via-line-strong to-transparent to-[99%] [mask-image:linear-gradient(to_bottom,transparent_0%,black_6%,black_94%,transparent_100%)]"
+          className="absolute left-[15px] top-0 w-[2px] overflow-hidden bg-line"
         >
           <motion.div
             style={{ height: heightTransform, opacity: opacityTransform }}
-            className="absolute inset-x-0 top-0 w-[2px] rounded-full bg-gradient-to-t from-lime via-cerulean to-transparent from-[0%] via-[10%]"
+            className="absolute inset-x-0 top-0 w-[2px] rounded-full bg-lime"
           />
         </div>
       </div>

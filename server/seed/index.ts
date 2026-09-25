@@ -5,6 +5,7 @@ import { seedFleet } from "./fleet";
 import { seedAgents } from "./agents";
 import { seedPolicies } from "./policies";
 import { seedHistory } from "./history";
+import { seedEntities, seedRules, assignOwnership, assignAgentEntities, seedObserveLeases } from "./entities";
 import { DEFAULT_SSH_SETTINGS } from "../fleet/adapters/ssh-config";
 import { defaultDeliverySettings } from "../messaging/delivery";
 
@@ -14,6 +15,7 @@ export function buildSeed(nowMs: number): QalaaState {
 
   // egress open everywhere at seed
   const servers = seedFleet(nowIso, world);
+  assignOwnership(servers);
   for (const s of servers) world.network.egressAllowed[s.id] = true;
 
   const byRole = {
@@ -22,6 +24,7 @@ export function buildSeed(nowMs: number): QalaaState {
     prodAll: servers.filter((s) => s.env === "prod").map((s) => s.id),
   };
   const agents = seedAgents(nowIso, byRole);
+  assignAgentEntities(agents);
   // every agent protects something sensible for the UI
   for (const a of agents) {
     for (const sid of a.assignedServerIds) {
@@ -59,5 +62,10 @@ export function buildSeed(nowMs: number): QalaaState {
       delivery: defaultDeliverySettings(),
     },
     world,
+    entities: seedEntities(nowIso),
+    rules: seedRules(),
+    leases: seedObserveLeases(nowIso),
+    stepUps: [],
+    records: [],
   };
 }

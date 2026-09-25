@@ -74,14 +74,7 @@ export function LoadingState({
   return (
     <div role="status" className={cn("flex w-fit items-center gap-2.5 text-text-1", className)}>
       <LoaderGrid variant={variant} />
-      <span
-        className="bg-clip-text text-[13px] font-medium text-transparent"
-        style={{
-          backgroundImage: "linear-gradient(90deg, var(--color-text-3) 35%, var(--color-text-1) 50%, var(--color-text-3) 65%)",
-          backgroundSize: "200% 100%",
-          animation: "shimmer-text 1.4s linear infinite",
-        }}
-      >
+      <span className="text-[13px] font-medium text-text-2" style={{ animation: "shimmer-text 1.4s linear infinite" }}>
         {label}
       </span>
       {elapsed && <span className="mono-data text-[12px] text-text-3 tabular-nums">{time}</span>}

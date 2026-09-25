@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { GrainBackdrop } from "@/components/shell/grain-backdrop";
 import { api } from "@/lib/api";
 import { safeNext } from "@/lib/auth/gate";
 
@@ -72,6 +73,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <main className="flex min-h-svh items-center justify-center px-4">
+      <GrainBackdrop />
       <React.Suspense fallback={null}>
         <LoginForm />
       </React.Suspense>

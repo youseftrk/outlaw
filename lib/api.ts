@@ -5,16 +5,25 @@
 import type {
   Agent,
   Approval,
+  AuthorityLease,
+  AuthorityPath,
+  AuthorityScope,
   AuthSettings,
   Bootstrap,
+  Capability,
   CVE,
   AttackTechnique,
   ThreatActor,
+  DecisionRecord,
   DirectorScenario,
+  DrillState,
+  Entity,
+  HouseRules,
   InsightsSummary,
   InsightsWindow,
   Message,
   Migration,
+  PermissionSuggestion,
   Policy,
   QalaaEvent,
   RangeMode,
@@ -247,6 +256,48 @@ export const api = {
   /** Generic inbound (same path Twilio hits): text goes through the operator command parser. */
   inbound: (text: string, secret: string, threadId?: string) =>
     post<{ sent: Message; replies: Message[] }>("/messages/inbound", { text, secret, threadId }),
+
+  authority: {
+    entities: () => get<Entity[]>("/authority/entities"),
+    leases: (params?: { status?: string; ownerEntityId?: string; requestingEntityId?: string }) =>
+      get<AuthorityLease[]>(`/authority/leases${qs(params ?? {})}`),
+    lease: (id: string) => get<AuthorityLease>(`/authority/leases/${id}`),
+    request: (body: {
+      requestingEntityId: string;
+      ownerEntityId: string;
+      agentId?: string;
+      capability: Capability;
+      scope: AuthorityScope;
+      justification: string;
+      incidentId?: string;
+      durationSec: number;
+    }) => post<AuthorityLease>("/authority/leases", body),
+    accept: (id: string, by = "operator", reason?: string) =>
+      post<AuthorityLease & { stepUpCode?: string }>(`/authority/leases/${id}/accept`, { by, reason }),
+    decline: (id: string, by = "operator", reason?: string) =>
+      post<AuthorityLease>(`/authority/leases/${id}/decline`, { by, reason }),
+    revoke: (id: string, by = "operator", reason?: string) =>
+      post<AuthorityLease>(`/authority/leases/${id}/revoke`, { by, reason }),
+    stepUp: (id: string, code: string) => post<AuthorityLease>(`/authority/leases/${id}/step-up`, { code }),
+    records: (params?: { leaseId?: string; kind?: string; limit?: number }) =>
+      get<DecisionRecord[]>(`/authority/records${qs(params ?? {})}`),
+    path: (leaseId: string) => get<AuthorityPath>(`/authority/path${qs({ leaseId })}`),
+    rules: () => get<HouseRules[]>("/authority/rules"),
+    rule: (entityId: string) => get<HouseRules>(`/authority/rules/${entityId}`),
+    updateRules: (entityId: string, body: Partial<Omit<HouseRules, "entityId">> & { by?: string }) =>
+      patch<HouseRules>(`/authority/rules/${entityId}`, body),
+    suggest: (body: { incidentId?: string; agentId?: string; capability?: Capability; serverId?: string }) =>
+      post<PermissionSuggestion>("/authority/suggest", body),
+    step: () => get<DrillState>("/authority/step"),
+    reset: () => post<{ ok: true }>("/authority/reset"),
+  },
+
+  /** protected call the authority engine gates (PIVOT §5). Throws ApiError(403) on refusal. */
+  protected: (ownerEntityId: string, capability: Capability, body: { actorId: string; serverId?: string; cluster?: string }) =>
+    post<{ ok: true; lease: AuthorityLease; checks: import("@/lib/types").AuthorityCheck[] }>(
+      `/protected/${ownerEntityId}/${capability}`,
+      body
+    ),
 };
 
 const KB_KEY = { cve: "cves", technique: "techniques", actor: "actors" } as const;

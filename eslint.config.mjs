@@ -35,6 +35,9 @@ const eslintConfig = defineConfig([
     // electron-builder output
     "release/**",
     "dist/**",
+    // playwright artifacts
+    "playwright-report/**",
+    "test-results/**",
   ]),
 ]);
 

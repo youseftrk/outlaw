@@ -26,7 +26,6 @@ Rule of the house: **no bespoke UI components.** Every visual element is a compo
 | `--color-sev-high` | `#FF9A5C` | |
 | `--color-sev-critical` | `#FF5D6C` | |
 | `--gradient-aura` | `radial-gradient(circle at 50% 50%, #71c5e8 0%, #a9e3f2 49%, #D0FFC8 100%)` | logo aura, active-agent halo |
-| `--gradient-thermal` | layered radial teals over `#0c0e11` (see globals) | deck + hero backgrounds |
 | `--radius-card` | `16px` (shell `18px`, inner `14px` — concentric) | cards |
 | `--radius-bubble` | `18px` | message bubbles |
 | `--shadow-ambient` | `0 24px 64px -32px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255,255,255,0.06)` | cards |
@@ -35,13 +34,13 @@ Rule of the house: **no bespoke UI components.** Every visual element is a compo
 
 shadcn variables map: `--background: bg-0`, `--card: bg-1`, `--popover: bg-3`, `--primary: lime`, `--primary-foreground: carbon`, `--secondary: bg-2`, `--muted: bg-2`, `--muted-foreground: text-2`, `--accent: bg-2`, `--destructive: sev-critical`, `--border: line`, `--input: line-strong`, `--ring: aqua`, `--chart-1: cerulean`, `--chart-2: lime`, `--chart-3: aqua`, `--chart-4: ocean`, `--chart-5: sev-high`, `--sidebar: #0a0c0e`, `--sidebar-border: line`, `--sidebar-primary: lime`, `--sidebar-accent: bg-2`. Dark is the only theme (`<html class="dark">`).
 
-Grain: fixed, pointer-events-none SVG `feTurbulence` overlay at `opacity: 0.035`, applied only on `/deck` and hero panels.
+Grain: Paper Shaders `GrainGradient` (`components/shell/grain-backdrop.tsx`) — lime/grey on `#0c0e11`, used as the `/why` hero and on `/login` + `/phone`; falls back to `colorBack` without WebGL, `speed: 0` under prefers-reduced-motion.
 
 ## 2. Type
 
-- Display: **Instrument Serif** 400 + italic (`next/font/google`, `--font-display`). Page titles 30–36 px, tracking −0.01em; deck headlines 88–160 px; agent names on cards. Never for body or tables.
-- UI: **Geist** 400/500/600 (`--font-sans`). Base 13.5 px in the app (dense), 15 px in deck body. Eyebrows: 11 px, uppercase, tracking 0.14em, `text-3`.
-- Data: **Geist Mono** (`--font-mono`), `font-variant-numeric: tabular-nums`, for ids, IPs, hashes, times, and every KPI number.
+- Display + UI: **Schibsted Grotesk** variable 400–900 + italic (`next/font/google`, `--font-schibsted`, OFL-1.1). Page titles 30–36 px, tracking −0.02em via `.font-display`; same family for body at 13.5 px (dense).
+- UI: Schibsted Grotesk (`--font-sans`). Base 13.5 px (dense). Eyebrows: 11 px, uppercase, tracking 0.14em, `text-3`.
+- Data: **IBM Plex Mono** 400/500/600 (`--font-plex`, OFL-1.1), `font-variant-numeric: tabular-nums`, for ids, IPs, hashes, times, and every KPI number.
 
 ## 3. Shell
 
@@ -102,9 +101,8 @@ Header card: eyebrow "Blind cyber range", display title "Autonomous swarm vs. AI
 ### `/settings`
 LLM: provider `Select` (presets), base URL, model, API key (`Input type=password`, only "set" state shown), enable `Switch`, Test `Button` → result line; operator name/phone/org; sim speed `Slider`, quiet hours `Switch`; Desktop section shows platform + version.
 
-### `/deck` — 14 slides, full-bleed, keyboard ← → , `F` fullscreen, `Esc` exit, dots progress, print = one slide per page
+### `/why` — GrainGradient hero, headline stats (NumberTicker), market-demand chart (shadcn/Recharts), UAE demand signals, who-it-serves
 1 Title (aura logo, wordmark, tagline sign image) · 2 "The night of July 11" (incident, sources) · 3 The problem (machine-speed attackers, 6-day detection) · 4 Qalaa thesis · 5 Meet the garrison (6 avatars) · 6 How it works (`AnimatedBeam` diagram telemetry→Saqr→tools→governance→texts) · 7 Autonomous on servers · 8 Governance traces · 9 Texts, not tickets (phone mockup) · 10 The blind range · 11 Results (live numbers from last run) · 12 Security research · 13 Roadmap (real adapters, SIEM, iMessage/SMS, multi-tenant) · 14 Close.
-Backgrounds alternate: thermal gradient + grain (React Bits `Aurora`/Magic UI `FlickeringGrid` at low opacity), lime sign panels (`liquid-gooey` merging blocks) with carbon serif text. Headlines Instrument Serif; body Geist 22 px; footer mono "qalaa · 2026".
 
 ## 5. Copy voice
 Sentence case. Plain verbs. Buttons say what happens ("Approve rebuild", not "Submit"). Agents write in first person, short, like a competent colleague: "Locked pkg-cache-01's registry — someone minted an admin token without a session. Athar is pulling evidence." Errors say what happened and what to do. Empty states invite action ("No approvals waiting. The garrison is running autonomously.").

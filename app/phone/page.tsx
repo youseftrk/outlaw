@@ -6,9 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { X } from "@phosphor-icons/react";
 
 import { AgentAvatar } from "@/components/shell/agent-avatar";
+import { GrainBackdrop } from "@/components/shell/grain-backdrop";
 import { PhoneConversation } from "@/components/compositions/phone-conversation";
 import { PhoneMockup } from "@/components/ui/phone-mockup";
-import { FlickeringGrid } from "@/components/ui/flickering-grid";
 import { LiveProvider } from "@/lib/hooks/use-live";
 import { useBootstrap, useThreads } from "@/lib/hooks/use-data";
 import { ago } from "@/lib/format";
@@ -24,9 +24,8 @@ function PhoneInner() {
   const agent = thread && thread.id !== "thr-qalaa" ? boot?.agents.find((a) => a.id === thread.agentId) : undefined;
 
   return (
-    <main className="thermal relative grid min-h-svh grid-cols-[minmax(0,1fr)] place-items-center overflow-hidden p-6">
-      <FlickeringGrid className="absolute inset-0 -z-0 opacity-30 [mask-image:radial-gradient(60%_60%_at_50%_50%,black,transparent)]" squareSize={3} gridGap={8} color="#99d6ea" maxOpacity={0.25} flickerChance={0.08} />
-      <span className="grain fixed inset-0" />
+    <main className="relative grid min-h-svh grid-cols-[minmax(0,1fr)] place-items-center overflow-hidden p-6">
+      <GrainBackdrop />
       <Link href="/messages" className="absolute right-5 top-5 z-10 grid size-9 place-items-center rounded-full bg-bg-1/70 text-text-2 backdrop-blur hover:text-text-1" aria-label="Back to Qalaa">
         <X weight="bold" className="size-4" />
       </Link>

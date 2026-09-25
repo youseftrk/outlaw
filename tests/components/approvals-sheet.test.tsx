@@ -85,7 +85,7 @@ describe("ApprovalItem", () => {
     expect(screen.getByText("82/100")).toBeTruthy();
     expect(screen.getByTestId("approval-expiry").textContent).toBe("6m 0s");
     expect(screen.getByText(/Prod rebuilds need a human — destructive tool on prod/)).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Open trace" }).getAttribute("href")).toBe("/governance?tab=traces&trace=trc-77");
+    expect(screen.getByRole("button", { name: "Open trace" }).getAttribute("href")).toBe("/record?tab=traces&trace=trc-77");
   });
 
   it("falls back gracefully while the trace is still loading", () => {

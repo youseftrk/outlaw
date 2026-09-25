@@ -18,7 +18,7 @@ import type { InsightsWindow } from "@/lib/types";
 
 const timelineConfig: ChartConfig = {
   detected: { label: "Detected", color: "var(--color-sev-high)" },
-  neutralized: { label: "Neutralized", color: "var(--color-cerulean)" },
+  neutralized: { label: "Neutralized", color: "var(--color-text-2)" },
   prevented: { label: "Prevented", color: "var(--color-lime)" },
 };
 const catConfig: ChartConfig = { count: { label: "Threats", color: "var(--color-cerulean)" } };
@@ -55,9 +55,9 @@ export default function InsightsPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="What your agents have been protecting"
-        title="Insights"
-        description="The company view: what the garrison caught, what it prevented before it mattered, and how well the fleet conforms."
+        eyebrow="What the agents have been doing"
+        title="Live wire"
+        description="The wider view: what the garrison caught, what it prevented, and how healthy the systems are."
         actions={
           <ToggleGroup
             value={[window]}
@@ -90,28 +90,20 @@ export default function InsightsPage() {
           <Panel eyebrow={window} title="Detected · neutralized · prevented">
             <ChartContainer config={timelineConfig} className="h-[240px] w-full aspect-auto">
               <AreaChart data={timeline} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-                <defs>
-                  {(["detected", "neutralized", "prevented"] as const).map((k) => (
-                    <linearGradient key={k} id={`ins-${k}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={`var(--color-${k})`} stopOpacity={0.45} />
-                      <stop offset="100%" stopColor={`var(--color-${k})`} stopOpacity={0} />
-                    </linearGradient>
-                  ))}
-                </defs>
                 <CartesianGrid vertical={false} stroke="rgba(217, 217, 214,0.06)" />
                 <XAxis dataKey="t" tickLine={false} axisLine={false} tick={{ fill: "#75787b", fontSize: 11 }} />
                 <YAxis tickLine={false} axisLine={false} tick={{ fill: "#75787b", fontSize: 11 }} allowDecimals={false} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Area type="monotone" dataKey="detected" stroke="var(--color-detected)" strokeWidth={1.5} fill="url(#ins-detected)" />
-                <Area type="monotone" dataKey="neutralized" stroke="var(--color-neutralized)" strokeWidth={1.5} fill="url(#ins-neutralized)" />
-                <Area type="monotone" dataKey="prevented" stroke="var(--color-prevented)" strokeWidth={2} fill="url(#ins-prevented)" />
+                <Area type="monotone" dataKey="detected" stroke="var(--color-detected)" strokeWidth={1.5} fill="var(--color-detected)" fillOpacity={0.14} />
+                <Area type="monotone" dataKey="neutralized" stroke="var(--color-neutralized)" strokeWidth={1.5} fill="var(--color-neutralized)" fillOpacity={0.14} />
+                <Area type="monotone" dataKey="prevented" stroke="var(--color-prevented)" strokeWidth={2} fill="var(--color-prevented)" fillOpacity={0.18} />
               </AreaChart>
             </ChartContainer>
           </Panel>
         </BlurFade>
 
         <BlurFade delay={0.15} className="col-span-12 md:col-span-6 xl:col-span-4">
-          <Panel eyebrow="Fleet" title="Conformance average" className="h-full">
+          <Panel eyebrow="Systems" title="Health average" className="h-full">
             <ChartContainer config={radialConfig} className="mx-auto h-[200px] w-full aspect-auto">
               <RadialBarChart data={radial} startAngle={210} endAngle={-30} innerRadius={70} outerRadius={95}>
                 <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
@@ -173,7 +165,7 @@ export default function InsightsPage() {
             <ul className="flex flex-col gap-1">
               {(data?.topProtected ?? []).map((t, i) => (
                 <li key={t.serverId}>
-                  <Link href={`/fleet?server=${t.serverId}`} className="flex items-center gap-3 rounded-[10px] px-2 py-1.5 hover:bg-bg-2">
+                  <Link href={`/systems?server=${t.serverId}`} className="flex items-center gap-3 rounded-[10px] px-2 py-1.5 hover:bg-bg-2">
                     <span className="mono-data w-5 text-[11px] text-text-3">{i + 1}</span>
                     <span className="mono-data min-w-0 flex-1 truncate text-text-1">{hostname(t.serverId)}</span>
                     <span className="text-[11px] text-text-3">{role(t.serverId)}</span>

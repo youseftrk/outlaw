@@ -27,15 +27,16 @@ import { useBootstrap } from "@/lib/hooks/use-data";
 import { cn } from "@/lib/utils";
 
 const TITLES: Record<string, string> = {
-  "": "Command center",
+  "": "Home",
+  permissions: "Permissions",
+  record: "What happened",
   agents: "Agents",
-  threats: "Threats",
-  fleet: "Fleet",
-  governance: "Governance",
+  incidents: "Incidents",
+  systems: "Systems",
   messages: "Messages",
-  research: "Research",
-  insights: "Insights",
-  range: "Range",
+  drill: "Run a drill",
+  why: "Why Qalaa",
+  insights: "Live wire",
   settings: "Settings",
 };
 

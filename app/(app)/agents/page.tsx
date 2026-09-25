@@ -25,7 +25,7 @@ export default function AgentsPage() {
       <PageHeader
         eyebrow="The garrison"
         title="Agents"
-        description="Six autonomous agents with distinct mandates. Every action they take on a server is evaluated by policy and traced."
+        description="Six agents, each with one job. None of them holds standing power: every action on someone else's system needs a permission, and every step is written down."
       />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {!agents &&
@@ -101,13 +101,7 @@ export default function AgentsPage() {
                     {a.activity.length > 1 && (
                       <ChartContainer config={activityConfig} className="h-9 w-28 aspect-auto">
                         <AreaChart data={a.activity.map((v, idx) => ({ idx, v }))} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
-                          <defs>
-                            <linearGradient id={`act-${a.id}`} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={look.color} stopOpacity={0.5} />
-                              <stop offset="100%" stopColor={look.color} stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <Area type="monotone" dataKey="v" stroke={look.color} strokeWidth={1.5} fill={`url(#act-${a.id})`} dot={false} isAnimationActive={false} />
+                          <Area type="monotone" dataKey="v" stroke={look.color} strokeWidth={1.5} fill={look.color} fillOpacity={0.12} dot={false} isAnimationActive={false} />
                         </AreaChart>
                       </ChartContainer>
                     )}
