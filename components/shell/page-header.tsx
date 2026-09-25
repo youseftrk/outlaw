@@ -25,7 +25,7 @@ export function PageHeader({
         {typeof title === "string" ? (
           <TextEffect
             as="h1"
-            per="word"
+            per="line"
             preset="fade-in-blur"
             speedReveal={1.6}
             className="font-display text-[34px] leading-none text-text-1"

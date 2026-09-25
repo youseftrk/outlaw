@@ -19,7 +19,7 @@ export const AGENT_LOOK: Record<string, { type: Shape; color: string; seed: numb
 };
 
 export function agentLook(agentId: string) {
-  return AGENT_LOOK[agentId] ?? { type: "clover" as Shape, color: "#bbbcbc", seed: 0.5 };
+  return AGENT_LOOK[agentId] ?? { type: "clover" as Shape, color: "#9DB9C3", seed: 0.5 };
 }
 
 export function avatarState(status?: AgentStatus): "default" | "working" | "sleeping" {
