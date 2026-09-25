@@ -1,0 +1,169 @@
+<!-- d2 · demo — recorded app footage framed in a browser-chrome bezel.
+     The master inlines this fragment and mounts the mp4 into #d2-demo-video.
+     Exposes window.d2DemoTl (paused:false) for the master to merge. -->
+<style>
+  #d2-demo .d2-bezel {
+    position: absolute;
+    left: 280px;
+    top: 58px;
+    width: 1360px;
+    border: 1px solid #2e2e2a;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #141414;
+  }
+  #d2-demo .d2-chrome {
+    position: relative;
+    height: 62px;
+    border-bottom: 1px solid #2e2e2a;
+    background: #141414;
+  }
+  #d2-demo .d2-dots {
+    position: absolute;
+    left: 28px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 12px;
+  }
+  #d2-demo .d2-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #3a3a35;
+  }
+  #d2-demo .d2-addr {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 8px 28px;
+    border: 1px solid #2e2e2a;
+    border-radius: 8px;
+    background: #101010;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 21px;
+    letter-spacing: 0.14em;
+    color: #a9a9a2;
+    white-space: nowrap;
+  }
+  #d2-demo .d2-video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    background: #0a0a0a;
+  }
+  #d2-demo .d2-status {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 906px;
+    height: 46px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 30px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-align: center;
+    color: #ececea;
+  }
+  #d2-demo .d2-status span {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+  }
+  #d2-demo .d2-ledger {
+    position: absolute;
+    left: 96px;
+    bottom: 48px;
+    width: 300px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 22px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  #d2-demo .d2-lrow {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 14px 0;
+    border-bottom: 1px solid #232320;
+    color: #a9a9a2;
+  }
+  #d2-demo .d2-lmark {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex: none;
+  }
+</style>
+
+<div id="d2-demo" class="clip" data-start="0" data-duration="63" data-track-index="1">
+  <div class="d2-bezel">
+    <div class="d2-chrome">
+      <div class="d2-dots"><span></span><span></span><span></span></div>
+      <div class="d2-addr">qalaa &middot; permissions</div>
+    </div>
+    <video id="d2-demo-video" class="d2-video" muted playsinline></video>
+  </div>
+
+  <div class="d2-status">
+    <span id="d2-st-0" style="color:#ff6b5c">refused</span>
+    <span id="d2-st-1" style="color:#ececea">asked</span>
+    <span id="d2-st-2" style="color:#97ff52">owner said yes</span>
+    <span id="d2-st-3" style="color:#ececea">code entered</span>
+    <span id="d2-st-4" style="color:#97ff52">allowed</span>
+    <span id="d2-st-5" style="color:#a9a9a2">taken back</span>
+    <span id="d2-st-6" style="color:#ff6b5c">refused</span>
+  </div>
+
+  <div class="d2-ledger">
+    <div class="d2-lrow"><span class="d2-lmark" style="background:#a9a9a2"></span>asked</div>
+    <div class="d2-lrow"><span class="d2-lmark" style="background:#97ff52"></span>allowed</div>
+    <div class="d2-lrow"><span class="d2-lmark" style="background:#ff6b5c"></span>refused</div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    function buildD2Demo() {
+      var d2DemoTl = gsap.timeline({ paused: false });
+      window.d2DemoTl = d2DemoTl;
+
+      var states = ["#d2-st-0", "#d2-st-1", "#d2-st-2", "#d2-st-3", "#d2-st-4", "#d2-st-5", "#d2-st-6"];
+      var labelTimes = [0, 9, 18, 27, 36, 45, 54];
+      labelTimes.forEach(function (t, i) { d2DemoTl.addLabel("d2-st-" + i, t); });
+
+      // restrained entrance — the footage is the hero
+      d2DemoTl.fromTo("#d2-demo .d2-bezel",
+        { y: 24, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, 0.2);
+      d2DemoTl.fromTo("#d2-demo .d2-status",
+        { opacity: 0 },
+        { opacity: 1, duration: 0.5, ease: "power2.out" }, 0.9);
+      d2DemoTl.fromTo("#d2-st-0",
+        { opacity: 0 },
+        { opacity: 1, duration: 0.5, ease: "power2.out" }, 0.9);
+
+      // status cycle: crossfade stacked spans at each label
+      states.forEach(function (sel, i) {
+        if (i === 0) return;
+        var t = labelTimes[i];
+        d2DemoTl.fromTo(states[i - 1],
+          { opacity: 1 },
+          { opacity: 0, duration: 0.45, ease: "power2.out" }, t);
+        d2DemoTl.fromTo(sel,
+          { opacity: 0, y: 8 },
+          { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, t);
+      });
+
+      // ledger stub draws in late
+      d2DemoTl.fromTo("#d2-demo .d2-lrow",
+        { y: 14, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.6, ease: "power3.out", stagger: 0.5 }, 50.4);
+    }
+
+    if (window.gsap) buildD2Demo();
+    else document.addEventListener("DOMContentLoaded", buildD2Demo);
+  })();
+</script>
