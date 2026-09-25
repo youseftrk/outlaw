@@ -13,6 +13,7 @@ import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAgents } from "@/lib/hooks/use-data";
 import { AGENT_STATUS_LABEL, humanize, seconds } from "@/lib/format";
+import { agentPowers } from "@/lib/agent-powers";
 import { cn } from "@/lib/utils";
 
 const activityConfig: ChartConfig = { v: { label: "activity", color: "var(--color-cerulean)" } };
@@ -25,7 +26,7 @@ export default function AgentsPage() {
       <PageHeader
         eyebrow="The garrison"
         title="Agents"
-        description="Six agents, each with one job. None of them holds standing power: every action on someone else's system needs a permission, and every step is written down."
+        description="Six agents, each with one job. None of them holds standing power: every action on someone else's system needs a permission from that system's owner, and every step is written down. Take the permission back and the agent stops on its next move."
       />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {!agents &&
@@ -75,12 +76,22 @@ export default function AgentsPage() {
                     {a.currentTask && <p className="mt-2 truncate text-[12px] text-cerulean">Now: {a.currentTask}</p>}
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-1.5">
-                    {a.tools.map((t) => (
-                      <span key={t} className="mono-data rounded-full border border-line px-2 py-0.5 text-[10px] text-text-3">
-                        {t}
-                      </span>
-                    ))}
+                  <div className="mt-4">
+                    <p className="text-[11px] text-text-3">What it may ask permission to do</p>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {agentPowers(a.tools).map((p) => (
+                        <span
+                          key={p.capability}
+                          className={cn(
+                            "rounded-full border px-2 py-0.5 text-[11px]",
+                            p.stepUp ? "border-lime/40 text-lime" : "border-line text-text-2",
+                          )}
+                        >
+                          {p.label}
+                          {p.stepUp && " · needs a human code"}
+                        </span>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="mt-4 flex items-end justify-between gap-3 border-t border-line pt-3">

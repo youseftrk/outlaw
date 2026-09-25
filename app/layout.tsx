@@ -20,7 +20,7 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: { default: "Qalaa", template: "%s · Qalaa" },
   description:
-    "Threat intelligence run by AI agents. Every AI agent, protected — with a governance trace for every decision.",
+    "One switch that grants — and instantly takes back — an AI agent's power. Every ask, yes, action and stop written down.",
   applicationName: "Qalaa",
   icons: { icon: "/icon.svg" },
 };
