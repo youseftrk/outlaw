@@ -73,10 +73,12 @@ export async function ownerSaysYes(request: APIRequestContext, lease: ApiLease) 
  * inject a director scenario whose plan starts with that tool. Under Qalaa the
  * tool first asks the system's owner for permission — we answer as the owner —
  * and only then does the internal approval appear. The brain dedupes a
- * category+server pair for 5 simulated minutes, so fall through the scenarios
- * until one yields a fresh approval.
+ * category+server pair for 5 simulated minutes and earlier specs (the range
+ * replay in particular) leave those categories open, so start from a reset
+ * runtime, then fall through the scenarios until one yields a fresh approval.
  */
 export async function createApproval(request: APIRequestContext, scenarios = ["c2-beacon", "exfil", "brute-force"]) {
+  await director(request, "reset-demo");
   const before = new Set((await pendingApprovals(request)).map((a) => a.id));
   await patchAgent(request, "agt-hisn", { autonomy: "act-with-approval" });
   const fresh = async () => (await pendingApprovals(request)).find((a) => !before.has(a.id) && a.agentId === "agt-hisn");
