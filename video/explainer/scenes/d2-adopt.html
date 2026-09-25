@@ -1,0 +1,57 @@
+<!-- d2-adopt — adoption + who fragment.
+     Contract: plain <div> block; the master inlines it into the composition.
+     Timeline is LOCAL — entrances run from t=0 over ~24s; the master merges
+     `d2AdoptTl` (paused:false) into its root timeline at the scene offset.
+     Requires: the shared stylesheet (.kicker/.mid/.row/.cap, .lime/.red/.dim/.mono)
+     and assets/gsap.min.js already loaded by the master. No Date.now/Math.random/network. -->
+<div id="d2-adopt" class="clip" data-start="80" data-duration="26" data-track-index="1">
+
+  <!-- left column — adoption pitch -->
+  <div style="position:absolute; left:150px; top:170px; width:820px">
+    <p id="d2-k" class="kicker">adoption</p>
+    <h1 class="mid" data-adopt style="font-size:60px; margin-top:64px">sits in front of the systems you already have.</h1>
+    <h1 class="mid" data-adopt style="font-size:60px; margin-top:64px">a simple api any agent framework can call.</h1>
+    <h1 class="mid" data-adopt style="font-size:60px; margin-top:64px"><span class="lime">self-hosted</span> <span class="dim">— data and the decision stay with you.</span></h1>
+  </div>
+
+  <!-- right column — the owner's house-rules card -->
+  <div id="d2-card" style="position:absolute; left:1010px; top:150px; width:760px; background:#141414; border:1px solid #2e2e2a; border-radius:16px; padding:50px 56px 26px">
+    <p id="d2-card-k" class="kicker">house rules · national data authority</p>
+    <div style="margin-top:30px">
+      <div class="row" data-rule style="flex-direction:column; align-items:flex-start; gap:8px">
+        <span class="d">what may be lent</span>
+        <span class="t" style="font-size:46px">contain, observe</span>
+      </div>
+      <div class="row" data-rule style="flex-direction:column; align-items:flex-start; gap:8px">
+        <span class="d">what needs a human code</span>
+        <span class="t" style="font-size:46px">credentials, data</span>
+      </div>
+      <div class="row" data-rule style="flex-direction:column; align-items:flex-start; gap:8px">
+        <span class="d">what is <span class="red">never</span> shared</span>
+        <span class="t" style="font-size:46px">raw customer data</span>
+      </div>
+      <div class="row" data-rule style="flex-direction:column; align-items:flex-start; gap:8px; border-bottom:none">
+        <span class="d">max time</span>
+        <span class="t lime" style="font-size:46px">60 min</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // paused:false — the master merges this into its root timeline at the scene offset.
+  var d2AdoptTl = gsap.timeline({ paused: false });
+  var d2In = function (sel, at) {
+    d2AdoptTl.fromTo(sel, { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, at);
+  };
+
+  // beat 1 — the house-rules card cascades on in reading order
+  d2In("#d2-card-k", 0.4);
+  d2AdoptTl.fromTo("#d2-card", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, 0.9);
+  d2AdoptTl.fromTo("[data-rule]", { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out", stagger: 2.2 }, 1.8);
+
+  // beat 2 — the adopt pitch, second stagger
+  d2In("#d2-k", 11.4);
+  d2AdoptTl.fromTo("[data-adopt]", { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out", stagger: 5.0 }, 12.0);
+</script>
