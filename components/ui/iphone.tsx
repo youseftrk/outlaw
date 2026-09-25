@@ -98,6 +98,7 @@ export function Iphone({
             borderRadius: `${RADIUS_H}% / ${RADIUS_V}%`,
           }}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element -- device mockup: `src` is caller-supplied and may be any URL, so next/image remotePatterns cannot be configured here */}
           <img
             src={src}
             alt=""

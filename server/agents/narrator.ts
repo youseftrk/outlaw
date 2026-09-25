@@ -3,7 +3,7 @@
  * message copy — LLM when enabled + key set, templates otherwise.
  * Voice: DESIGN.md §5 — first person, short, concrete, names hosts/ids.
  */
-import type { Agent, Severity, Threat } from "@/lib/types";
+import type { Agent, Threat } from "@/lib/types";
 import { llmChat, llmConfigured } from "./llm";
 import { store } from "../store";
 

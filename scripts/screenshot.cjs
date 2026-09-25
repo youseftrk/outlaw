@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * QA helper: render routes in a hidden Electron window and save PNG screenshots.
  *

@@ -85,6 +85,7 @@ export const AnimatedSpan = ({
     if (!sequence.sequenceStarted) return
     if (hasStarted) return
     if (sequence.activeIndex === itemIndex) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- magicui upstream: starts this line when the sequence reaches it
       setHasStarted(true)
     }
   }, [sequence, hasStarted, itemIndex])
@@ -164,6 +165,7 @@ export const TypingAnimation = ({
 
     if (hasSequence && itemIndex !== null) {
       if (sequenceStarted && !started && sequenceActiveIndex === itemIndex) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- magicui upstream: starts typing when the sequence reaches this line
         setStarted(true)
       }
     } else if (!startOnView || isInView) {

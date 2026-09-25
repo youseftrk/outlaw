@@ -76,6 +76,7 @@ export function Safari({
             borderRadius: "0 0 11px 11px",
           }}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element -- device mockup: `imageSrc` is caller-supplied and may be any URL, so next/image remotePatterns cannot be configured here */}
           <img
             src={imageSrc}
             alt=""

@@ -42,11 +42,9 @@ const KINDS: NoiseKind[] = [
 ];
 
 let rng = makeRng("qalaa-2026:noise");
-let noiseTick = 0;
 
 export function noiseReset(): void {
   rng = makeRng("qalaa-2026:noise");
-  noiseTick = 0;
 }
 
 function pickKind(): NoiseKind {
@@ -59,7 +57,6 @@ function pickKind(): NoiseKind {
 
 /** Called every tick — emits ~2–4 signals/min at 1× (≈4% chance per tick). */
 export function tickNoise(): void {
-  noiseTick++;
   // halve noise while a range run is active so the replay stands out
   if (!rng.chance(store.s.activeRunId ? 0.02 : 0.04)) return;
   const servers = store.s.servers.filter((s) => s.status === "healthy" || s.status === "degraded");
