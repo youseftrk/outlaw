@@ -236,6 +236,15 @@ Director (`POST /api/director`): `brute-force`, `c2-beacon`, `exfil`, `prompt-in
 | PATCH `/settings/auth` | `{password: string|null}` → `{auth}`; sets (≥8 chars, scrypt-hashed) or clears the operator password; 401 without a session while auth is on; 409 when persistence is disabled |
 | POST `/auth/login` · POST `/auth/logout` · GET `/auth/me` | `{password}` → `{ok}` + `Set-Cookie qalaa_session` (401 wrong, 429 rate-limited, 400 auth off) · clears cookie · `{enabled, authenticated}` |
 | GET `/health` | `{ok, uptimeSec, tick, clients}` |
+| GET `/authority/entities` | `Entity[]` |
+| GET `/authority/leases?status=&ownerEntityId=&requestingEntityId=` · GET `/authority/leases/[id]` | `AuthorityLease[]` · lease |
+| POST `/authority/leases` | `{requestingEntityId, ownerEntityId, agentId?, capability, scope, justification, incidentId?, durationSec}` → lease (201 created / 200 deduped). `stepUpCode` is present only in the dev-mode response (`QALAA_DEMO_SHOW_CODE=1`); otherwise the code goes to the owner's Messages thread. |
+| POST `/authority/leases/[id]/accept` · `decline` · `revoke` · `step-up` | `{by, reason?}` → lease · `{code}` → lease (403 wrong code, 409 replay, 410 dead challenge) |
+| GET `/authority/records?leaseId=&kind=&limit=` | `DecisionRecord[]` |
+| GET `/authority/path?leaseId=` | `AuthorityPath` |
+| GET `/authority/rules` · GET/PATCH `/authority/rules/[entityId]` | `HouseRules[]` · `HouseRules` · `{by?, allowed?, stepUp?, neverShared?, maxDurationSec?}` → rules (records `rules-changed`) |
+| POST `/authority/suggest` · GET `/authority/step` · POST `/authority/reset` | `{incidentId}` or `{agentId, capability, serverId}` → `PermissionSuggestion` · `DrillState` · `{ok:true}` |
+| POST `/protected/[ownerEntityId]/[capability]` | `{actorId, serverId?, cluster?}` → `200 {ok, lease, checks}` · `403 {error/code, message, checks}` — every call checked against an active lease |
 
 Errors: `{ error: string }` with 400/404/409. Validate bodies with zod. When auth is enabled (§7.1) every route except `/health`, `/auth/*` and `/messages/inbound` (self-authenticating, §8.2) answers `401 {"error":"unauthorized"}` without a valid `qalaa_session` cookie — enforced in `proxy.ts`, not per route.
 
@@ -246,6 +255,42 @@ Errors: `{ error: string }` with 400/404/409. Validate bodies with zod. When aut
 - ssh adapter (`tests/ssh-adapter.test.ts`, `ssh2` mocked): command line for every op, sudo wrapping, timeout → `ok:false`, strict / accept-new host-key handling, connection reuse + idle close, bastion `forwardOut`, `adapterFor` selection.
 - delivery (`fetch` stubbed, no network): envelope + HMAC, Slack blocks, Twilio body/auth/truncation, retry → `failed`, queue cap, filter, bus hook ignores operator messages, Twilio signature valid/invalid, inbound `approve <id>` resolves the approval.
 - auth: session sign/verify/tamper/expiry, `decide()` for every public path and `/api/events`, scrypt hashing, login route (wrong/right/rate-limit), `PATCH /settings/auth` guard.
+- authority (`tests/authority.test.ts`): every refusal code in §13 (REQUIRED/PENDING/mismatch/expired/revoked/step-up ×3+replay), never-shared veto over an active lease, rules exceedance at request, checks on allow+refuse, suggest ≤ rules, drill state, reset → AUTHORITY_REQUIRED, single pending request per key from `runTool`, same-entity short-circuit, and the direct-route 403 → 200 → 403.
 
 ## 12. Desktop (`desktop/`)
 Electron (CommonJS). `main.cjs`: `BrowserWindow` 1440×900 min 1100×700, `titleBarStyle: "hiddenInset"`, `trafficLightPosition: {x: 18, y: 18}`, `backgroundColor: "#04101a"`, `vibrancy: "under-window"` (mac only), `webPreferences: { preload, contextIsolation: true }`. Dev: load `http://localhost:3000` (`QALAA_URL` override). Packaged: spawn `node .next/standalone/server.js` on a free port with `HOSTNAME=127.0.0.1`, wait for `/api/health`, load it; kill on quit. `preload.cjs` exposes `window.qalaa = { isDesktop: true, platform }`. Scripts: `desktop` = concurrently `next dev` + `wait-on http://localhost:3000` → `electron .`; `desktop:build:mac` = `next build` → `scripts/prepare-standalone.mjs` (copy `.next/static` → `.next/standalone/.next/static`, `public` → `.next/standalone/public`) → `electron-builder --mac dmg --arm64 --x64` (unsigned; `mac.identity: null`). `next.config.ts`: `output: "standalone"`. Verify on Windows: `electron .` opens against the dev server.
+
+## 13. Authority (`server/authority/engine.ts` + `app/api/authority/*`)
+
+The pivot: agents hold **no standing rights** over other entities' systems. Every protected call is checked server-side against an active lease (`AuthorityLease`); owners grant and revoke through `/api/authority/*` (or the Messages thread). See `docs/PIVOT.md` for the full contract.
+
+**Entities** (`server/seed/entities.ts`): `ent-response` (National Emergency Response Authority — owns the agents, `Agent.entityId`), `ent-data` (owns `prod` servers), `ent-research` (owns everything else). `Server.ownerEntityId` is assigned deterministically by env; `Server.dataClasses` tags what a server carries (`personal-data`, `health-data`, …). One seeded long-lived `observe` lease per owner keeps visibility working; everything else must be leased.
+
+**Decision** — `authorize(AuthorizeInput)` runs on every protected call, in this order: owner resolved → same-entity short-circuit (an entity's own agents on its own systems → allow, synthetic `self-<entity>` lease) → candidates = leases for (requesting entity, owner) → per lease: pending → `AUTHORITY_PENDING`, pending-step-up → `STEP_UP_REQUIRED`, declined → `AUTHORITY_REQUIRED`, expired → `AUTHORITY_EXPIRED`, revoked inside its original window → `AUTHORITY_REVOKED`, wrong agent → `REQUESTER_MISMATCH`, different capability on a grant that specifically covers this agent/target → `CAPABILITY_MISMATCH` (a blanket grant for another capability doesn't cover this call at all → `AUTHORITY_REQUIRED`), target outside scope → `SCOPE_MISMATCH`, past `expiresAt` → `AUTHORITY_EXPIRED`, step-up pending → `STEP_UP_REQUIRED`, never-shared data + read cap (`observe`/`data`) → `NEVER_SHARED`. Best-ranked refusal wins; nothing found → `AUTHORITY_REQUIRED`. Every refusal and allowance carries `checks[]` — nine plain-language rows ("Permission exists", "Owner said yes", "Human code entered", "Still within the agreed time", "Not taken back", "Right agent", "What the agent may do matches", "Where it may act matches", "Owner never shares this data").
+
+**House rules** (`HouseRules` per owner): `allowed` caps, `stepUp` caps needing the human code, `neverShared` data classes, `maxDurationSec`. `POST /api/authority/leases` rejects with `400 RULES_EXCEEDED` when capability ∉ allowed, duration > max, or the scope touches never-shared data under a read cap. Rules are editable via `PATCH /api/authority/rules/:entityId` (records `rules-changed`).
+
+**Lifecycle** — `request()` (deduped per requestingEntity+owner+capability+scope+agent over pending|pending-step-up|active) → `accept()` (`{by}` → `pending-step-up` or `active`) → `completeStepUp({code})` → `revoke()`/`decline()`. Step-up codes: 6 digits from crypto, sha-256 at rest, 5 sim-min TTL, 3 attempts, replay → 409, dead → 410; delivered as a Saqr message in the `thr-qalaa` operator thread (+ configured delivery channel) — never in a GET. `tickAuthority()` flips expired leases/challenges on the sim clock and releases waiters. `record()` appends immutable `DecisionRecord`s (`asked`, `accepted`, `step-up-sent`, `step-up-passed`, `step-up-failed`, `activated`, `allowed`, `refused`, `revoked`, `declined`, `expired`, `rules-changed`, `reset`). `pathFor(leaseId)` returns the `AuthorityPath` node graph.
+
+**Tool gate** — `runTool` authorizes *before* policy: on `AUTHORITY_REQUIRED` it creates/reuses one pending request and waits ≤10 sim-min for activation (skipped while inside the awaited part of a tick — a wait there would deadlock the sim; agent plan steps spawned by a tick still wait and resume when the owner grants). An explicit `operator:` command is itself the human grant — the lease is accepted and activated immediately. `REVOKED`/`PENDING`/`RULES_EXCEEDED` refuse at once. Every outcome is recorded and lands on the span + `agent.action` event (`leaseId`, `refusalCode`). `fastForward({autoApprove:true})` accepts pending leases and passes step-up so range/e2e flows keep working.
+
+**Demo loop** — `GET /api/authority/step` narrates the demo lease (Hisn → ent-data `contain` on `srv-dataset-worker-02`) in plain language; `POST /api/authority/suggest` returns the smallest permission the rules allow (deterministic; an LLM may only draft wording); `POST /api/authority/reset` clears leases/records/challenges to seed (keeps entities/rules), emits `authority.updated`.
+
+Curl the switch end to end:
+
+```bash
+curl -s -XPOST localhost:3000/api/protected/ent-data/contain -H 'content-type: application/json' \
+  -d '{"actorId":"agt-hisn","serverId":"srv-dataset-worker-02"}'        # → 403 AUTHORITY_REQUIRED
+curl -s -XPOST localhost:3000/api/authority/leases -H 'content-type: application/json' \
+  -d '{"requestingEntityId":"ent-response","ownerEntityId":"ent-data","agentId":"agt-hisn",
+       "capability":"contain","scope":{"serverIds":["srv-dataset-worker-02"]},
+       "justification":"Contain the compromised worker.","durationSec":900}'   # → 201 pending
+curl -s -XPOST localhost:3000/api/authority/leases/L-N/accept -d '{"by":"owner-panel"}'  # → pending-step-up
+curl -s "localhost:3000/api/messages/threads/thr-qalaa" | jq '.messages[-1].text'        # one-time code
+curl -s -XPOST localhost:3000/api/authority/leases/L-N/step-up -d '{"code":"123456"}'    # → active
+curl -s -XPOST localhost:3000/api/protected/ent-data/contain -H 'content-type: application/json' \
+  -d '{"actorId":"agt-hisn","serverId":"srv-dataset-worker-02"}'        # → 200 {ok, lease, checks}
+curl -s -XPOST localhost:3000/api/authority/leases/L-N/revoke -d '{"by":"owner-panel"}'  # → revoked
+curl -s -XPOST localhost:3000/api/protected/ent-data/contain -H 'content-type: application/json' \
+  -d '{"actorId":"agt-hisn","serverId":"srv-dataset-worker-02"}'        # → 403 AUTHORITY_REVOKED
+```

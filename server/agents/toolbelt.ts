@@ -12,7 +12,7 @@ import * as world from "../world/world";
 import { evaluate } from "../governance/policy";
 import { addSpan, endSpan, policySpan, projectRisk } from "../governance/traces";
 import { createApproval, waitForDecision } from "../governance/approvals";
-import { authorize, request as requestLease, waitForLease, record as recordDecision, describeScope, LEASE_WAIT_MAX_SIM_SEC, entityName } from "../authority/engine";
+import { authorize, request as requestLease, waitForLease, record as recordDecision, describeScope, LEASE_WAIT_MAX_SIM_SEC, entityName, authorityTickActive, accept as acceptLease, completeStepUp, stepUpCodeFor } from "../authority/engine";
 import { toolSpec } from "./tools";
 import { adapterFor } from "../fleet/adapters";
 import { refreshServerConformance } from "../fleet/conformance";
@@ -304,8 +304,10 @@ async function authorityFor(
 
   const input: AuthorizeInput = { actorId: agent.id, capability: capability as Capability, ...target.input };
   let auth = authorize(input);
+  // an explicit operator command is itself the human grant — no UI round-trip needed
+  const operatorInitiated = trace.intent.startsWith("operator:");
 
-  if (!auth.allow && auth.code === "AUTHORITY_REQUIRED") {
+  if (!auth.allow && (auth.code === "AUTHORITY_REQUIRED" || (operatorInitiated && auth.code === "AUTHORITY_PENDING"))) {
     // create/reuse one pending request, then wait up to 10 sim-min for activation
     const req = requestLease({
       requestingEntityId: agent.entityId ?? "ent-response",
@@ -318,7 +320,15 @@ async function authorityFor(
       durationSec: 3600,
     }, agent.id);
     if (req.ok) {
-      if (req.created) {
+      if (operatorInitiated) {
+        const a = acceptLease(req.lease.id, "operator");
+        if (a.ok && a.stepUpCode) completeStepUp(req.lease.id, a.stepUpCode, "operator");
+        else if (!a.ok) {
+          const code = stepUpCodeFor(req.lease.id);
+          if (code) completeStepUp(req.lease.id, code, "operator");
+        }
+        auth = authorize(input);
+      } else if (req.created && !authorityTickActive) {
         const outcome = await waitForLease(req.lease.id, LEASE_WAIT_MAX_SIM_SEC);
         if (outcome === "active") auth = authorize(input);
         else auth = { allow: false, code: "AUTHORITY_PENDING", ownerEntityId: auth.ownerEntityId, lease: req.lease, message: `The ${entityName(req.lease.ownerEntityId)} didn't answer in time.`, checks: auth.checks };

@@ -40,6 +40,13 @@ export const STEP_UP_TTL_SIM_SEC = 5 * 60;
 export const STEP_UP_MAX_ATTEMPTS = 3;
 export const LEASE_WAIT_MAX_SIM_SEC = 10 * 60;
 
+/** true while the awaited part of a sim tick is running — waiting on a lease there
+ * would deadlock the sim (only a later tick/route call can activate it). */
+export let authorityTickActive = false;
+export function setAuthorityTickActive(v: boolean): void {
+  authorityTickActive = v;
+}
+
 /* ─────────────────────────── lookups ─────────────────────────── */
 
 export function entity(id?: ID): Entity | undefined {
@@ -87,6 +94,8 @@ export function scopeKey(scope: AuthorityScope): string {
 }
 export const isEmptyScope = (scope: AuthorityScope) =>
   !scope.serverIds?.length && !scope.clusters?.length && !scope.envs?.length;
+
+const hasScopeTerms = (scope: AuthorityScope) => !isEmptyScope(scope);
 
 /** does `scope` cover this authorize target? empty scope = whole estate */
 export function scopeCovers(scope: AuthorityScope, input: AuthorizeInput): boolean {
@@ -214,7 +223,14 @@ function refusalFor(l: AuthorityLease, input: AuthorizeInput, agent: Agent | und
       ? { code: "AUTHORITY_REVOKED", message: `The ${owner} took permission ${l.id} back.` }
       : { code: "AUTHORITY_REQUIRED", message: `Permission ${l.id} was revoked after its window.` };
   }
-  if (l.capability !== input.capability) return { code: "CAPABILITY_MISMATCH", message: `${l.id} covers ${CAPABILITY_LABEL[l.capability]}, not ${CAPABILITY_LABEL[input.capability]}.` };
+  if (l.capability !== input.capability) {
+    // a grant scoped to this agent or this target for a different capability is a mismatch;
+    // a blanket grant (no agent, whole estate) simply doesn't cover this call at all.
+    const specific = l.agentId === agent?.id || (hasScopeTerms(l.scope) && scopeCovers(l.scope, input));
+    return specific
+      ? { code: "CAPABILITY_MISMATCH", message: `${l.id} covers ${CAPABILITY_LABEL[l.capability]}, not ${CAPABILITY_LABEL[input.capability]}.` }
+      : { code: "AUTHORITY_REQUIRED", message: `The ${owner} hasn't granted ${CAPABILITY_LABEL[input.capability]} here — ${l.id} is ${CAPABILITY_LABEL[l.capability]} only.` };
+  }
   if (l.agentId && l.agentId !== agent?.id) return { code: "REQUESTER_MISMATCH", message: `${l.id} belongs to ${store.agent(l.agentId)?.name ?? l.agentId}, not ${agent?.name ?? input.actorId}.` };
   if (!scopeCovers(l.scope, input)) return { code: "SCOPE_MISMATCH", message: `${l.id} doesn't cover this system.` };
   if (l.expiresAt && new Date(l.expiresAt).getTime() <= nowMs) return { code: "AUTHORITY_EXPIRED", message: `Permission ${l.id} ran out of time.` };
