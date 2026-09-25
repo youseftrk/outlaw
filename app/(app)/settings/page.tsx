@@ -78,8 +78,10 @@ export default function SettingsPage() {
   const [password, setPassword] = React.useState("");
   const [savingAuth, setSavingAuth] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!data) return;
+  // sync the form once per fetched settings snapshot (render-phase adjust, not an effect)
+  const [hydratedFrom, setHydratedFrom] = React.useState<typeof data>(undefined);
+  if (data && data !== hydratedFrom) {
+    setHydratedFrom(data);
     setProvider(data.llm.provider);
     setBaseUrl(data.llm.baseUrl);
     setModel(data.llm.model);
@@ -96,7 +98,7 @@ export default function SettingsPage() {
     setBastionHost(data.ssh.bastion?.host ?? "");
     setBastionPort(String(data.ssh.bastion?.port ?? 22));
     setBastionUser(data.ssh.bastion?.user ?? "");
-  }, [data]);
+  }
 
   const pickProvider = (p: LLMProvider) => {
     setProvider(p);

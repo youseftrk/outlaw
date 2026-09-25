@@ -36,6 +36,8 @@ export interface ToolArgs {
 export interface ToolResult {
   ok: boolean;
   summary: string;
+  /** exact command/plan the adapter ran on the host, when a fleet adapter was involved */
+  command?: string;
   evidence?: Record<string, unknown>;
 }
 
@@ -133,8 +135,7 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
     }
     case "rotate_credentials": {
       if (args.serverId) {
-        const r = await adapterFor(args.serverId).rotateSecret(args.serverId, "*", by);
-        return { ok: r.ok, summary: r.summary };
+        return adapterFor(args.serverId).rotateSecret(args.serverId, "*", by);
       }
       const r = world.rotateSecret(args.secretKind ?? "cloud", by);
       return { ok: r.ok, summary: r.summary };
@@ -165,8 +166,7 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
       return { ok: true, summary: findings.length ? findings.join("; ") : "worker clean", evidence: { findings } };
     }
     case "isolate_host": {
-      const r = await adapterFor(args.serverId).isolate(args.serverId!, by);
-      return { ok: r.ok, summary: r.summary };
+      return adapterFor(args.serverId).isolate(args.serverId!, by);
     }
     case "block_egress": {
       if (args.ip) {
@@ -186,7 +186,7 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
         const srv = store.server(args.serverId);
         if (srv) refreshServerConformance(srv);
       }
-      return { ok: r.ok, summary: r.summary };
+      return r;
     }
     case "harden_sandbox":
       return world.hardenSandbox(by);
@@ -226,8 +226,7 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
     case "remediate_drift":
       return world.remediateConfig(args.serverId!, by);
     case "migrate_workload": {
-      const r = await adapterFor(args.serverId).migrate(args.serverId!, undefined, [args.workload ?? "workloads"]);
-      return { ok: r.ok, summary: r.summary };
+      return adapterFor(args.serverId).migrate(args.serverId!, undefined, [args.workload ?? "workloads"]);
     }
     case "notify_human":
       return { ok: true, summary: "operator notified" };
