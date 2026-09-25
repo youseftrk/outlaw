@@ -15,7 +15,7 @@ import { tickRange, resetAttempts, baselineActive } from "./range/engine";
 import { tickNoise, noiseReset } from "./range/noise";
 import { tickMigrations, checkIncidentMigrations } from "./fleet/migrations";
 import { tickApprovals, decide } from "./governance/approvals";
-import { tickAuthority, accept as acceptLease, completeStepUp, stepUpCodeFor } from "./authority/engine";
+import { tickAuthority, accept as acceptLease, completeStepUp, stepUpCodeFor, setAuthorityTickActive } from "./authority/engine";
 import { seedEntities, seedRules, assignOwnership, assignAgentEntities, seedObserveLeases } from "./seed/entities";
 import { syncSshSettings } from "./fleet/adapters/ssh-config";
 import { defaultDeliverySettings, hookDeliveryToBus } from "./messaging/delivery";
@@ -39,15 +39,20 @@ declare global {
 let intervalMs = 1000;
 
 async function tick(): Promise<void> {
-  store.advanceTick();
-  tickNoise();
-  tickRange();
-  const paused = baselineActive();
-  await brainTick(paused);
-  tickMigrations();
-  if (!paused) checkIncidentMigrations(); // Rahhal-driven — agents paused in baseline
-  tickApprovals();
-  tickAuthority();
+  setAuthorityTickActive(true);
+  try {
+    store.advanceTick();
+    tickNoise();
+    tickRange();
+    const paused = baselineActive();
+    await brainTick(paused);
+    tickMigrations();
+    if (!paused) checkIncidentMigrations(); // Rahhal-driven — agents paused in baseline
+    tickApprovals();
+    tickAuthority();
+  } finally {
+    setAuthorityTickActive(false);
+  }
   store.flush();
 }
 
