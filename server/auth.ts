@@ -112,7 +112,7 @@ export interface ProxyAuthState {
   sessionSecret: string | null;
 }
 
-const SECRETS_FILE = join(process.cwd(), ".data", "secrets.json");
+const SECRETS_FILE = join(process.env.QALAA_DATA_DIR || join(process.cwd(), ".data"), "secrets.json");
 
 interface DiskCache {
   mtimeMs: number;
