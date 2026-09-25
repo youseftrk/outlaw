@@ -461,7 +461,8 @@ export class SshAdapter implements ServerAdapter {
     }
     if (r.code !== 0) {
       const tail = (r.stderr || r.stdout).trim().split("\n").pop() ?? "";
-      return { ok: false, summary: `${what} on ${t.label} exited ${r.code ?? r.signal ?? "?"}${tail ? ` — ${tail.slice(0, 160)}` : ""}`, command: built.command, evidence: ev };
+      const hint = tail ? tail.slice(0, 160) : t.sudo ? "no output" : "no output; if the command needs root, enable sudo in settings.ssh";
+      return { ok: false, summary: `${what} on ${t.label} exited ${r.code ?? r.signal ?? "?"} — ${hint}`, command: built.command, evidence: ev };
     }
     return { ok: true, summary: `${what} on ${t.label}`, command: built.command, evidence: ev };
   }
@@ -536,7 +537,7 @@ export class SshAdapter implements ServerAdapter {
       const ruleset = isolateRuleset(t.port);
       const built = buildCommand(["nft", "-f", "-"], t.sudo);
       const r = await exec(built.command, ruleset);
-      const res = this.outcome(t, "isolated (nftables egress deny)", built, r, { ruleset, table: ISOLATE_TABLE });
+      const res = this.outcome(t, "isolate (nftables egress deny)", built, r, { ruleset, table: ISOLATE_TABLE });
       if (!res.ok) return res;
       const ct = buildCommand(["conntrack", "-F"], t.sudo);
       const cr = await exec(`command -v conntrack >/dev/null 2>&1 && ${ct.command} || echo "conntrack not installed" >&2`);
