@@ -24,6 +24,7 @@ import { useLive } from "@/lib/hooks/use-live";
 import { AGENT_STATUS_LABEL, SEVERITY_CLASS, THREAT_STATUS_CLASS, THREAT_STATUS_LABEL, VERDICT_CLASS, ago, clock, humanize } from "@/lib/format";
 import type { Autonomy, Trace } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { LoadingState } from "@/components/beautiful-ui/loading-state";
 
 const AUTONOMY: { value: Autonomy; label: string; hint: string }[] = [
   { value: "observe", label: "Observe", hint: "Read-only. Reports, never acts." },
@@ -76,7 +77,7 @@ export default function AgentDetailPage() {
   };
 
   if (!agent) {
-    return <div className="text-text-3">Loading agent…</div>;
+    return <LoadingState label="Loading agent" variant="drive" />;
   }
 
   const busy = agent.status === "investigating" || agent.status === "acting";

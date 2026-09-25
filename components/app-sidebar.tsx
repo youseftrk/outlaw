@@ -354,6 +354,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             Sign out
           </Button>
         )}
+        <a
+          href="https://rareui.com"
+          target="_blank"
+          rel="noreferrer"
+          className="mono-data truncate px-2 pb-1 text-[9px] uppercase tracking-[0.12em] text-text-3/70 transition-colors hover:text-text-2 group-data-[collapsible=icon]:hidden"
+        >
+          Bell &amp; orb by Rare UI
+        </a>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

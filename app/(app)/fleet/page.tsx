@@ -30,6 +30,7 @@ import { api, useBootstrap, useMigrations, useServer, useServers } from "@/lib/h
 import { MIGRATION_STATUS_LABEL, SERVER_STATUS_HEX, THREAT_STATUS_CLASS, THREAT_STATUS_LABEL, ago, humanize } from "@/lib/format";
 import type { ConformanceCategory, ConformanceCheck, Migration, MigrationReason, Region, Server } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { LoadingState } from "@/components/beautiful-ui/loading-state";
 
 const loadConfig: ChartConfig = { v: { label: "load", color: "var(--color-cerulean)" } };
 const CATEGORIES: ConformanceCategory[] = ["patching", "network", "identity", "config", "runtime", "data"];
@@ -543,7 +544,7 @@ function FleetInner() {
 
 export default function FleetPage() {
   return (
-    <React.Suspense fallback={<div className="text-text-3">Loading fleet…</div>}>
+    <React.Suspense fallback={<LoadingState label="Loading fleet" variant="orbit" />}>
       <FleetInner />
     </React.Suspense>
   );

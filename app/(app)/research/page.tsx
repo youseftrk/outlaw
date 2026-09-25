@@ -27,6 +27,8 @@ import { SEVERITY_CLASS, SEVERITY_HEX, ago, humanize } from "@/lib/format";
 import type { AttackTechnique, CVE, ResearchQuery, ThreatActor } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import useSWR from "swr";
+import { LoadingState } from "@/components/beautiful-ui/loading-state";
+import { TextLoader } from "@/components/opensource-ui/text-loader";
 
 const SUGGESTIONS = [
   "Enrich 185.220.101.4",
@@ -64,7 +66,7 @@ function KbBrowser() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(data as CVE[] | undefined)?.map((c) => (
+                {type === "cve" && (data as CVE[] | undefined)?.map((c) => (
                   <TableRow key={c.id} className="border-line">
                     <TableCell className="mono-data text-text-1">{c.id}</TableCell>
                     <TableCell className="text-text-2">{c.title}</TableCell>
@@ -77,7 +79,7 @@ function KbBrowser() {
           </TabsContent>
           <TabsContent value="technique" className="p-2">
             <ul className="flex flex-col gap-1">
-              {(data as AttackTechnique[] | undefined)?.map((t) => (
+              {type === "technique" && (data as AttackTechnique[] | undefined)?.map((t) => (
                 <li key={t.id} className="flex items-start gap-3 rounded-[10px] px-2 py-1.5 hover:bg-bg-2">
                   <a href={t.url} target="_blank" rel="noreferrer" className="mono-data shrink-0 text-cerulean hover:underline">
                     {t.id}
@@ -94,7 +96,7 @@ function KbBrowser() {
           </TabsContent>
           <TabsContent value="actor" className="p-2">
             <ul className="flex flex-col gap-1">
-              {(data as ThreatActor[] | undefined)?.map((a) => (
+              {type === "actor" && (data as ThreatActor[] | undefined)?.map((a) => (
                 <li key={a.id} className="rounded-[10px] px-2 py-1.5 hover:bg-bg-2">
                   <p className="text-text-1">
                     {a.name} <span className="text-[11px] text-text-3">· {a.aliases.join(", ")}</span>
@@ -138,6 +140,7 @@ function Result({ q }: { q: ResearchQuery }) {
         <div className="flex items-center gap-3 rounded-[12px] bg-bg-2 p-3">
           <ThinkingOrb state="searching" size={20} theme="dark" />
           <span className="text-text-2">Doc is working the case — enriching indicators, pulling techniques, checking exposure.</span>
+          <TextLoader text="Searching" className="ml-auto text-[13px]" />
         </div>
       )}
       {r && (
@@ -336,7 +339,7 @@ function ResearchInner() {
 
 export default function ResearchPage() {
   return (
-    <React.Suspense fallback={<div className="text-text-3">Loading research…</div>}>
+    <React.Suspense fallback={<LoadingState label="Loading research" variant="drive" />}>
       <ResearchInner />
     </React.Suspense>
   );

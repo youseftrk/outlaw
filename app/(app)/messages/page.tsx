@@ -16,6 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useBootstrap, useThreads } from "@/lib/hooks/use-data";
 import { ago } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { LoadingState } from "@/components/beautiful-ui/loading-state";
 
 function MessagesInner() {
   const router = useRouter();
@@ -104,7 +105,7 @@ function MessagesInner() {
 
 export default function MessagesPage() {
   return (
-    <React.Suspense fallback={<div className="text-text-3">Loading messages…</div>}>
+    <React.Suspense fallback={<LoadingState label="Loading messages" variant="dots" />}>
       <MessagesInner />
     </React.Suspense>
   );

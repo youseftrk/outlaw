@@ -154,6 +154,28 @@
       opacity: 0.55;
     }
   }
+  /* Beautiful UI loading-state (MIT) */
+  @keyframes pixel-on {
+    0%,
+    100% {
+      opacity: 0.15;
+    }
+    18%,
+    42% {
+      opacity: 1;
+    }
+    62% {
+      opacity: 0.15;
+    }
+  }
+  @keyframes shimmer-text {
+    0% {
+      background-position: 150%;
+    }
+    100% {
+      background-position: -50%;
+    }
+  }
 }
 
 /* Dark is the only theme. Values are the brand tokens mapped onto shadcn's variables.

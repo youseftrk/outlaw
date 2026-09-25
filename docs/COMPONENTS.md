@@ -35,6 +35,15 @@ npx shadcn add https://reactbits.dev/r/{Aurora,DotGrid,Dock,Particles}-TS-TW.jso
 
 # libraries.dev npm packages (MIT)
 npm i border-beam thinking-orbs bot-avatars liquid-gooey voice-glow
+
+# Rare UI — site is behind a Vercel bot checkpoint, so vendored from the repo (registry form also works)
+#   npx shadcn@latest add swamimalode07/rare-ui/{notification-bell,matrix-orb}
+git clone https://github.com/swamimalode07/rare-ui && cp rare-ui/{components/ui/notification-bell.tsx,components/ui/matrix-orb.tsx,LICENSE} components/rare-ui/
+
+# Beautiful UI — no CLI; copy from https://beautifului.dev ("View code") → components/beautiful-ui/loading-state.tsx
+# Opensource UI — copy TypeScript source, no install (https://github.com/bidyut10/opensourceui)
+#   components/mockups/phone-mockup-card.tsx → components/ui/phone-mockup.tsx
+#   components/loaders/text-loader.tsx      → components/opensource-ui/text-loader.tsx
 ```
 
 ## Inventory
@@ -78,6 +87,13 @@ npm i border-beam thinking-orbs bot-avatars liquid-gooey voice-glow
 | Border beam (pkg) | libraries.dev `border-beam` | npm `1.4.1` | MIT |
 | Gooey merge effects | libraries.dev `liquid-gooey` | npm `0.2.2` | MIT |
 | Voice-reactive glow | libraries.dev `voice-glow` | npm `0.2.1` | MIT |
+| Header approvals bell (badge count, shake on change) | Rare UI `notification-bell` | `components/rare-ui/notification-bell.tsx` (Radix `Slot`/`asChild` branch removed — Base UI project) | MIT + Commons Clause + Attribution — notice in `components/rare-ui/LICENSE`, visible link to rareui.com in the sidebar footer |
+| Agent state orb (idle / listening / thinking) | Rare UI `matrix-orb` | `components/rare-ui/matrix-orb.tsx` (default colour → lime) | same as above |
+| Loading state (3×3 pixel grid, shimmer label, elapsed timer; `drive` / `dots` / `orbit`) | Beautiful UI `LoadingState` | `components/beautiful-ui/loading-state.tsx` (+ `pixel-on` / `shimmer-text` keyframes in `app/globals.css`; Surfer video variant dropped) | MIT (© 2026 Shane Levine) |
+| Letter-pulse text loader with glass orb (`/research` searching) | Opensource UI `text-loader` | `components/opensource-ui/text-loader.tsx` (schemes → `lime` / `sky`) | MIT |
+| iPhone device frame (`/phone`, `/messages`, deck) | Opensource UI `phone-mockup-card` | `components/ui/phone-mockup.tsx` (`finish`: graphite / titanium / black, `showDynamicIsland`) | MIT |
+
+Motion added in the UI polish pass (no new libraries): `components/ui/button.tsx` (Motion `whileTap` spring, primary sheen, icon-button ripple, `loading` prop → Spinner, `prefers-reduced-motion`), `components/ui/tabs.tsx` + `switch.tsx` (AnimatedBackground indicator), `components/app-sidebar.tsx` (AnimatedBackground active pill, Magnetic icons, BorderTrail wordmark, ThinkingOrb live roster, SlidingNumber unread badge, Kibo Status + RelativeTime footer), `components/compositions/kpi-card.tsx` (SlidingNumber + GlowingEffect), `components/shell/page-header.tsx` (TextEffect / BlurFade), `components/compositions/live-feed.tsx` (AnimatedList + FlickeringGrid empty state), replay CTA (BorderBeam).
 
 Dropped / substituted:
 

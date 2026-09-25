@@ -30,6 +30,7 @@ import { api, useApprovals, useBootstrap, usePolicies, useTraces } from "@/lib/h
 import { VERDICT_CLASS, ago, clock, humanize } from "@/lib/format";
 import type { Approval, Policy, PolicyEffect, ToolRisk, Trace } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { LoadingState } from "@/components/beautiful-ui/loading-state";
 
 const EFFECT_CLASS: Record<PolicyEffect, string> = {
   allow: "text-lime",
@@ -463,7 +464,7 @@ function GovernanceInner() {
 
 export default function GovernancePage() {
   return (
-    <React.Suspense fallback={<div className="text-text-3">Loading governance…</div>}>
+    <React.Suspense fallback={<LoadingState label="Loading governance" variant="orbit" />}>
       <GovernanceInner />
     </React.Suspense>
   );
