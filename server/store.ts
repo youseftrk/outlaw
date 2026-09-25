@@ -37,6 +37,9 @@ export interface QalaaSecrets {
   sshKeys?: Record<string, string>;
   /** `host:port` → base64 host key blob pinned by the strict / accept-new host-key policy */
   sshKnownHosts?: Record<string, string>;
+  /** HMAC key for outbound webhooks + shared secret for generic inbound */
+  deliverySecret?: string;
+  twilioAuthToken?: string;
   auth?: { passwordHash?: string; sessionSecret?: string };
 }
 

@@ -6,6 +6,7 @@ import { seedAgents } from "./agents";
 import { seedPolicies } from "./policies";
 import { seedHistory } from "./history";
 import { DEFAULT_SSH_SETTINGS } from "../fleet/adapters/ssh-config";
+import { defaultDeliverySettings } from "../messaging/delivery";
 
 export function buildSeed(nowMs: number): QalaaState {
   const nowIso = new Date(nowMs).toISOString();
@@ -55,6 +56,7 @@ export function buildSeed(nowMs: number): QalaaState {
       ssh: { ...DEFAULT_SSH_SETTINGS, hostMap: {} },
       operator: { name: "Operator", phone: "+1 555 0100", org: "Frontier Hub" },
       sim: { speed: 1, autoRun: true, quietHours: false },
+      delivery: defaultDeliverySettings(),
     },
     world,
   };

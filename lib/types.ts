@@ -498,6 +498,16 @@ export interface QuickReply {
   tone?: "primary" | "danger" | "neutral";
 }
 
+export type DeliveryStatus = "queued" | "sent" | "failed";
+
+/** Outcome of pushing a message to an outbound channel (webhook / slack / twilio). */
+export interface MessageDelivery {
+  channel: string;
+  status: DeliveryStatus;
+  at: ISODate;
+  error?: string;
+}
+
 export interface Message {
   id: ID;
   threadId: ID;
@@ -512,9 +522,11 @@ export interface Message {
   threatId?: ID;
   traceId?: ID;
   sentAt: ISODate;
+  /** set immediately for in-app messages; for channel-delivered messages only once the channel confirms */
   deliveredAt?: ISODate;
   readAt?: ISODate;
   tapback?: Tapback;
+  delivery?: MessageDelivery[];
 }
 
 /* ─────────────────────────── Research ─────────────────────────── */
@@ -822,6 +834,27 @@ export interface SshSettingsPatch {
   forgetKnownHosts?: boolean;
 }
 
+export type DeliveryChannel = "off" | "webhook" | "slack" | "twilio";
+
+/** Which agent/system messages leave the app. Empty `kinds` / `agentIds` = no restriction. */
+export interface DeliveryFilter {
+  minSeverity: Severity;
+  kinds: MessageKind[];
+  agentIds: ID[];
+}
+
+export interface DeliverySettings {
+  channel: DeliveryChannel;
+  /** generic webhook or Slack incoming-webhook URL */
+  url: string;
+  twilio: { accountSid: string; from: string; to: string };
+  filter: DeliveryFilter;
+  /** HMAC / inbound shared secret is stored server-side only */
+  secretSet: boolean;
+  twilioAuthTokenSet: boolean;
+  lastTest?: { ok: boolean; at: ISODate; channel: DeliveryChannel; latencyMs?: number; error?: string };
+}
+
 export type AuthSource = "settings" | "env" | "off";
 
 export interface AuthSettings {
@@ -835,6 +868,7 @@ export interface Settings {
   ssh: SshSettings;
   operator: { name: string; phone: string; org: string };
   sim: { speed: number; autoRun: boolean; quietHours: boolean };
+  delivery: DeliverySettings;
   /** computed server-side from env + secrets; not persisted in state */
   auth?: AuthSettings;
 }
