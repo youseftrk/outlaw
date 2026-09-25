@@ -10,6 +10,16 @@ checked by the server, so the story is identical if a judge tries it from a term
   under its owner, so you begin where a customer begins. Background agents stay quiet for
   twenty minutes after that, so the record only shows your story.
 - Keep `/agents` open in a second tab for "what do the six agents do?".
+- The server must run with `QALAA_DEMO_SHOW_CODE=1` so the one-time code appears on the
+  card instead of only in Messages.
+
+## Two ways to run it
+
+- **Click through** (preferred): you press each button and talk between them. Script below.
+- **Auto-play** (backup, or if your hands are shaking): press **Auto-play** next to
+  "Start the demo". It runs the whole story by itself — one real API call per step, about
+  four seconds apart — while the page, path and record follow along. Say the same lines;
+  the steps land in the same order. **Stop** halts it at any point.
 
 ## The one line
 

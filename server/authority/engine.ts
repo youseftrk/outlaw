@@ -219,7 +219,7 @@ function refusalFor(l: AuthorityLease, input: AuthorizeInput, agent: Agent | und
   if (l.status === "declined") return { code: "AUTHORITY_REQUIRED", message: `The ${owner} said no.` };
   if (l.status === "expired") return { code: "AUTHORITY_EXPIRED", message: `Permission ${l.id} ran out of time.` };
   if (l.status === "revoked") {
-    const windowEnd = l.activatedAt ? new Date(l.activatedAt).getTime() + l.durationSec * 1000 : Infinity;
+    const windowEnd = l.activatedAt ? new Date(l.activatedAt).getTime() + l.durationSec * 1000 : 0;
     return nowMs <= windowEnd
       ? { code: "AUTHORITY_REVOKED", message: `The ${owner} took permission ${l.id} back.` }
       : { code: "AUTHORITY_REQUIRED", message: `Permission ${l.id} was revoked after its window.` };
