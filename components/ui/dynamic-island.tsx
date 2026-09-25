@@ -10,7 +10,7 @@ import React, {
   useRef,
   useState,
 } from "react"
-import { AnimatePresence, motion, useWillChange } from "motion/react"
+import { AnimatePresence, motion, useWillChange, type HTMLMotionProps } from "motion/react"
 
 const stiffness = 400
 const damping = 30
@@ -361,10 +361,9 @@ const DynamicIslandContent = ({
 }: {
   children: React.ReactNode
   id: string
-  willChange: any
+  willChange: ReturnType<typeof useWillChange>
   screenSize: string
-  [key: string]: any
-}) => {
+} & Omit<HTMLMotionProps<"div">, "children" | "id" | "style" | "animate" | "className">) => {
   const { state, presets } = useDynamicIslandSize()
   const currentSize = presets[state.size]
 

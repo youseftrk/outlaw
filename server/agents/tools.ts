@@ -1,5 +1,5 @@
 /** ToolSpec table for every ToolName (SPEC §2). */
-import type { ToolName, ToolRisk, ToolSpec, ToolTarget } from "@/lib/types";
+import type { ToolName, ToolRisk, ToolSpec } from "@/lib/types";
 
 export const TOOL_SPECS: Record<ToolName, ToolSpec> = {
   query_telemetry: { name: "query_telemetry", label: "Query telemetry", description: "Read the telemetry ring buffer for signals matching a filter.", risk: "read", targets: ["none"] },
