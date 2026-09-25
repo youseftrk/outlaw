@@ -1048,6 +1048,7 @@ export type DecisionKind =
   | "expired"
   | "declined"
   | "rules-changed"
+  | "onboarded" // a system was put under an owner
   | "reset";
 
 export type RefusalCode =
@@ -1105,7 +1106,7 @@ export interface PermissionSuggestion {
   source: "rules" | "model";
 }
 
-export type DrillStep = "no-permission" | "asked" | "owner-accepted" | "code-needed" | "allowed" | "acted" | "revoked" | "expired";
+export type DrillStep = "onboard" | "no-permission" | "asked" | "owner-accepted" | "code-needed" | "allowed" | "acted" | "revoked" | "expired";
 
 /** Server-derived guidance for the demo: where the story is and what happens next. */
 export interface DrillState {
@@ -1113,6 +1114,15 @@ export interface DrillState {
   title: string;
   next: string;
   leaseId?: ID;
+  /** the one system the demo is about, and who owns it right now (absent until it is onboarded) */
+  system: { serverId: ID; hostname: string; ownerEntityId?: ID; dataClasses: DataClass[] };
+}
+
+/** Put a system under an owner — the first thing an organisation does with Qalaa. */
+export interface OnboardInput {
+  serverId: ID;
+  ownerEntityId: ID;
+  dataClasses?: DataClass[];
 }
 
 /** Append-only, server-written record of every decision. Shown to people as "the record". */

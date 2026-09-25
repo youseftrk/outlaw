@@ -3,7 +3,7 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
-import { ArrowCounterClockwise } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, Play } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
@@ -11,8 +11,9 @@ import { authorityApi, useDrillState, useRefreshAuthority } from "@/lib/hooks/us
 import type { DrillStep } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const ORDER: DrillStep[] = ["no-permission", "asked", "owner-accepted", "code-needed", "allowed", "acted", "revoked"];
+const ORDER: DrillStep[] = ["onboard", "no-permission", "asked", "owner-accepted", "code-needed", "allowed", "acted", "revoked"];
 const SHORT: Record<DrillStep, string> = {
+  onboard: "Onboard",
   "no-permission": "Refused",
   asked: "Asked",
   "owner-accepted": "Owner said yes",
@@ -29,11 +30,15 @@ export function DrillGuide({ className, showReset = true }: { className?: string
   const refresh = useRefreshAuthority();
   const [busy, setBusy] = React.useState(false);
 
-  const reset = async () => {
+  const reset = async (fromOnboarding: boolean) => {
     setBusy(true);
     try {
-      await authorityApi.reset();
-      toast.success("Back to the start. No permissions, nothing on the record.");
+      await authorityApi.reset({ fromOnboarding });
+      toast.success(
+        fromOnboarding
+          ? "Clean slate. The system is not under anyone yet — onboard it to begin."
+          : "Back to the start. No permissions, nothing on the record.",
+      );
       await refresh();
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : "Could not reset");
@@ -79,9 +84,14 @@ export function DrillGuide({ className, showReset = true }: { className?: string
           )}
         </div>
         {showReset && (
-          <Button variant="ghost" size="sm" onClick={reset} loading={busy} disabled={busy} className="gap-1.5 text-text-3">
-            <ArrowCounterClockwise className="size-3.5" /> Start over
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={() => reset(true)} loading={busy} disabled={busy} className="gap-1.5 text-text-2">
+              <Play className="size-3.5" weight="fill" /> Start the demo
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => reset(false)} disabled={busy} className="gap-1.5 text-text-3">
+              <ArrowCounterClockwise className="size-3.5" /> Start over
+            </Button>
+          </div>
         )}
       </div>
     </div>

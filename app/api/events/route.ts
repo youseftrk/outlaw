@@ -1,6 +1,7 @@
 /**
  * SSE stream (SPEC §2): `event:/id:/data:` lines, replay via ?since=,
- * heartbeat comment every 15 s.
+ * heartbeat comment every 15 s. `?json=1` returns the replay as JSON for clients
+ * behind proxies that buffer streams.
  */
 import { rt } from "@/app/api/_lib/util";
 import { bus } from "@/server/bus";
@@ -15,7 +16,14 @@ export function formatEvent(ev: QalaaEvent): string {
 
 export async function GET(req: Request) {
   rt();
-  const since = new URL(req.url).searchParams.get("since") ?? undefined;
+  const params = new URL(req.url).searchParams;
+  const since = params.get("since") ?? undefined;
+  if (params.get("json")) {
+    return Response.json(
+      { events: bus.replay(since) },
+      { headers: { "cache-control": "no-store" } },
+    );
+  }
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream<Uint8Array>({

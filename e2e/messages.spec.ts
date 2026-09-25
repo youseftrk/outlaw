@@ -15,11 +15,11 @@ test.describe("messages", () => {
 
     await composer.fill("status");
     await page.getByRole("button", { name: "Send" }).click();
-    await expect(page.getByText(/servers up, \d+ open threats?, \d+ approvals? waiting/)).toBeVisible();
+    await expect(page.getByText(/servers up, \d+ open threats?, \d+ approvals? waiting/).last()).toBeVisible();
 
     await composer.fill(`Approve ${approval.id}`);
     await composer.press("Enter");
-    await expect(page.getByText(new RegExp(`Approved ${approval.id} — block_egress for Hisn`))).toBeVisible();
+    await expect(page.getByText(new RegExp(`Approved ${approval.id} — block_egress for Hisn`)).last()).toBeVisible();
 
     expect(await approvalStatus(request, approval.id)).toBe("approved");
   });

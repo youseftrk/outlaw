@@ -8,6 +8,7 @@ import { ThinkingOrb } from "thinking-orbs";
 import { ActingAs } from "@/components/authority/acting-as";
 import { AskDialog } from "@/components/authority/ask-dialog";
 import { DrillGuide } from "@/components/authority/drill-guide";
+import { OnboardCard } from "@/components/authority/onboard-card";
 import { PermissionCard, type Directory } from "@/components/authority/permission-card";
 import { RecordList } from "@/components/authority/record-list";
 import { TryDoor } from "@/components/authority/try-door";
@@ -17,7 +18,7 @@ import { PageHeader } from "@/components/shell/page-header";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useActingAs, useEntities, useLeases, useRecords } from "@/lib/hooks/use-authority";
+import { useActingAs, useDrillState, useEntities, useLeases, useRecords } from "@/lib/hooks/use-authority";
 import { useBootstrap } from "@/lib/hooks/use-data";
 import { AGENT_STATUS_LABEL } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -57,6 +58,7 @@ export default function AuthorityHome() {
   const { data: entities = [] } = useEntities();
   const { data: leases = [] } = useLeases();
   const { data: records = [] } = useRecords("?limit=8");
+  const { data: drill } = useDrillState();
   const [actingAs] = useActingAs();
   const [asking, setAsking] = React.useState(false);
 
@@ -74,7 +76,8 @@ export default function AuthorityHome() {
 
   const requester = entities.find((e) => e.operatesAgents) ?? entities[0];
   const demoServer = servers.find((s) => s.id === DEMO.serverId);
-  const demoOwner = entities.find((e) => e.id === demoServer?.ownerEntityId);
+  const demoOwner = entities.find((e) => e.id === (drill?.system.ownerEntityId ?? demoServer?.ownerEntityId));
+  const needsOnboarding = drill?.step === "onboard";
   const demoAgent = agents.find((a) => a.id === DEMO.agentId);
 
   const activeByAgent = (id: string) => active.filter((l) => l.agentId === id).length;
@@ -142,8 +145,15 @@ export default function AuthorityHome() {
         </BlurFade>
 
         <BlurFade delay={0.15} className="col-span-12 xl:col-span-5">
-          <Panel eyebrow="Try the door" title="See the switch work" className="h-full">
-            {demoServer && demoOwner && demoAgent ? (
+          <Panel eyebrow={needsOnboarding ? "Step one" : "Try the door"} title={needsOnboarding ? "Put a system under Qalaa" : "See the switch work"} className="h-full">
+            {needsOnboarding && drill ? (
+              <div className="flex flex-col gap-3">
+                <OnboardCard system={drill.system} />
+                <Button variant="ghost" size="sm" className="w-fit text-text-2" nativeButton={false} render={<Link href="/drill" />}>
+                  Run the whole story step by step <ArrowUpRight className="size-3.5" />
+                </Button>
+              </div>
+            ) : demoServer && demoOwner && demoAgent ? (
               <div className="flex flex-col gap-3">
                 <p className="text-[13px] text-text-2">
                   This is a real attempt against {demoOwner.shortName}&rsquo;s system. Refused without permission, allowed with it, refused again the second it is taken back.
