@@ -5,7 +5,8 @@
 
 export const LOGIN_PATH = "/login";
 
-const PUBLIC_EXACT = new Set(["/login", "/api/health", "/icon.svg", "/favicon.ico"]);
+// /api/messages/inbound authenticates itself (Twilio signature / shared secret).
+const PUBLIC_EXACT = new Set(["/login", "/api/health", "/api/messages/inbound", "/icon.svg", "/favicon.ico"]);
 const PUBLIC_PREFIXES = ["/api/auth/", "/_next/", "/brand/"];
 
 export function isPublicPath(pathname: string): boolean {
