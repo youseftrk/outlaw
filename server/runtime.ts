@@ -15,6 +15,7 @@ import { tickRange, resetAttempts, baselineActive } from "./range/engine";
 import { tickNoise, noiseReset } from "./range/noise";
 import { tickMigrations, checkIncidentMigrations } from "./fleet/migrations";
 import { tickApprovals, decide } from "./governance/approvals";
+import { defaultDeliverySettings, hookDeliveryToBus } from "./messaging/delivery";
 import type { AgentStatus } from "@/lib/types";
 
 export interface QalaaRuntime {
@@ -75,6 +76,8 @@ function migrateState(state: QalaaState): void {
   // thr-qalaa keeps agentId but always reads as the system thread
   const qalaa = state.threads.find((t) => t.id === "thr-qalaa");
   if (qalaa) { qalaa.title = "Qalaa"; qalaa.agentId = "agt-cassidy"; }
+  // settings.delivery arrived after the first persisted states
+  if (!state.settings.delivery) state.settings.delivery = defaultDeliverySettings();
   // restore id counters so persisted entities never collide with new ids
   const bump = (prefix: string, ids: string[]) => {
     const max = Math.max(0, ...ids.map((id) => Number(id.split("-").pop()) || 0));
@@ -114,6 +117,9 @@ export function getRuntime(): QalaaRuntime {
   store.init(state);
   store.loadSecrets();
   store.s.settings.llm.apiKeySet = !!store.secrets.llmApiKey;
+  store.s.settings.delivery.secretSet = !!store.secrets.deliverySecret;
+  store.s.settings.delivery.twilioAuthTokenSet = !!store.secrets.twilioAuthToken;
+  hookDeliveryToBus(); // outbound copies of agent/system messages (SPEC §8)
 
   brainReset();
   resetAttempts();

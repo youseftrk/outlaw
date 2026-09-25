@@ -27,6 +27,7 @@ import type {
   Trace,
   Autonomy,
   Tapback,
+  DeliverySettings,
 } from "@/lib/types";
 
 export class ApiError extends Error {
@@ -208,9 +209,22 @@ export const api = {
       llm?: Partial<Settings["llm"]> & { apiKey?: string };
       operator?: Partial<Settings["operator"]>;
       sim?: Partial<Settings["sim"]>;
+      delivery?: {
+        channel?: DeliverySettings["channel"];
+        url?: string;
+        twilio?: Partial<DeliverySettings["twilio"]>;
+        filter?: Partial<DeliverySettings["filter"]>;
+        secret?: string;
+        twilioAuthToken?: string;
+      };
     }) => patch<Settings>("/settings", body),
     testLlm: () => post<Settings["llm"]["lastTest"]>("/settings/llm/test"),
+    testDelivery: () => post<DeliverySettings["lastTest"]>("/settings/delivery/test"),
   },
+
+  /** Generic inbound (same path Twilio hits): text goes through the operator command parser. */
+  inbound: (text: string, secret: string, threadId?: string) =>
+    post<{ sent: Message; replies: Message[] }>("/messages/inbound", { text, secret, threadId }),
 };
 
 function qs(params: Record<string, string | number | undefined>) {

@@ -18,6 +18,7 @@ export interface QalaaGlobal {
   __qalaaRt?: unknown;
   __qalaaRangeAttempts?: Map<string, Map<number, number>>;
   __qalaaPatrolAt?: Record<string, number>;
+  __qalaaDeliveryHooked?: boolean;
 }
 
 export const G = globalThis as unknown as QalaaGlobal;
