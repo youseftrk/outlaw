@@ -104,6 +104,8 @@ export interface Server {
   protectedBy: ID[];
   /** the entity that owns this system and must accept any agent permission on it (docs/PIVOT.md) */
   ownerEntityId?: ID;
+  /** what kind of data lives here; owners can mark classes as never shared */
+  dataClasses?: DataClass[];
   lastSeen: ISODate;
   createdAt: ISODate;
   /** rolling cpu/net signal for sparklines, newest last, 0–100 */
@@ -1038,7 +1040,9 @@ export type DecisionKind =
   | "refused" // protected call refused
   | "revoked"
   | "expired"
-  | "declined";
+  | "declined"
+  | "rules-changed"
+  | "reset";
 
 export type RefusalCode =
   | "AUTHORITY_REQUIRED"
@@ -1048,7 +1052,62 @@ export type RefusalCode =
   | "SCOPE_MISMATCH"
   | "CAPABILITY_MISMATCH"
   | "REQUESTER_MISMATCH"
-  | "STEP_UP_REQUIRED";
+  | "STEP_UP_REQUIRED"
+  | "NEVER_SHARED"
+  | "RULES_EXCEEDED";
+
+/** Kinds of data a system can hold. Owners can mark some as never shared, whatever the permission says. */
+export type DataClass = "personal-data" | "health-data" | "financial-data" | "security-telemetry" | "infrastructure";
+
+export const DATA_CLASS_LABEL: Record<DataClass, string> = {
+  "personal-data": "People's personal data",
+  "health-data": "Health records",
+  "financial-data": "Financial records",
+  "security-telemetry": "Security signals",
+  infrastructure: "Infrastructure",
+};
+
+/** An owner's house rules: the ceiling any permission on its systems must fit under. */
+export interface HouseRules {
+  entityId: ID;
+  /** capabilities the owner is willing to lend at all */
+  allowed: Capability[];
+  /** capabilities that also need a one-time human code before they start */
+  stepUp: Capability[];
+  /** data that is never shared, even under an active permission */
+  neverShared: DataClass[];
+  maxDurationSec: number;
+}
+
+/** One plain-language check the engine ran, in order. Returned with every allow/refuse. */
+export interface AuthorityCheck {
+  label: string;
+  passed: boolean;
+}
+
+/** Deterministic suggestion for the smallest permission that fits the owner's rules. */
+export interface PermissionSuggestion {
+  requestingEntityId: ID;
+  ownerEntityId: ID;
+  agentId?: ID;
+  capability: Capability;
+  scope: AuthorityScope;
+  durationSec: number;
+  justification: string;
+  incidentId?: ID;
+  terms: { label: string; allowed: boolean; why: string }[];
+  source: "rules" | "model";
+}
+
+export type DrillStep = "no-permission" | "asked" | "owner-accepted" | "code-needed" | "allowed" | "acted" | "revoked" | "expired";
+
+/** Server-derived guidance for the demo: where the story is and what happens next. */
+export interface DrillState {
+  step: DrillStep;
+  title: string;
+  next: string;
+  leaseId?: ID;
+}
 
 /** Append-only, server-written record of every decision. Shown to people as "the record". */
 export interface DecisionRecord {
@@ -1068,6 +1127,8 @@ export interface DecisionRecord {
   refusalCode?: RefusalCode;
   /** one plain-language sentence */
   summary: string;
+  /** the checks the engine ran for allow/refuse records */
+  checks?: AuthorityCheck[];
   /** free-form evidence from the engine (never used for authorization) */
   detail?: Record<string, unknown>;
 }
@@ -1083,8 +1144,8 @@ export interface AuthorizeInput {
 }
 
 export type AuthorizeResult =
-  | { allow: true; lease: AuthorityLease; ownerEntityId: ID }
-  | { allow: false; code: RefusalCode; ownerEntityId?: ID; lease?: AuthorityLease; message: string };
+  | { allow: true; lease: AuthorityLease; ownerEntityId: ID; checks: AuthorityCheck[] }
+  | { allow: false; code: RefusalCode; ownerEntityId?: ID; lease?: AuthorityLease; message: string; checks: AuthorityCheck[] };
 
 /** Server-driven view of one permission's journey, for the Authority Path graph. */
 export interface AuthorityPathNode {
