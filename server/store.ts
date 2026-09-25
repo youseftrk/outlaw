@@ -33,6 +33,7 @@ export interface QalaaSecrets {
   /** HMAC key for outbound webhooks + shared secret for generic inbound */
   deliverySecret?: string;
   twilioAuthToken?: string;
+  auth?: { passwordHash?: string; sessionSecret?: string };
 }
 
 export interface QalaaState {
@@ -80,6 +81,7 @@ export const store = {
   dirty: false,
   lastWriteMs: 0,
   flushTimer: null as ReturnType<typeof setTimeout> | null,
+  persistEnabled,
 
   init(state: QalaaState): void {
     this.state = state;

@@ -4,6 +4,7 @@ import { store } from "@/server/store";
 import { bus } from "@/server/bus";
 import { LLM_PRESETS } from "@/server/agents/llm";
 import { configureDelivery, redactedDelivery } from "@/server/messaging/delivery";
+import { authEnabled, authSource } from "@/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ export async function GET() {
     ...s,
     llm: { ...s.llm, apiKeySet: !!store.secrets.llmApiKey },
     delivery: redactedDelivery(),
+    auth: { enabled: authEnabled(), source: authSource() },
     llmPresets: LLM_PRESETS,
   });
 }
@@ -68,7 +70,7 @@ export async function PATCH(req: Request) {
   if (sim) Object.assign(s.sim, sim);
   if (delivery) configureDelivery(delivery);
   store.markDirty();
-  const redacted = { ...s, llm: { ...s.llm, apiKeySet: !!store.secrets.llmApiKey }, delivery: redactedDelivery() };
+  const redacted = { ...s, llm: { ...s.llm, apiKeySet: !!store.secrets.llmApiKey }, delivery: redactedDelivery(), auth: { enabled: authEnabled(), source: authSource() } };
   bus.emit("system", { settings: redacted }, { summary: "settings updated", href: "/settings" });
   return json({ settings: redacted });
 }

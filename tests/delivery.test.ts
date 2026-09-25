@@ -11,6 +11,7 @@ import { renderSms, sendTwilio, twilioMessagesUrl, twilioSignature, verifyTwilio
 import { configureDelivery, deliver, deliveryOptions, deliveryTest, passesFilter, redactedDelivery, resolveChannel } from "@/server/messaging/delivery";
 import { inboundGeneric, inboundTwilio } from "@/server/messaging/inbound";
 import { POST as inboundRoute } from "@/app/api/messages/inbound/route";
+import { decide } from "@/lib/auth/gate";
 import type { Message } from "@/lib/types";
 
 type FetchMock = ReturnType<typeof vi.fn<typeof fetch>>;
@@ -343,5 +344,10 @@ describe("inbound", () => {
     for (const [target] of fetchMock.mock.calls) {
       expect(String(target)).toMatch(/example\.test|api\.twilio\.com|hooks\.slack\.com/);
     }
+  });
+
+  it("inbound route stays reachable for channel callbacks when operator auth is on", () => {
+    expect(decide({ pathname: "/api/messages/inbound", enabled: true, authenticated: false })).toEqual({ kind: "allow" });
+    expect(decide({ pathname: "/api/messages/threads", enabled: true, authenticated: false })).toEqual({ kind: "unauthorized" });
   });
 });

@@ -19,6 +19,9 @@ export interface QalaaGlobal {
   __qalaaRangeAttempts?: Map<string, Map<number, number>>;
   __qalaaPatrolAt?: Record<string, number>;
   __qalaaDeliveryHooked?: boolean;
+  __qalaaEnvPwHash?: { password: string; hash: string };
+  __qalaaSecretsDisk?: { mtimeMs: number; auth: QalaaSecrets["auth"] };
+  __qalaaLoginLimiter?: unknown;
 }
 
 export const G = globalThis as unknown as QalaaGlobal;
