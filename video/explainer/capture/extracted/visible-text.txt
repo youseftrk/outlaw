@@ -1,0 +1,30 @@
+Qalaa in one line: "One switch that grants — and instantly takes back — an AI agent's power."
+
+The UAE is building government and enterprise on AI agents, acting on real systems and real data. The question nobody has answered: when an agent from one organisation needs to touch another organisation's data or systems — say, during an emergency — who says yes, for how long, and who can say stop?
+
+Verified claims only (research: docs/research/qalaa-research.md on branch devin/1790342274-qalaa-authority-pivot):
+- "In April 2026 the UAE set a two-year goal: half of all government services and operations run on AI agents." (mediaoffice.ae, 23 Apr 2026)
+- "Abu Dhabi is spending 13 billion dirhams to become the world's first AI-native government by 2027." (dge.gov.ae)
+- "Dubai put a Chief AI Officer in every government department — more than 230 so far."
+- Gartner: "over 40% of agentic AI projects will be cancelled by 2027 — inadequate risk controls is a named reason."
+The phrase "thousands of AI agents" could NOT be verified — do not say it.
+
+Qalaa is the answer:
+1. Ask. The agent asks for a specific permission: what, where, why, for how long.
+2. The owner says yes. Only the organisation that owns the data can grant it. Nobody grants themselves power. For sensitive things, a human confirms with a one-time code.
+3. It works — for exactly that. The agent's request now goes through. Nothing more, nowhere else, no longer than agreed.
+4. Stop. The owner flips the switch. The agent's very next request is refused. Not "soon" — now.
+5. Everything is written down. Every ask, every yes, every action, every stop — in a record anyone can read. The data never leaves the organisation that owns it.
+
+Who it serves: governments and large enterprises that run many AI agents across departments — UAE first (sovereignty: the data and the decision stay with the UAE entity; the switch is yours, not a vendor's).
+
+Words to use: permission, owner, switch, record, stop, agent, data. Words to avoid: lease, receipt, token, RBAC, policy engine, middleware, 403/200 (show them visually as "Refused"/"Allowed" if at all). Short sentences. Eloquent, calm, confident, no hype. Target length 60-90s. Narration text: write it as on-screen kinetic type and (optionally) as a VO script file; do not generate real voice unless the tooling is trivially available.
+
+App vocabulary: "permission", "owner", "switch", "record", "refused/allowed", "agent", "incident". Demo entities: National Emergency Response Authority (operates agents) asks National Data Authority (owns systems) for permission to contain a system for one hour.
+
+Palette: background #000a0f, surfaces #06150f / #0b1f16, text #e6efe9 / #9fb3a8, accent lime #97ff52, warm neutrals #d1c9a9 / #d7cbc6, Refused red #ff6b5c only.
+Type: Space Grotesk (display+body) + JetBrains Mono (chrome/ledger), both OFL, local woff2.
+Motion: arlan.me/vault patterns — typer, ghosty-reveal, color-depth, liquid-ui, vector-editor, kinetic-typography (all MIT).
+Sound: Cuelume cues only — toggle (switch flip), success (Allowed), error (Refused), tick/bloom (reveals).
+Background: Paper Shaders GrainGradient wave — colors #97ff52/#d1c9a9/#d7cbc6 on #000a0f, softness 0.7, intensity 0.15, noise 0.5 — rendered deterministically.
+Brand assets: public/brand/* (logo.svg, wordmark.png, logo-lockup.png, tagline-sign.png, brand-board.jpg) — unmodified.

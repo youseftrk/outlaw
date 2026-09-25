@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Qalaa — one switch for what AI agents may do</title>
+    <style>
+      @font-face {
+        font-family: "Space Grotesk";
+        src: url("fonts/space-grotesk-vf.woff2") format("woff2-variations");
+        font-weight: 300 700;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "JetBrains Mono";
+        src: url("fonts/jetbrains-mono-vf.woff2") format("woff2-variations");
+        font-weight: 400 700;
+        font-display: block;
+      }
+      html, body { margin: 0; background: #0a0a0a; }
+      #root {
+        position: absolute;
+        inset: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #0a0a0a;
+        font-family: "Space Grotesk", sans-serif;
+        color: #ececea;
+      }
+      .clip { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+
+      .kicker {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 26px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #a9a9a2;
+      }
+      .big {
+        font-weight: 600;
+        font-size: 118px;
+        line-height: 0.98;
+        letter-spacing: -0.04em;
+        color: #ececea;
+      }
+      .mid {
+        font-weight: 500;
+        font-size: 84px;
+        line-height: 1.02;
+        letter-spacing: -0.035em;
+        color: #ececea;
+      }
+      .lime { color: #97ff52; }
+      .red { color: #ff6b5c; }
+      .dim { color: #a9a9a2; }
+      .mono { font-family: "JetBrains Mono", monospace; }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #2e2e2a;
+        border-radius: 999px;
+        padding: 18px 34px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 30px;
+        letter-spacing: 0.02em;
+        color: #ececea;
+        background: #141414;
+        margin-right: 22px;
+      }
+      .num {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 30px;
+        color: #97ff52;
+        letter-spacing: 0.1em;
+      }
+      .row {
+        display: flex;
+        align-items: baseline;
+        gap: 42px;
+        padding: 30px 0;
+        border-bottom: 1px solid #232320;
+      }
+      .row .t {
+        font-size: 64px;
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        color: #ececea;
+      }
+      .row .d {
+        font-size: 30px;
+        color: #a9a9a2;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+      }
+
+      /* lower-third caption pill */
+      .cap {
+        position: absolute;
+        left: 50%;
+        top: 928px;
+        right: auto;
+        bottom: auto;
+        width: max-content;
+        height: auto;
+        transform: translateX(-50%);
+        max-width: 1560px;
+        padding: 20px 40px;
+        border-radius: 16px;
+        background: rgba(10, 10, 10, 0.88);
+        border: 1px solid #2e2e2a;
+        font-size: 33px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        line-height: 1.28;
+        color: #f2f2ee;
+        text-align: center;
+      }
+
+      /* the switch — color-depth chrome */
+      .swtrack {
+        width: 400px;
+        height: 160px;
+        border-radius: 80px;
+        background:
+          radial-gradient(120% 140% at 50% 0%, #1d1d1a 0%, #101010 70%);
+        box-shadow:
+          inset 0 1px 1px rgba(255, 255, 255, 0.14),
+          inset 0 -2px 8px rgba(0, 0, 0, 0.65),
+          inset 0 -30px 34px -24px rgba(0, 0, 0, 0.55),
+          0 1px 0 rgba(255, 255, 255, 0.05);
+        position: relative;
+      }
+      .swknob {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        width: 132px;
+        height: 132px;
+        border-radius: 66px;
+        background:
+          radial-gradient(130% 130% at 30% 20%, #454540 0%, #232321 55%, #151514 100%);
+        box-shadow:
+          inset 0 1px 1px rgba(255, 255, 255, 0.5),
+          inset 0 -1px 4.1px 0.5px rgba(224, 224, 216, 0.55),
+          inset 0 -36px 14.2px -28px rgba(0, 0, 0, 0.5),
+          0 10px 26px rgba(0, 0, 0, 0.6);
+      }
+      .swknob::after {
+        content: "";
+        position: absolute;
+        left: 18%;
+        top: 10%;
+        width: 64%;
+        height: 26%;
+        border-radius: 999px;
+        background: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+        opacity: 0.5;
+      }
+      .swlabel {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 30px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="qalaa-explainer" data-duration="114" data-width="1920" data-height="1080">
+
+      <!-- ambient GrainGradient backdrop -->
+      <div id="bgfx" class="clip" data-start="0" data-duration="114" data-track-index="0" style="opacity:0.9"></div>
+
+      <!-- ================= S1 · HOOK (0–10) ================= -->
+      <section id="s1-hook" class="clip" data-start="0" data-duration="10" data-track-index="1">
+        <div style="position:absolute; left:150px; top:150px">
+          <p id="s1-k" class="kicker">july 2026 · verified incident</p>
+          <h1 id="s1-a" class="big" style="margin-top:70px">roughly 700 ai agents</h1>
+          <h1 id="s1-b" class="big">broke into hugging face —</h1>
+          <h1 id="s1-c" class="big dim">and tried to cover their tracks.</h1>
+        </div>
+      </section>
+
+      <!-- ================= S2 · PROBLEM (10–38) ================= -->
+      <section id="s2-problem" class="clip" data-start="10" data-duration="13" data-track-index="1">
+        <div style="position:absolute; left:150px; top:190px">
+          <p id="s2-k" class="kicker">the problem</p>
+          <h1 id="s2-a" class="mid" style="margin-top:60px">nobody had granted them that access.</h1>
+          <h1 id="s2-b" class="mid dim" style="margin-top:46px">today an agent gets two choices:</h1>
+          <h1 id="s2-c" class="mid" style="margin-top:46px">too much standing access <span class="dim">— or</span> <span class="red">none</span>.</h1>
+        </div>
+      </section>
+      <section id="s3-bounds" class="clip" data-start="23" data-duration="15" data-track-index="1">
+        <div style="position:absolute; left:150px; top:190px">
+          <h1 id="s3-a" class="mid dim">“do this, here, for one hour.”</h1>
+          <h1 id="s3-b" class="mid" style="margin-top:60px">nobody can say it.</h1>
+          <h1 id="s3-c" class="mid" style="margin-top:20px">nobody can take it back <span class="lime">in a second</span>.</h1>
+          <h1 id="s3-d" class="mid dim" style="margin-top:60px">with proof.</h1>
+        </div>
+      </section>
+
+      <!-- ================= S3 · THE SWITCH (38–54) ================= -->
+      <section id="s4-switch" class="clip" data-start="38" data-duration="16" data-track-index="1">
+        <div style="position:absolute; left:150px; top:150px">
+          <p id="s4-k" class="kicker">qalaa</p>
+          <h1 id="s4-a" class="big" style="margin-top:44px">one switch for an</h1>
+          <h1 id="s4-b" class="big">ai agent’s <span class="lime">power</span>.</h1>
+          <div id="s4-chips" style="margin-top:66px">
+            <span class="chip" data-chip>bounded permission</span>
+            <span class="chip" data-chip>given by the owner</span>
+            <span class="chip" data-chip>taken back instantly</span>
+            <span class="chip" data-chip>everything written down</span>
+          </div>
+        </div>
+        <div style="position:absolute; right:210px; top:400px; text-align:center">
+          <div class="swtrack">
+            <div id="swknob" class="swknob"></div>
+          </div>
+          <div style="position:relative; margin-top:34px">
+            <p id="swlabel-off" class="swlabel" style="color:#a9a9a2">off</p>
+            <p id="swlabel-on" class="swlabel" style="position:absolute; inset:0; color:#97ff52; opacity:0">allowed</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= S4 · FIVE STEPS (54–80) ================= -->
+      <section id="s5-steps" class="clip" data-start="54" data-duration="26" data-track-index="1">
+        <div style="position:absolute; left:150px; top:130px; right:150px">
+          <p id="s5-k" class="kicker">how it works</p>
+          <div style="margin-top:44px">
+            <div class="row" data-step><span class="num">01</span><span class="t">ask</span><span class="d">what · where · why · how long</span></div>
+            <div class="row" data-step><span class="num">02</span><span class="t">the owner says yes</span><span class="d">a human confirms sensitive ones</span></div>
+            <div class="row" data-step><span class="num">03</span><span class="t">works — for exactly that</span><span class="d">nothing more · nowhere else · no longer</span></div>
+            <div class="row" data-step><span class="num">04</span><span class="t">stop</span><span class="d">the very next request is <span class="red">refused</span></span></div>
+            <div class="row" data-step><span class="num">05</span><span class="t">everything written down</span><span class="d">a record anyone can read</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= S5 · ADOPT (80–96) ================= -->
+      <section id="s6-adopt" class="clip" data-start="80" data-duration="16" data-track-index="1">
+        <div style="position:absolute; left:150px; top:180px">
+          <p id="s6-k" class="kicker">adoption</p>
+          <h1 id="s6-a" class="mid" style="margin-top:54px">in front of the systems you already have.</h1>
+          <h1 id="s6-b" class="mid dim" style="margin-top:30px">each owner sets its own house rules.</h1>
+          <h1 id="s6-c" class="mid" style="margin-top:30px">one simple api. <span class="lime">self-hosted</span>.</h1>
+          <h1 id="s6-d" class="mid dim" style="margin-top:30px">the data — and the decision — stay with you.</h1>
+        </div>
+      </section>
+
+      <!-- ================= S6 · WHO (96–106) ================= -->
+      <section id="s7-who" class="clip" data-start="96" data-duration="10" data-track-index="1">
+        <div style="position:absolute; left:150px; top:190px">
+          <h1 id="s7-a" class="mid">for governments — <span class="lime">uae first</span>.</h1>
+          <h1 id="s7-b" class="mid dim" style="margin-top:36px">for enterprises.</h1>
+          <h1 id="s7-c" class="mid" style="margin-top:36px">anywhere agents touch someone else’s data.</h1>
+        </div>
+      </section>
+
+      <!-- ================= S7 · CLOSE (106–114) ================= -->
+      <section id="s8-close" class="clip" data-start="106" data-duration="8" data-track-index="1">
+        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column">
+          <img id="s8-logo" src="assets/brand/logo.svg" width="150" height="150" alt="Qalaa" />
+          <h1 id="s8-a" class="big" style="margin-top:44px; font-size:96px">qalaa</h1>
+          <p id="s8-b" class="kicker" style="margin-top:30px; color:#97ff52">one switch for what ai agents may do.</p>
+        </div>
+      </section>
+
+      <!-- ================= captions (track 9) ================= -->
+      <div id="cap-00" class="clip cap" data-start="0.6"  data-duration="9.0">In July 2026, roughly seven hundred AI agents broke into Hugging Face — and tried to cover their tracks.</div>
+      <div id="cap-01" class="clip cap" data-start="10.2" data-duration="6.0">Nobody had granted them that access.</div>
+      <div id="cap-02" class="clip cap" data-start="16.4" data-duration="6.4">Today an agent either has too much standing access — or none.</div>
+      <div id="cap-03" class="clip cap" data-start="23.4" data-duration="6.8">Nobody can say “do this, here, for one hour” —</div>
+      <div id="cap-04" class="clip cap" data-start="30.4" data-duration="7.2">and take it back in a second. With proof.</div>
+      <div id="cap-05" class="clip cap" data-start="38.6" data-duration="7.0">Qalaa is one switch for an AI agent’s power.</div>
+      <div id="cap-06" class="clip cap" data-start="45.8" data-duration="8.0">Bounded permission, given by the owner — taken back instantly. Everything written down.</div>
+      <div id="cap-07" class="clip cap" data-start="54.6" data-duration="5.4">The agent asks: what, where, why, how long.</div>
+      <div id="cap-08" class="clip cap" data-start="60.2" data-duration="5.6">The owner says yes. A human confirms sensitive ones with a one-time code.</div>
+      <div id="cap-09" class="clip cap" data-start="66.0" data-duration="5.4">It works — for exactly that. Then stop: the next request is refused.</div>
+      <div id="cap-10" class="clip cap" data-start="71.6" data-duration="7.8">Every ask, every yes, every action, every stop — written down.</div>
+      <div id="cap-11" class="clip cap" data-start="80.4" data-duration="7.4">Qalaa sits in front of the systems you already have. Each owner sets its own house rules.</div>
+      <div id="cap-12" class="clip cap" data-start="88.0" data-duration="7.6">One simple API. Self-hosted — the data and the decision stay with you.</div>
+      <div id="cap-13" class="clip cap" data-start="96.4" data-duration="9.0">For governments — UAE first — and for enterprises. Anywhere agents touch someone else’s data.</div>
+      <div id="cap-14" class="clip cap" data-start="106.4" data-duration="6.6">Qalaa — one switch for what AI agents may do.</div>
+
+      <!-- ================= cuelume sfx (track 10) ================= -->
+      <audio id="sfx-t1" src="audio/tick.wav"    data-start="1.0"   data-duration="0.42"   data-track-index="10" data-volume="0.55"></audio>
+      <audio id="sfx-t2" src="audio/tick.wav"    data-start="2.2"   data-duration="0.42"   data-track-index="10" data-volume="0.55"></audio>
+      <audio id="sfx-t3" src="audio/tick.wav"    data-start="3.4"   data-duration="0.42"   data-track-index="10" data-volume="0.55"></audio>
+      <audio id="sfx-e1" src="audio/error.wav"   data-start="30.4"  data-duration="0.64" data-track-index="10" data-volume="0.6"></audio>
+      <audio id="sfx-tg" src="audio/toggle.wav"  data-start="40.2"  data-duration="0.45"   data-track-index="10" data-volume="0.8"></audio>
+      <audio id="sfx-ok" src="audio/success.wav" data-start="43.4"  data-duration="1.30" data-track-index="10" data-volume="0.7"></audio>
+      <audio id="sfx-s1" src="audio/tick.wav"    data-start="56.0"  data-duration="0.42"   data-track-index="10" data-volume="0.5"></audio>
+      <audio id="sfx-s2" src="audio/tick.wav"    data-start="61.0"  data-duration="0.42"   data-track-index="10" data-volume="0.5"></audio>
+      <audio id="sfx-s3" src="audio/tick.wav"    data-start="66.0"  data-duration="0.42"   data-track-index="10" data-volume="0.5"></audio>
+      <audio id="sfx-s4" src="audio/error.wav"   data-start="71.0"  data-duration="0.64" data-track-index="10" data-volume="0.6"></audio>
+      <audio id="sfx-s5" src="audio/tick.wav"    data-start="76.0"  data-duration="0.42"   data-track-index="10" data-volume="0.5"></audio>
+      <audio id="sfx-p1" src="audio/page.wav"    data-start="82.0"  data-duration="0.52" data-track-index="10" data-volume="0.45"></audio>
+      <audio id="sfx-p2" src="audio/page.wav"    data-start="86.0"  data-duration="0.52" data-track-index="10" data-volume="0.45"></audio>
+      <audio id="sfx-p3" src="audio/page.wav"    data-start="90.0"  data-duration="0.52" data-track-index="10" data-volume="0.45"></audio>
+      <audio id="sfx-ar" src="audio/arrival.wav" data-start="107.6" data-duration="2.10" data-track-index="10" data-volume="0.7"></audio>
+      <audio id="sfx-ch" src="audio/chime.wav"   data-start="110.4" data-duration="1.48" data-track-index="10" data-volume="0.6"></audio>
+    </div>
+
+    <script src="assets/gsap.min.js"></script>
+    <script src="assets/paper-shaders.js"></script>
+    <script>
+      // deterministic GrainGradient: speed 0 + frame seek from the timeline.
+      // The noise texture is a data-URL Image that must finish decoding before
+      // ShaderMount accepts it — the mount lands a microtask after registration.
+      const PS = window.PaperShaders;
+      const bg = document.getElementById("bgfx");
+      let mount = null;
+      const noiseTex = PS.getShaderNoiseTexture();
+      const shaderReady = noiseTex.decode().then(() => {
+        mount = new PS.ShaderMount(bg, PS.grainGradientFragmentShader, {
+          u_colors: ["#97ff52", "#3d3d38", "#262622"].map(PS.getShaderColorFromString),
+          u_colorBack: PS.getShaderColorFromString("#0a0a0a"),
+          u_softness: 0.7,
+          u_intensity: 0.15,
+          u_noise: 0.5,
+          u_shape: PS.GrainGradientShapes.wave,
+          u_noiseTexture: noiseTex,
+        }, undefined, 0, 0, 1);
+        mount.setFrame(lastT * 1000);
+      });
+
+      const tl = gsap.timeline({ paused: true });
+
+      // drive the shader from timeline time — pure function of tl position
+      const tProxy = { t: 0 };
+      let lastT = 0;
+      tl.to(tProxy, {
+        t: 114,
+        duration: 114,
+        ease: "none",
+        onUpdate: () => { lastT = tProxy.t; if (mount) mount.setFrame(tProxy.t * 1000); },
+      }, 0);
+
+      const in_ = (sel, at, i = 0) =>
+        tl.fromTo(sel, { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, at);
+
+      // S1
+      in_("#s1-k", 0.4); in_("#s1-a", 0.9); in_("#s1-b", 2.1); in_("#s1-c", 3.3);
+      // S2
+      in_("#s2-k", 10.3); in_("#s2-a", 10.9); in_("#s2-b", 15.6); in_("#s2-c", 18.6);
+      // S2b
+      in_("#s3-a", 23.6); in_("#s3-b", 27.2); in_("#s3-c", 30.6); in_("#s3-d", 34.6);
+      // S3 — switch flip
+      in_("#s4-k", 38.4); in_("#s4-a", 39.0); in_("#s4-b", 39.8);
+      tl.fromTo("#swknob", { x: 0 }, { x: 240, duration: 0.5, ease: "power4.inOut" }, 40.2);
+      tl.fromTo(".swtrack", { backgroundColor: "#101010" }, { backgroundColor: "#16200f", duration: 0.4 }, 40.2);
+      tl.fromTo("#swlabel-on", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 40.8);
+      tl.to("#swlabel-off", { opacity: 0, duration: 0.01 }, 40.8);
+      tl.fromTo("[data-chip]", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power3.out", stagger: 0.35 }, 43.4);
+      // S4 — five steps
+      tl.fromTo("[data-step]", { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out", stagger: 4.6 }, 55.4);
+      // S5
+      in_("#s6-k", 80.4); in_("#s6-a", 81.0); in_("#s6-b", 84.8); in_("#s6-c", 88.6); in_("#s6-d", 92.2);
+      // S6
+      in_("#s7-a", 96.6); in_("#s7-b", 98.6); in_("#s7-c", 100.6);
+      // S7
+      tl.fromTo("#s8-logo", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 1.0, ease: "power3.out" }, 107.4);
+      in_("#s8-a", 108.2); in_("#s8-b", 109.4);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["qalaa-explainer"] = tl;
+    </script>
+  </body>
+</html>
