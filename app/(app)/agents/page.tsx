@@ -23,7 +23,7 @@ export default function AgentsPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="The gang"
+        eyebrow="The garrison"
         title="Agents"
         description="Six autonomous agents with distinct mandates. Every action they take on a server is evaluated by policy and traced."
       />

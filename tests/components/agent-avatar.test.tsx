@@ -13,7 +13,7 @@ import { AgentAvatar, AGENT_LOOK, agentLook, avatarState } from "@/components/sh
 
 describe("AgentAvatar", () => {
   it("gives each of the six agents a distinct look and falls back for unknown ids", () => {
-    const ids = ["agt-cassidy", "agt-sundance", "agt-doc", "agt-belle", "agt-ringo", "agt-calamity"];
+    const ids = ["agt-saqr", "agt-hisn", "agt-athar", "agt-miftah", "agt-rahhal", "agt-bawwab"];
     const looks = ids.map((id) => agentLook(id));
     expect(new Set(looks.map((l) => l.type)).size).toBe(6);
     expect(new Set(looks.map((l) => l.color)).size).toBe(6);
@@ -31,7 +31,7 @@ describe("AgentAvatar", () => {
   });
 
   it("renders a decorative, sized wrapper around the sourced BotAvatar", () => {
-    const { container, getByTestId } = render(<AgentAvatar agentId="agt-cassidy" status="acting" size={32} />);
+    const { container, getByTestId } = render(<AgentAvatar agentId="agt-saqr" status="acting" size={32} />);
     const wrapper = container.firstElementChild as HTMLElement;
     expect(wrapper.getAttribute("aria-hidden")).toBe("true");
     expect(wrapper.style.width).toBe("32px");
@@ -44,10 +44,10 @@ describe("AgentAvatar", () => {
   });
 
   it("takes the id from the agent object and lets an explicit status override it", () => {
-    const { getByTestId, rerender } = render(<AgentAvatar agent={{ id: "agt-ringo", status: "paused" }} agentId="agt-doc" />);
+    const { getByTestId, rerender } = render(<AgentAvatar agent={{ id: "agt-rahhal", status: "paused" }} agentId="agt-athar" />);
     expect(getByTestId("bot").dataset.type).toBe("square");
     expect(getByTestId("bot").dataset.state).toBe("sleeping");
-    rerender(<AgentAvatar agent={{ id: "agt-ringo", status: "paused" }} status="acting" />);
+    rerender(<AgentAvatar agent={{ id: "agt-rahhal", status: "paused" }} status="acting" />);
     expect(getByTestId("bot").dataset.state).toBe("working");
   });
 });

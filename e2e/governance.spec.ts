@@ -18,7 +18,7 @@ test.describe("governance approvals", () => {
 
     const card = sheet.locator("li").filter({ hasText: approval.id });
     await expect(card).toBeVisible();
-    await expect(card.getByText("Sundance", { exact: true })).toBeVisible();
+    await expect(card.getByText("Hisn", { exact: true })).toBeVisible();
     await expect(card.getByText("block_egress").first()).toBeVisible();
     // pending approvals carry a projected score, not the 0 of an in-progress trace
     await expect(card.getByText("Risk score").locator("xpath=following-sibling::dd")).toHaveText(/^[1-9]\d?\/100$|^100\/100$/);

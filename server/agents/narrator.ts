@@ -51,7 +51,7 @@ export function statusCopy(): () => string {
     const open = s.threats.filter((t) => !["neutralized", "prevented", "false-positive"].includes(t.status)).length;
     const pending = s.approvals.filter((a) => a.status === "pending").length;
     const compromised = s.servers.filter((x) => x.status === "compromised").length;
-    return `${s.servers.length} servers up, ${open} open threat${open === 1 ? "" : "s"}, ${pending} approval${pending === 1 ? "" : "s"} waiting${compromised ? `, ${compromised} host${compromised === 1 ? "" : "s"} compromised` : ""}. Gang's riding autonomous.`;
+    return `${s.servers.length} servers up, ${open} open threat${open === 1 ? "" : "s"}, ${pending} approval${pending === 1 ? "" : "s"} waiting${compromised ? `, ${compromised} host${compromised === 1 ? "" : "s"} compromised` : ""}. Garrison is running autonomous.`;
   };
 }
 

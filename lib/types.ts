@@ -330,7 +330,7 @@ export interface AgentMetrics {
 
 export interface Agent {
   id: ID;
-  /** Cassidy, Sundance, Doc, Belle, Ringo, Calamity */
+  /** Saqr, Hisn, Athar, Miftah, Rahhal, Bawwab */
   name: string;
   callsign: string;
   role: AgentRole;
@@ -735,7 +735,7 @@ export interface QalaaEvent<T = unknown> {
   at: ISODate;
   agentId?: ID;
   severity?: Severity;
-  /** one-line human description for live feeds, e.g. "Sundance isolated dataset-worker-02" */
+  /** one-line human description for live feeds, e.g. "Hisn isolated dataset-worker-02" */
   summary?: string;
   /** optional deep link target, e.g. "/threats/T-1042" */
   href?: string;

@@ -22,7 +22,7 @@ import { ApprovalItem, expiresIn, targetLabel, APPROVAL_TTL_SEC } from "@/compon
 const approval: Approval = {
   id: "apr-1001",
   traceId: "trc-77",
-  agentId: "agt-doc",
+  agentId: "agt-athar",
   toolName: "rebuild_node",
   summary: "Rebuild prod-api-01 from golden image",
   risk: "destructive",
@@ -75,10 +75,10 @@ describe("ApprovalItem", () => {
     traceState.data = trace;
     render(
       <ul>
-        <ApprovalItem approval={approval} agentName="Doc" servers={servers} nowIso="2026-03-01T10:04:00.000Z" deciding={null} onDecide={() => {}} />
+        <ApprovalItem approval={approval} agentName="Athar" servers={servers} nowIso="2026-03-01T10:04:00.000Z" deciding={null} onDecide={() => {}} />
       </ul>,
     );
-    expect(screen.getByText("Doc")).toBeTruthy();
+    expect(screen.getByText("Athar")).toBeTruthy();
     expect(screen.getByText("destructive")).toBeTruthy();
     expect(screen.getByText("rebuild_node")).toBeTruthy();
     expect(screen.getByText("prod-api-01")).toBeTruthy();
@@ -91,7 +91,7 @@ describe("ApprovalItem", () => {
   it("falls back gracefully while the trace is still loading", () => {
     render(
       <ul>
-        <ApprovalItem approval={approval} agentName="Doc" servers={[]} nowIso={approval.requestedAt} deciding={null} onDecide={() => {}} />
+        <ApprovalItem approval={approval} agentName="Athar" servers={[]} nowIso={approval.requestedAt} deciding={null} onDecide={() => {}} />
       </ul>,
     );
     expect(screen.getByText("—")).toBeTruthy();
@@ -104,7 +104,7 @@ describe("ApprovalItem", () => {
     const onDecide = vi.fn();
     const { rerender } = render(
       <ul>
-        <ApprovalItem approval={approval} agentName="Doc" servers={servers} nowIso={approval.requestedAt} deciding={null} onDecide={onDecide} />
+        <ApprovalItem approval={approval} agentName="Athar" servers={servers} nowIso={approval.requestedAt} deciding={null} onDecide={onDecide} />
       </ul>,
     );
     fireEvent.click(screen.getByRole("button", { name: /Approve/ }));
@@ -114,7 +114,7 @@ describe("ApprovalItem", () => {
 
     rerender(
       <ul>
-        <ApprovalItem approval={approval} agentName="Doc" servers={servers} nowIso={approval.requestedAt} deciding="approve" onDecide={onDecide} />
+        <ApprovalItem approval={approval} agentName="Athar" servers={servers} nowIso={approval.requestedAt} deciding="approve" onDecide={onDecide} />
       </ul>,
     );
     const approving = screen.getByRole("button", { name: /Approving…/ }) as HTMLButtonElement;

@@ -27,6 +27,8 @@ import { SEVERITY_CLASS, SEVERITY_HEX, ago, humanize } from "@/lib/format";
 import type { AttackTechnique, CVE, ResearchQuery, ThreatActor } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import useSWR from "swr";
+import { LoadingState } from "@/components/beautiful-ui/loading-state";
+import { TextLoader } from "@/components/opensource-ui/text-loader";
 
 const SUGGESTIONS = [
   "Enrich 185.220.101.4",
@@ -40,7 +42,12 @@ const SUGGESTIONS = [
 function KbBrowser() {
   const [type, setType] = React.useState<"cve" | "technique" | "actor">("cve");
   const [q, setQ] = React.useState("");
-  const { data } = useSWR(`/research/kb?type=${type}&q=${encodeURIComponent(q)}`, () => api.research.kb(type, q), { keepPreviousData: true });
+  const { data: kb } = useSWR(
+    `/research/kb?type=${type}&q=${encodeURIComponent(q)}`,
+    async () => ({ type, rows: await api.research.kb(type, q) }),
+    { keepPreviousData: true },
+  );
+  const data = kb?.type === type ? kb.rows : undefined;
   return (
     <Card className="bezel-core gap-0 border-0 p-0">
       <Tabs value={type} onValueChange={(v) => setType(v as typeof type)} className="gap-0">
@@ -64,7 +71,7 @@ function KbBrowser() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(data as CVE[] | undefined)?.map((c) => (
+                {type === "cve" && (data as CVE[] | undefined)?.map((c) => (
                   <TableRow key={c.id} className="border-line">
                     <TableCell className="mono-data text-text-1">{c.id}</TableCell>
                     <TableCell className="text-text-2">{c.title}</TableCell>
@@ -77,7 +84,7 @@ function KbBrowser() {
           </TabsContent>
           <TabsContent value="technique" className="p-2">
             <ul className="flex flex-col gap-1">
-              {(data as AttackTechnique[] | undefined)?.map((t) => (
+              {type === "technique" && (data as AttackTechnique[] | undefined)?.map((t) => (
                 <li key={t.id} className="flex items-start gap-3 rounded-[10px] px-2 py-1.5 hover:bg-bg-2">
                   <a href={t.url} target="_blank" rel="noreferrer" className="mono-data shrink-0 text-cerulean hover:underline">
                     {t.id}
@@ -94,7 +101,7 @@ function KbBrowser() {
           </TabsContent>
           <TabsContent value="actor" className="p-2">
             <ul className="flex flex-col gap-1">
-              {(data as ThreatActor[] | undefined)?.map((a) => (
+              {type === "actor" && (data as ThreatActor[] | undefined)?.map((a) => (
                 <li key={a.id} className="rounded-[10px] px-2 py-1.5 hover:bg-bg-2">
                   <p className="text-text-1">
                     {a.name} <span className="text-[11px] text-text-3">· {a.aliases.join(", ")}</span>
@@ -137,7 +144,8 @@ function Result({ q }: { q: ResearchQuery }) {
       {q.status === "running" && (
         <div className="flex items-center gap-3 rounded-[12px] bg-bg-2 p-3">
           <ThinkingOrb state="searching" size={20} theme="dark" />
-          <span className="text-text-2">Doc is working the case — enriching indicators, pulling techniques, checking exposure.</span>
+          <span className="text-text-2">Athar is working the case — enriching indicators, pulling techniques, checking exposure.</span>
+          <TextLoader text="Searching" className="ml-auto text-[13px]" />
         </div>
       )}
       {r && (
@@ -245,7 +253,7 @@ function ResearchInner() {
       setValue("");
       void mutate();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Doc couldn't take that one");
+      toast.error(e instanceof Error ? e.message : "Athar couldn't take that one");
     } finally {
       setBusy(false);
     }
@@ -254,16 +262,16 @@ function ResearchInner() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="Doc's workbench"
+        eyebrow="Athar's workbench"
         title="Research"
-        description="Ask Doc to enrich an indicator, explain a CVE, map techniques, or investigate anything in the fleet. Every investigation is a trace."
+        description="Ask Athar to enrich an indicator, explain a CVE, map techniques, or investigate anything in the fleet. Every investigation is a trace."
       />
       <div className="grid grid-cols-12 gap-4">
         <div className="col-span-12 flex flex-col gap-4 xl:col-span-5">
           <BlurFade delay={0.05}>
             <Card className="bezel-core gap-0 border-0 p-3">
               <PromptInput value={value} onValueChange={setValue} onSubmit={() => void ask()} isLoading={busy} className="border-line bg-bg-2">
-                <PromptInputTextarea placeholder="Ask Doc…" className="text-[13.5px]" />
+                <PromptInputTextarea placeholder="Ask Athar…" className="text-[13.5px]" />
                 <PromptInputActions className="justify-end">
                   <Tooltip>
                     <TooltipTrigger
@@ -273,7 +281,7 @@ function ResearchInner() {
                     >
                       <ArrowUp weight="bold" className="size-4" />
                     </TooltipTrigger>
-                    <TooltipContent>Send to Doc</TooltipContent>
+                    <TooltipContent>Send to Athar</TooltipContent>
                   </Tooltip>
                 </PromptInputActions>
               </PromptInput>
@@ -322,7 +330,7 @@ function ResearchInner() {
             ) : (
               <div className="grid h-[600px] place-items-center text-center">
                 <div>
-                  <p className="font-display text-[26px] text-text-1">Ask Doc something.</p>
+                  <p className="font-display text-[26px] text-text-1">Ask Athar something.</p>
                   <p className="mt-1 text-text-2">An IP, a CVE id, a technique, a hostname — or a plain question.</p>
                 </div>
               </div>
@@ -336,7 +344,7 @@ function ResearchInner() {
 
 export default function ResearchPage() {
   return (
-    <React.Suspense fallback={<div className="text-text-3">Loading research…</div>}>
+    <React.Suspense fallback={<LoadingState label="Loading research" variant="drive" />}>
       <ResearchInner />
     </React.Suspense>
   );

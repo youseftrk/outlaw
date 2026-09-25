@@ -7,9 +7,9 @@ import type { Agent } from "@/lib/types";
 beforeAll(() => getRuntime());
 
 const agent = (autonomy: Agent["autonomy"] = "autonomous"): Agent =>
-  store.s.agents.find((a) => a.id === "agt-sundance")!
-    ? { ...store.s.agents.find((a) => a.id === "agt-sundance")!, autonomy }
-    : (() => { throw new Error("no sundance"); })();
+  store.s.agents.find((a) => a.id === "agt-hisn")!
+    ? { ...store.s.agents.find((a) => a.id === "agt-hisn")!, autonomy }
+    : (() => { throw new Error("no hisn"); })();
 
 describe("policy engine", () => {
   it("deny wins over allow (prod→sandbox migration)", () => {

@@ -11,7 +11,7 @@ import { FlickeringGrid } from "@/components/ui/flickering-grid";
 import { AnimatedBeam } from "@/components/ui/animated-beam";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { TextShimmer } from "@/components/ui/text-shimmer";
-import { Iphone } from "@/components/ui/iphone";
+import { PhoneMockup } from "@/components/ui/phone-mockup";
 import { Button } from "@/components/ui/button";
 import { AgentAvatar } from "@/components/shell/agent-avatar";
 import { PhoneConversation } from "@/components/compositions/phone-conversation";
@@ -51,14 +51,14 @@ function ThermalBg({ grid = true }: { grid?: boolean }) {
     <>
       <div className="thermal absolute inset-0" />
       <div className="absolute inset-0 opacity-70 mix-blend-screen">
-        <Aurora colorStops={["#015473", "#24C7D6", "#D0FF78"]} amplitude={0.9} blend={0.55} speed={0.45} />
+        <Aurora colorStops={["#333f48", "#99d6ea", "#D0FF78"]} amplitude={0.9} blend={0.55} speed={0.45} />
       </div>
       {grid && (
         <FlickeringGrid
           className="absolute inset-0 opacity-25 [mask-image:radial-gradient(70%_60%_at_50%_60%,black,transparent)]"
           squareSize={3}
           gridGap={9}
-          color="#61E7DB"
+          color="#a9e3f2"
           maxOpacity={0.35}
           flickerChance={0.06}
         />
@@ -71,8 +71,8 @@ function ThermalBg({ grid = true }: { grid?: boolean }) {
 function CarbonBg() {
   return (
     <>
-      <div className="absolute inset-0 bg-[#040e17]" />
-      <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_80%_20%,rgba(1,84,115,0.45),transparent_60%),radial-gradient(50%_40%_at_10%_90%,rgba(36,199,214,0.18),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[#0c0e11]" />
+      <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_80%_20%,rgba(51, 63, 72,0.45),transparent_60%),radial-gradient(50%_40%_at_10%_90%,rgba(153, 214, 234,0.18),transparent_60%)]" />
       <span className="grain absolute inset-0" />
     </>
   );
@@ -205,7 +205,7 @@ function GangSlide({ agents }: { agents: { id: string; name: string; role: strin
     <div className="relative flex h-full flex-col justify-center px-[6vw]">
       <CarbonBg />
       <div className="relative">
-        <Eyebrow>Meet the gang</Eyebrow>
+        <Eyebrow>Meet the garrison</Eyebrow>
         <Headline className="mt-3 text-[clamp(36px,4.6vw,72px)]">Six agents. Six mandates. All autonomous.</Headline>
         <div className="mt-10 grid grid-cols-6 gap-4">
           {agents.map((a) => (
@@ -235,14 +235,14 @@ function FlowNode({ r, label, sub, children }: { r: React.RefObject<HTMLDivEleme
 function FlowSlide() {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const telemetryRef = React.useRef<HTMLDivElement>(null);
-  const cassidyRef = React.useRef<HTMLDivElement>(null);
+  const saqrRef = React.useRef<HTMLDivElement>(null);
   const policyRef = React.useRef<HTMLDivElement>(null);
   const toolsRef = React.useRef<HTMLDivElement>(null);
   const textRef = React.useRef<HTMLDivElement>(null);
   const traceRef = React.useRef<HTMLDivElement>(null);
   const beams = [
-    [telemetryRef, cassidyRef],
-    [cassidyRef, policyRef],
+    [telemetryRef, saqrRef],
+    [saqrRef, policyRef],
     [policyRef, toolsRef],
     [toolsRef, textRef],
     [toolsRef, traceRef],
@@ -257,15 +257,15 @@ function FlowSlide() {
           <FlowNode r={telemetryRef} label="Telemetry" sub="servers · datasets · tokens · network">
             <span className="mono-data text-[11px] text-cerulean">auth.admin-token-minted</span>
           </FlowNode>
-          <FlowNode r={cassidyRef} label="Cassidy" sub="correlates · triages · assigns">
-            <AgentAvatar agentId="agt-cassidy" status="investigating" size={56} />
+          <FlowNode r={saqrRef} label="Saqr" sub="correlates · triages · assigns">
+            <AgentAvatar agentId="agt-saqr" status="investigating" size={56} />
           </FlowNode>
           <FlowNode r={policyRef} label="Policy" sub="allow · deny · require approval">
             <span className="mono-data text-[11px] text-lime">10 policies · deny wins</span>
           </FlowNode>
           <FlowNode r={toolsRef} label="Tools on servers" sub="isolate · revoke · patch · migrate">
             <span className="flex -space-x-2">
-              {["agt-sundance", "agt-belle", "agt-ringo", "agt-calamity"].map((id) => (
+              {["agt-hisn", "agt-miftah", "agt-rahhal", "agt-bawwab"].map((id) => (
                 <span key={id} className="rounded-full ring-2 ring-bg-1">
                   <AgentAvatar agentId={id} status="acting" size={28} />
                 </span>
@@ -274,14 +274,14 @@ function FlowSlide() {
           </FlowNode>
           <div className="flex flex-col gap-6">
             <FlowNode r={textRef} label="Text" sub="iMessage-style, two-way">
-              <span className="bubble-agent px-3 py-1.5 text-[12px]">Locked the registry. Doc is on evidence.</span>
+              <span className="bubble-agent px-3 py-1.5 text-[12px]">Locked the registry. Athar is on evidence.</span>
             </FlowNode>
             <FlowNode r={traceRef} label="Trace" sub="every span, every policy hit">
               <span className="mono-data text-[11px] text-text-2">TR-2091 · 7 spans · risk 62</span>
             </FlowNode>
           </div>
           {beams.map(([a, b], i) => (
-            <AnimatedBeam key={i} containerRef={containerRef} fromRef={a} toRef={b} duration={4 + i} delay={i * 0.6} pathColor="rgba(214,240,246,0.12)" gradientStartColor="#24c7d6" gradientStopColor="#d0ff78" curvature={i === 4 ? 40 : i === 3 ? -40 : 0} />
+            <AnimatedBeam key={i} containerRef={containerRef} fromRef={a} toRef={b} duration={4 + i} delay={i * 0.6} pathColor="rgba(217, 217, 214,0.12)" gradientStartColor="#99d6ea" gradientStopColor="#d0ff78" curvature={i === 4 ? 40 : i === 3 ? -40 : 0} />
           ))}
         </div>
       </div>
@@ -296,7 +296,7 @@ function ServersSlide() {
       <div className="relative col-span-6">
         <Eyebrow tone="dark">Autonomous on servers</Eyebrow>
         <Headline tone="dark" className="mt-4">
-          Ringo conforms every host to baseline — and moves what can&apos;t be trusted.
+          Rahhal conforms every host to baseline — and moves what can&apos;t be trusted.
         </Headline>
       </div>
       <div className="relative col-span-6 flex flex-col gap-3">
@@ -324,7 +324,7 @@ function TraceSlide() {
     ["policy", "Autonomous containment (allow) · Patch & harden autonomously (allow)", "ok"],
     ["tool", "lock_registry pkg-cache-01 — plugin install disabled, admin tokens revoked", "ok"],
     ["tool", "snapshot_evidence pkg-cache-01 — 412 MB · sha256 9f1c…", "ok"],
-    ["message", "Cassidy texted the operator", "ok"],
+    ["message", "Saqr texted the operator", "ok"],
     ["outcome", "Threat T-1187 contained in 14 s · attacker path closed", "ok"],
   ];
   return (
@@ -336,7 +336,7 @@ function TraceSlide() {
         <Body className="mt-6">What the agent saw, what it reasoned, which policies fired, what it ran on the server, and how it turned out. Exportable. Auditable. Blind-boundary tested.</Body>
       </div>
       <div className="relative col-span-7 rounded-[24px] bg-bg-1 p-6 ring-1 ring-line">
-        <p className="mono-data text-[12px] text-text-3">TR-2091 · agt-sundance · risk 62 · completed</p>
+        <p className="mono-data text-[12px] text-text-3">TR-2091 · agt-hisn · risk 62 · completed</p>
         <ol className="relative mt-4 flex flex-col gap-3 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-line-strong">
           {spans.map(([k, t, s], i) => (
             <li key={i} className="relative pl-7">
@@ -358,7 +358,7 @@ function TextsSlide({ children }: { children: React.ReactNode }) {
       <ThermalBg grid={false} />
       <div className="relative col-span-6">
         <Eyebrow>Texts, not tickets</Eyebrow>
-        <Headline className="mt-4">The gang texts you. You text back.</Headline>
+        <Headline className="mt-4">The garrison texts you. You text back.</Headline>
         <Body className="mt-6">
           Alerts, approvals, and reports arrive like messages from a colleague. Reply <span className="mono-data text-text-1">isolate dataset-worker-02</span> or tap{" "}
           <span className="text-lime">Approve</span> — the command becomes a governed trace.
@@ -366,9 +366,9 @@ function TextsSlide({ children }: { children: React.ReactNode }) {
       </div>
       <div className="relative col-span-6 flex justify-center">
         <div className="w-[min(340px,26vw)]">
-          <Iphone className="drop-shadow-[0_60px_120px_rgba(0,0,0,0.6)]" screenClassName="bg-[#040c14]">
+          <PhoneMockup className="drop-shadow-[0_60px_120px_rgba(0,0,0,0.6)]" finish="graphite">
             {children}
-          </Iphone>
+          </PhoneMockup>
         </div>
       </div>
     </div>
@@ -382,7 +382,7 @@ function RangeSlide() {
       <div className="relative grid grid-cols-12 gap-10">
         <div className="col-span-6">
           <Eyebrow>The blind range</Eyebrow>
-          <Headline className="mt-4">We replayed July 2026 against the gang. They didn&apos;t know.</Headline>
+          <Headline className="mt-4">We replayed July 2026 against the garrison. They didn&apos;t know.</Headline>
         </div>
         <div className="col-span-6 flex flex-col gap-3 self-end">
           {[
@@ -439,13 +439,13 @@ function ResearchSlide() {
       <CarbonBg />
       <div className="relative col-span-6">
         <Eyebrow>Security research</Eyebrow>
-        <Headline className="mt-4">Ask Doc. Get an investigation, not a search result.</Headline>
+        <Headline className="mt-4">Ask Athar. Get an investigation, not a search result.</Headline>
         <Body className="mt-6">IOC enrichment, CVE exposure, ATT&amp;CK mapping, actor profiles — grounded in your fleet and written up as a trace you can hand to an auditor.</Body>
       </div>
       <div className="relative col-span-6">
         <div className="rounded-[24px] bg-bg-1 p-6 ring-1 ring-line">
           <div className="flex items-center gap-3">
-            <AgentAvatar agentId="agt-doc" status="investigating" size={44} />
+            <AgentAvatar agentId="agt-athar" status="investigating" size={44} />
             <div>
               <p className="eyebrow">ioc · 2 s ago</p>
               <p className="font-display text-[clamp(18px,1.6vw,26px)] leading-none text-text-1">Enrich 185.220.101.4</p>
@@ -501,7 +501,7 @@ function CloseSlide() {
       <div className="relative flex flex-col items-center">
         <Image src="/brand/logo.svg" alt="" width={96} height={96} className="drop-shadow-[0_20px_50px_rgba(21,197,220,0.45)]" />
         <TextGenerateEffect words="Every AI agent, protected." className="font-display mt-8 text-[clamp(48px,7vw,120px)] leading-none text-text-1 [&_span]:font-display" />
-        <TextShimmer as="p" className="mt-8 text-[clamp(14px,1.2vw,20px)] [--base-color:#9db9c3] [--base-gradient-color:#d0ff78]" duration={2.4}>
+        <TextShimmer as="p" className="mt-8 text-[clamp(14px,1.2vw,20px)] [--base-color:#bbbcbc] [--base-gradient-color:#d0ff78]" duration={2.4}>
           github.com/youseftrk/outlaw
         </TextShimmer>
       </div>
@@ -523,8 +523,8 @@ function DeckInner() {
   const [dir, setDir] = React.useState(1);
 
   const agents = React.useMemo(() => boot?.agents ?? [], [boot]);
-  const cassidyThread = boot?.threads.find((t) => t.id === "thr-cassidy") ?? boot?.threads[0];
-  const cassidy = agents.find((a) => a.id === "agt-cassidy");
+  const saqrThread = boot?.threads.find((t) => t.id === "thr-saqr") ?? boot?.threads[0];
+  const saqr = agents.find((a) => a.id === "agt-saqr");
 
   const finished = (range?.history ?? []).filter((r) => r.score);
   const p = finished.find((r) => r.mode === "protected");
@@ -544,7 +544,7 @@ function DeckInner() {
         key: "texts",
         node: (
           <TextsSlide>
-            {cassidyThread ? <PhoneConversation thread={cassidyThread} agent={cassidy} /> : <div className="grid h-full place-items-center text-text-3">Start the app to load texts</div>}
+            {saqrThread ? <PhoneConversation thread={saqrThread} agent={saqr} /> : <div className="grid h-full place-items-center text-text-3">Start the app to load texts</div>}
           </TextsSlide>
         ),
       },
@@ -574,7 +574,7 @@ function DeckInner() {
       { key: "roadmap", node: <RoadmapSlide /> },
       { key: "close", node: <CloseSlide /> },
     ],
-    [agents, cassidyThread, cassidy, p, b],
+    [agents, saqrThread, saqr, p, b],
   );
 
   // Deep-link: /deck?slide=7 opens slide 7; the URL follows navigation so a slide can be reloaded in place.
@@ -612,7 +612,7 @@ function DeckInner() {
   }, [go, slides.length]);
 
   return (
-    <main className="deck relative h-svh w-full overflow-hidden bg-[#040e17] text-text-1 select-none">
+    <main className="deck relative h-svh w-full overflow-hidden bg-[#0c0e11] text-text-1 select-none">
       <AnimatePresence mode="wait" initial={false}>
         <motion.section
           key={slides[index].key}
@@ -628,11 +628,13 @@ function DeckInner() {
 
       <div className="deck-chrome absolute inset-x-0 bottom-0 z-20 flex items-center justify-between px-6 py-4">
         <span className="mono-data text-[11px] text-text-3">
-          outlaw · {String(index + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
+          Qalaa · {String(index + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
         </span>
         <div className="flex items-center gap-1.5">
           {slides.map((s, i) => (
-            <button key={s.key} type="button" aria-label={`Slide ${i + 1}`} onClick={() => { setDir(i > index ? 1 : -1); setIndex(i); }} className={cn("h-1.5 rounded-full transition-all duration-500 ease-[var(--ease-spring)]", i === index ? "w-6 bg-lime" : "w-1.5 bg-text-3/50 hover:bg-text-3")} />
+            <button key={s.key} type="button" aria-label={`Slide ${i + 1}`} aria-current={i === index ? "step" : undefined} onClick={() => { setDir(i > index ? 1 : -1); setIndex(i); }} className="group/dot flex h-8 min-w-6 items-center justify-center rounded-full px-1 outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <span aria-hidden className={cn("block h-1.5 rounded-full transition-[width,background-color] duration-500 ease-[var(--ease-spring)]", i === index ? "w-6 bg-lime" : "w-1.5 bg-text-3/50 group-hover/dot:bg-text-3")} />
+            </button>
           ))}
         </div>
         <div className="flex items-center gap-1">

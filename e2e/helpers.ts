@@ -38,7 +38,7 @@ export async function pendingApprovals(request: APIRequestContext) {
 }
 
 /**
- * Deterministic require-approval path (SPEC §policy): cap Sundance (containment)
+ * Deterministic require-approval path (SPEC §policy): cap Hisn (containment)
  * at `act-with-approval` so her medium-risk `block_egress` needs a human, then
  * inject a director scenario whose plan starts with that tool. The brain dedupes
  * a category+server pair for 5 simulated minutes, so fall through the scenarios
@@ -46,8 +46,8 @@ export async function pendingApprovals(request: APIRequestContext) {
  */
 export async function createApproval(request: APIRequestContext, scenarios = ["c2-beacon", "exfil", "brute-force"]) {
   const before = new Set((await pendingApprovals(request)).map((a) => a.id));
-  await patchAgent(request, "agt-sundance", { autonomy: "act-with-approval" });
-  const fresh = async () => (await pendingApprovals(request)).find((a) => !before.has(a.id) && a.agentId === "agt-sundance");
+  await patchAgent(request, "agt-hisn", { autonomy: "act-with-approval" });
+  const fresh = async () => (await pendingApprovals(request)).find((a) => !before.has(a.id) && a.agentId === "agt-hisn");
 
   for (const scenario of scenarios) {
     await director(request, scenario);
@@ -58,7 +58,7 @@ export async function createApproval(request: APIRequestContext, scenarios = ["c
       await new Promise((r) => setTimeout(r, 500));
     }
   }
-  throw new Error(`director scenarios [${scenarios.join(", ")}] did not yield a pending approval for Sundance`);
+  throw new Error(`director scenarios [${scenarios.join(", ")}] did not yield a pending approval for Hisn`);
 }
 
 export async function approvalStatus(request: APIRequestContext, id: string) {
@@ -69,7 +69,7 @@ export async function approvalStatus(request: APIRequestContext, id: string) {
 }
 
 export async function restoreSundance(request: APIRequestContext) {
-  await patchAgent(request, "agt-sundance", { autonomy: "autonomous" });
+  await patchAgent(request, "agt-hisn", { autonomy: "autonomous" });
 }
 
 export async function expectNoHorizontalOverflow(page: Page) {

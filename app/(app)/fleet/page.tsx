@@ -30,6 +30,7 @@ import { api, useBootstrap, useMigrations, useServer, useServers } from "@/lib/h
 import { MIGRATION_STATUS_LABEL, SERVER_STATUS_HEX, THREAT_STATUS_CLASS, THREAT_STATUS_LABEL, ago, humanize } from "@/lib/format";
 import type { ConformanceCategory, ConformanceCheck, Migration, MigrationReason, Region, Server } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { LoadingState } from "@/components/beautiful-ui/loading-state";
 
 const loadConfig: ChartConfig = { v: { label: "load", color: "var(--color-cerulean)" } };
 const CATEGORIES: ConformanceCategory[] = ["patching", "network", "identity", "config", "runtime", "data"];
@@ -59,7 +60,7 @@ function ServerSheet({ serverId, onClose }: { serverId: string | null; onClose: 
     setRunning(true);
     try {
       await api.fleet.runConformance(serverId);
-      toast.success("Ringo is running conformance on this host");
+      toast.success("Rahhal is running conformance on this host");
       setTimeout(() => void mutate(), 2500);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't start checks");
@@ -228,7 +229,7 @@ function MigrationCard({ m, servers }: { m: Migration; servers: Server[] }) {
 
   return (
     <Card className="bezel-core relative gap-0 overflow-hidden border-0 p-4">
-      {live && <BorderBeam size={100} duration={6} colorFrom="#d0ff78" colorTo="#24c7d6" borderWidth={1.5} />}
+      {live && <BorderBeam size={100} duration={6} colorFrom="#d0ff78" colorTo="#99d6ea" borderWidth={1.5} />}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="eyebrow">
@@ -252,7 +253,7 @@ function MigrationCard({ m, servers }: { m: Migration; servers: Server[] }) {
 
       <div ref={containerRef} className="relative mt-4 flex items-center justify-between gap-6 rounded-[12px] bg-bg-0/50 p-3">
         <div ref={fromRef} className="z-10 rounded-[10px] bg-bg-2 px-3 py-2">
-          <p className="eyebrow text-[9px]">from</p>
+          <p className="eyebrow text-[10px]">from</p>
           <p className="mono-data text-[12px] text-text-1">{src?.hostname ?? m.sourceServerId}</p>
           <p className="text-[11px] text-text-3">{src ? `${src.region} · ${src.provider}` : ""}</p>
         </div>
@@ -261,7 +262,7 @@ function MigrationCard({ m, servers }: { m: Migration; servers: Server[] }) {
           <p className="text-[10px] text-text-3">{m.workloads.length} workloads</p>
         </div>
         <div ref={toRef} className="z-10 rounded-[10px] bg-bg-2 px-3 py-2 text-right">
-          <p className="eyebrow text-[9px]">to</p>
+          <p className="eyebrow text-[10px]">to</p>
           <p className="mono-data text-[12px] text-text-1">{dst?.hostname ?? (m.targetSpec ? `new ${m.targetSpec.role}` : "—")}</p>
           <p className="text-[11px] text-text-3">
             {dst ? `${dst.region} · ${dst.provider}` : m.targetSpec ? `${m.targetSpec.region} · ${m.targetSpec.provider}` : ""}
@@ -273,9 +274,9 @@ function MigrationCard({ m, servers }: { m: Migration; servers: Server[] }) {
           toRef={toRef}
           curvature={-24}
           duration={live ? 3 : 8}
-          pathColor="rgba(214,240,246,0.15)"
+          pathColor="rgba(217, 217, 214,0.15)"
           gradientStartColor="#d0ff78"
-          gradientStopColor="#24c7d6"
+          gradientStopColor="#99d6ea"
         />
       </div>
 
@@ -300,7 +301,7 @@ function MigrationCard({ m, servers }: { m: Migration; servers: Server[] }) {
       <div className="mt-3 flex items-center gap-2">
         <AgentAvatar agentId={m.ownerAgentId} size={18} />
         <span className="text-[11px] text-text-3">
-          {servers.length ? "Ringo" : m.ownerAgentId} · updated {ago(m.updatedAt)}
+          {servers.length ? "Rahhal" : m.ownerAgentId} · updated {ago(m.updatedAt)}
         </span>
         <div className="ml-auto flex gap-1.5">
           {m.status === "awaiting-approval" && (
@@ -345,7 +346,7 @@ function NewMigrationDialog({ servers }: { servers: Server[] }) {
         reason,
         workloads: src.workloads,
       });
-      toast.success(`Ringo is planning the move for ${src.hostname}`);
+      toast.success(`Rahhal is planning the move for ${src.hostname}`);
       setOpen(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't plan migration");
@@ -358,7 +359,7 @@ function NewMigrationDialog({ servers }: { servers: Server[] }) {
       <DialogContent className="bezel-core border-line">
         <DialogHeader>
           <DialogTitle className="font-display text-[24px] font-normal">Move workloads</DialogTitle>
-          <DialogDescription>Ringo plans it, dry-runs it, then executes with a rollback path. Database moves wait for your approval.</DialogDescription>
+          <DialogDescription>Rahhal plans it, dry-runs it, then executes with a rollback path. Database moves wait for your approval.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-[12px] text-text-2">
@@ -444,13 +445,13 @@ function FleetInner() {
       <PageHeader
         eyebrow="Servers · conformance · migrations"
         title="Fleet"
-        description="Ringo conforms every host to baseline, patches what's known, and moves workloads when a server can't be trusted."
+        description="Rahhal conforms every host to baseline, patches what's known, and moves workloads when a server can't be trusted."
         actions={<NewMigrationDialog servers={servers ?? []} />}
       />
 
       <BlurFade delay={0.05} className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <KpiCard label="Avg conformance" value={avg} suffix="/100" tone="cerulean" />
-        <KpiCard label="Isolated" value={count("isolated")} tone="lime" hint="Held by Sundance" />
+        <KpiCard label="Isolated" value={count("isolated")} tone="lime" hint="Held by Hisn" />
         <KpiCard label="Compromised" value={count("compromised")} tone="warm" hint="Rebuild or migrate pending" />
         <KpiCard label="Migrating · rebuilding" value={count("migrating") + count("rebuilding")} tone="neutral" />
       </BlurFade>
@@ -529,7 +530,7 @@ function FleetInner() {
             {migrations && migrations.length === 0 && (
               <Card className="bezel-core col-span-full gap-0 border-0 p-8 text-center">
                 <p className="font-display text-[22px] text-text-1">No migrations yet.</p>
-                <p className="mt-1 text-text-2">Plan one, or wait — Ringo opens one automatically when a host is compromised.</p>
+                <p className="mt-1 text-text-2">Plan one, or wait — Rahhal opens one automatically when a host is compromised.</p>
               </Card>
             )}
           </div>
@@ -543,7 +544,7 @@ function FleetInner() {
 
 export default function FleetPage() {
   return (
-    <React.Suspense fallback={<div className="text-text-3">Loading fleet…</div>}>
+    <React.Suspense fallback={<LoadingState label="Loading fleet" variant="orbit" />}>
       <FleetInner />
     </React.Suspense>
   );

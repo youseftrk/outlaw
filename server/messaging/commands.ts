@@ -1,6 +1,6 @@
 /**
  * Operator command parser + dispatcher (SPEC §8). Case-insensitive, works
- * in any thread; Cassidy replies unless the addressed agent owns the tool.
+ * in any thread; Saqr replies unless the addressed agent owns the tool.
  * Every command produces a trace with input.from = "operator".
  */
 import type { Agent, Message } from "@/lib/types";
@@ -32,16 +32,16 @@ function resolveAgentForThread(threadId: string): Agent {
     const a = store.agent(thread.agentId);
     if (a) return a;
   }
-  return store.agent("agt-cassidy")!;
+  return store.agent("agt-saqr")!;
 }
 
 const OWNER: Record<string, string> = {
-  isolate_host: "agt-sundance", block_egress: "agt-sundance", cordon_cluster: "agt-sundance",
-  kill_process: "agt-sundance", lock_registry: "agt-sundance",
-  revoke_token: "agt-belle", rotate_credentials: "agt-belle", disable_account: "agt-belle",
-  quarantine_dataset: "agt-calamity", scan_dataset: "agt-calamity",
-  rebuild_node: "agt-ringo", migrate_workload: "agt-ringo", patch_service: "agt-ringo",
-  run_conformance: "agt-ringo", remediate_drift: "agt-ringo", harden_sandbox: "agt-ringo",
+  isolate_host: "agt-hisn", block_egress: "agt-hisn", cordon_cluster: "agt-hisn",
+  kill_process: "agt-hisn", lock_registry: "agt-hisn",
+  revoke_token: "agt-miftah", rotate_credentials: "agt-miftah", disable_account: "agt-miftah",
+  quarantine_dataset: "agt-bawwab", scan_dataset: "agt-bawwab",
+  rebuild_node: "agt-rahhal", migrate_workload: "agt-rahhal", patch_service: "agt-rahhal",
+  run_conformance: "agt-rahhal", remediate_drift: "agt-rahhal", harden_sandbox: "agt-rahhal",
 };
 
 export async function handleOperatorMessage(threadId: string, text: string): Promise<{ sent: Message; replies: Message[] }> {
@@ -136,22 +136,22 @@ export async function handleOperatorMessage(threadId: string, text: string): Pro
       else {
         const { createMigration } = await import("../fleet/migrations");
         const mig = createMigration({ sourceServerId: srv.id, targetSpec: { region: mm[2] }, reason: "capacity" });
-        say(`Queued ${mig.id}: ${srv.hostname} → ${mm[2]}. Ringo owns it — watch fleet.`, { kind: "status" });
+        say(`Queued ${mig.id}: ${srv.hostname} → ${mm[2]}. Rahhal owns it — watch fleet.`, { kind: "status" });
       }
     } else if (v === "pause" || v === "resume") {
       const target = cmd.args[0] ? store.agent(cmd.args[0]) : undefined;
       const names = target ? [target] : store.s.agents;
       for (const a of names) a.status = v === "pause" ? "paused" : "idle";
       store.markDirty();
-      bus.emit("agent.status", { agents: names.map((a) => a.id) }, { summary: `${v}d ${target ? target.name : "the whole gang"}`, href: "/agents" });
-      say(v === "pause" ? `${target ? target.name : "The gang"} is paused.` : `${target ? target.name : "The gang"} is back on the trail.`);
+      bus.emit("agent.status", { agents: names.map((a) => a.id) }, { summary: `${v}d ${target ? target.name : "the whole garrison"}`, href: "/agents" });
+      say(v === "pause" ? `${target ? target.name : "The garrison"} is paused.` : `${target ? target.name : "The garrison"} is back on watch.`);
     } else if (/^who/.test(v) || /who'?s on/.test(cmd.raw.toLowerCase())) {
       const host = cmd.args[cmd.args.length - 1] ?? "";
       const srv = store.server(host);
       if (!srv) say(`Can't find host ${host}.`);
       else {
         const on = srv.protectedBy.map((id) => store.agent(id)?.name).filter(Boolean);
-        say(`${srv.hostname}: ${srv.role} · ${srv.status} · conformance ${srv.conformanceScore}. Riding it: ${on.join(", ") || "the whole gang (no dedicated agent)"}.`);
+        say(`${srv.hostname}: ${srv.role} · ${srv.status} · conformance ${srv.conformanceScore}. Watching it: ${on.join(", ") || "the whole garrison (no dedicated agent)"}.`);
       }
     } else if (/^what/.test(v) || /what happened/.test(cmd.raw.toLowerCase())) {
       const host = cmd.args[cmd.args.length - 1] ?? "";
@@ -163,7 +163,7 @@ export async function handleOperatorMessage(threadId: string, text: string): Pro
     } else {
       // freeform → narrator (LLM) or template
       if (llmConfigured()) {
-        const system = "You are Cassidy of Qalaa answering the operator in one or two short sentences. Only use observable fleet state.";
+        const system = "You are Saqr of Qalaa answering the operator in one or two short sentences. Only use observable fleet state.";
         const user = `Operator asks: ${cmd.raw}\nState: ${statusCopy()()}`;
         if (llmIsSlow()) {
           llmChatDeferred(system, user, (late, usage) => {

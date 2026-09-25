@@ -1,7 +1,7 @@
 /**
  * Migration state machine (SPEC §6.2):
  * planned → awaiting-approval → dry-run → executing → verifying →
- * completed | rolled-back | failed. Owner Ringo; each transition is a
+ * completed | rolled-back | failed. Owner Rahhal; each transition is a
  * trace span; progress emitted every tick while executing (~30 s at 1×).
  * incident-response migrations move workloads off compromised servers and
  * rebuild the source instead of decommissioning it.
@@ -41,7 +41,7 @@ export function createMigration(opts: {
     workloads: opts.workloads ?? src?.workloads ?? [],
     status: "planned",
     steps,
-    ownerAgentId: opts.ownerAgentId ?? "agt-ringo",
+    ownerAgentId: opts.ownerAgentId ?? "agt-rahhal",
     traceIds: [],
     progress: 0,
     createdAt: store.now(),
@@ -144,7 +144,7 @@ export function tickMigrations(): void {
   }
 }
 
-/** Ringo watches for compromised servers → incident-response migration. */
+/** Rahhal watches for compromised servers → incident-response migration. */
 const queued = new Set<ID>();
 export function checkIncidentMigrations(): void {
   for (const srv of store.s.servers) {
@@ -157,7 +157,7 @@ export function checkIncidentMigrations(): void {
       targetServerId: target?.id,
       reason: "incident-response",
       workloads: srv.workloads,
-      ownerAgentId: "agt-ringo",
+      ownerAgentId: "agt-rahhal",
     });
     queued.add(srv.id);
     // governed: database-role sources need approval (pol-01)

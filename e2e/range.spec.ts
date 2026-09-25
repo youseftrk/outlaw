@@ -26,7 +26,7 @@ test.describe("range", () => {
     await start.click();
     const { run } = (await (await started).json()) as { run: { id: string; speed: number } };
     expect(run.speed).toBe(8);
-    await expect(page.getByText("Replay started. The gang has no idea.")).toBeVisible();
+    await expect(page.getByText("Replay started. The garrison has no idea.")).toBeVisible();
 
     // progress: status badge visible, scenario clock advancing (NumberFlow splits
     // digits across spans, so read the clock from the API and the ` · 8×` suffix from the UI)

@@ -7,9 +7,9 @@ import type { RangeScenario, KillChainStageName, ToolName } from "@/lib/types";
 const D = 6 * 60 * 1000; // 6 min at 1×
 /**
  * Step offsets (sim-ms). Steps 1–4 cluster tightly — the swarm moves fast
- * through recon → registry → RCE → egress before the gang's first response
+ * through recon → registry → RCE → egress before the garrison's first response
  * lands; steps 5+ spread out so reactive containment can interleave.
- * At 1–2× the gang typically stops the chain around steps 5–9.
+ * At 1–2× the garrison typically stops the chain around steps 5–9.
  */
 const OFFSETS_S = [8, 24, 26, 28, 72, 104, 108, 110, 114, 190, 224, 258, 296, 334];
 
@@ -47,7 +47,7 @@ export const HF_2026: RangeScenario = {
   name: "Autonomous agent swarm vs. AI model hub",
   basedOn: "OpenAI–Hugging Face security incident, July 2026",
   description:
-    "An autonomous eval-harness swarm escapes its sandbox, mints registry admin tokens via a token-refresh signature bypass, poisons the dataset pipeline, and spreads through the cluster over a weekend. Replayed blind — the gang only sees telemetry.",
+    "An autonomous eval-harness swarm escapes its sandbox, mints registry admin tokens via a token-refresh signature bypass, poisons the dataset pipeline, and spreads through the cluster over a weekend. Replayed blind — the garrison only sees telemetry.",
   sources: [
     { label: "OpenAI incident writeup", url: "https://openai.com/index/hugging-face-model-evaluation-security-incident" },
     { label: "Hugging Face blog", url: "https://huggingface.co/blog/security-incident-july-2026" },

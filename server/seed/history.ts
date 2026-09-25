@@ -168,7 +168,7 @@ export function seedHistory(nowIso: string, servers: Server[], agents: Agent[]):
       workloads: src.workloads,
       status: "completed",
       steps,
-      ownerAgentId: "agt-ringo",
+      ownerAgentId: "agt-rahhal",
       traceIds: [],
       progress: 100,
       createdAt: created,
@@ -188,12 +188,12 @@ export function seedHistory(nowIso: string, servers: Server[], agents: Agent[]):
       lastMessageAt: last?.sentAt ?? nowIso,
       lastPreview: last?.text ?? "Riding quiet. Nothing to report.",
       unread: 0,
-      pinned: agent.id === "agt-cassidy",
+      pinned: agent.id === "agt-saqr",
     });
   }
   threads.push({
     id: "thr-qalaa",
-    agentId: "agt-cassidy",
+    agentId: "agt-saqr",
     title: "Qalaa",
     lastMessageAt: nowIso,
     lastPreview: "Daily digest — 60 threats handled this week, zero touched prod data.",
@@ -205,7 +205,7 @@ export function seedHistory(nowIso: string, servers: Server[], agents: Agent[]):
     threadId: "thr-qalaa",
     from: "system",
     kind: "report",
-    text: "Weekly digest — 60 threats handled, 0 approvals needed, fleet conformance holding. The gang rides autonomous.",
+    text: "Weekly digest — 60 threats handled, 0 approvals needed, fleet conformance holding. The garrison runs autonomous.",
     severity: "info",
     sentAt: iso(now - 86400_000),
     deliveredAt: iso(now - 86400_000),

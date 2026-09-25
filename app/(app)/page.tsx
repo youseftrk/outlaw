@@ -45,7 +45,7 @@ function Panel({
 }) {
   return (
     <Card className={cn("bezel-core relative gap-0 overflow-hidden border-0 p-0", className)}>
-      {glow && <BorderBeam size={120} duration={8} colorFrom="#d0ff78" colorTo="#24c7d6" borderWidth={1.5} />}
+      {glow && <BorderBeam size={120} duration={8} colorFrom="#d0ff78" colorTo="#99d6ea" borderWidth={1.5} />}
       <CardHeader className="flex flex-row items-start justify-between gap-3 px-4 pt-4 pb-0">
         <div>
           {eyebrow && <CardDescription className="eyebrow mb-1.5">{eyebrow}</CardDescription>}
@@ -105,12 +105,13 @@ export default function CommandCenter() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow={boot ? `Frontier Hub · ${servers.length} servers · ${agents.length} agents riding` : "Frontier Hub"}
+        eyebrow={boot ? `Frontier Hub · ${servers.length} servers · ${agents.length} agents on watch` : "Frontier Hub"}
         title="Command center"
         actions={
-          <Button nativeButton={false} render={<Link href="/range" />} className="gap-2">
+          <Button nativeButton={false} render={<Link href="/range" />} className="gap-2 overflow-visible">
             <Play weight="fill" className="size-3.5" />
             {activeRun ? "Watch the replay" : "Start the July 2026 replay"}
+            <BorderBeam size={56} duration={5} borderWidth={1.5} colorFrom="var(--color-cerulean)" colorTo="var(--color-lime)" className="motion-reduce:hidden" />
           </Button>
         }
       />
@@ -172,7 +173,7 @@ export default function CommandCenter() {
 
         <BlurFade delay={0.2} className="col-span-12 md:col-span-6 xl:col-span-4">
           <Panel
-            eyebrow="The gang"
+            eyebrow="The garrison"
             title="On duty"
             className="h-full"
             action={
@@ -222,7 +223,7 @@ export default function CommandCenter() {
               </span>
             }
           >
-            <p className="mb-3 text-[12px] text-text-3">Lowest scores — Ringo works these first.</p>
+            <p className="mb-3 text-[12px] text-text-3">Lowest scores — Rahhal works these first.</p>
             <ul className="flex flex-col gap-2.5">
               {lowest.map((s) => (
                 <li key={s.id}>
@@ -242,7 +243,7 @@ export default function CommandCenter() {
         <BlurFade delay={0.3} className="col-span-12 xl:col-span-4">
           <Panel eyebrow="Needs you" title={approvals.length ? `${approvals.length} waiting` : "Nothing waiting"} className="h-full">
             {approvals.length === 0 ? (
-              <p className="text-text-2">The gang is riding autonomously. Approvals only appear for prod rebuilds and database moves.</p>
+              <p className="text-text-2">The garrison is running autonomously. Approvals only appear for prod rebuilds and database moves.</p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {approvals.slice(0, 4).map((a) => (
@@ -281,10 +282,10 @@ export default function CommandCenter() {
                     </linearGradient>
                   ))}
                 </defs>
-                <CartesianGrid vertical={false} stroke="rgba(214,240,246,0.06)" />
-                <XAxis dataKey="t" tickLine={false} axisLine={false} tick={{ fill: "#5e7c88", fontSize: 11 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fill: "#5e7c88", fontSize: 11 }} allowDecimals={false} />
-                <ChartTooltip cursor={{ stroke: "rgba(214,240,246,0.15)" }} content={<ChartTooltipContent />} />
+                <CartesianGrid vertical={false} stroke="rgba(217, 217, 214,0.06)" />
+                <XAxis dataKey="t" tickLine={false} axisLine={false} tick={{ fill: "#75787b", fontSize: 11 }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fill: "#75787b", fontSize: 11 }} allowDecimals={false} />
+                <ChartTooltip cursor={{ stroke: "rgba(217, 217, 214,0.15)" }} content={<ChartTooltipContent />} />
                 <Area type="monotone" dataKey="detected" stroke="var(--color-detected)" strokeWidth={1.5} fill="url(#fill-detected)" />
                 <Area type="monotone" dataKey="neutralized" stroke="var(--color-neutralized)" strokeWidth={1.5} fill="url(#fill-neutralized)" />
                 <Area type="monotone" dataKey="prevented" stroke="var(--color-prevented)" strokeWidth={2} fill="url(#fill-prevented)" />
@@ -333,7 +334,7 @@ export default function CommandCenter() {
             ) : (
               <div className="flex flex-col gap-3">
                 <p className="text-text-2">
-                  Replay the autonomous-swarm intrusion that breached a model hub in July 2026. The gang doesn&apos;t know it&apos;s
+                  Replay the autonomous-swarm intrusion that breached a model hub in July 2026. The garrison doesn&apos;t know it&apos;s
                   a drill.
                 </p>
                 <Button size="sm" nativeButton={false} render={<Link href="/range" />} className="w-fit gap-2">

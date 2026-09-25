@@ -44,7 +44,7 @@ function StepChip({ step, result, active }: { step: RangeStep; result?: RangeSte
           />
         }
       >
-        {active && <BorderBeam size={60} duration={4} colorFrom="#24c7d6" colorTo="#d0ff78" borderWidth={1.5} />}
+        {active && <BorderBeam size={60} duration={4} colorFrom="#99d6ea" colorTo="#d0ff78" borderWidth={1.5} />}
         <span className="mono-data text-[10px] opacity-70">
           {String(step.order).padStart(2, "0")} · {step.realWorldLabel}
         </span>
@@ -150,7 +150,7 @@ export default function RangePage() {
     setStarting(true);
     try {
       await api.range.start(scenario.id, mode, speed);
-      toast.success(mode === "protected" ? "Replay started. The gang has no idea." : "Baseline run started — agents paused.");
+      toast.success(mode === "protected" ? "Replay started. The garrison has no idea." : "Baseline run started — agents paused.");
       void mutate();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't start the run");
@@ -255,7 +255,7 @@ export default function RangePage() {
                     className="rounded-[10px] bg-bg-2 p-1"
                   >
                     <ToggleGroupItem value="protected" className="h-8 rounded-[8px] px-3 text-[12px] text-text-2 data-[pressed]:bg-bg-3 data-[pressed]:text-lime">
-                      Protected · gang on duty
+                      Protected · garrison on duty
                     </ToggleGroupItem>
                     <ToggleGroupItem value="baseline" className="h-8 rounded-[8px] px-3 text-[12px] text-text-2 data-[pressed]:bg-bg-3 data-[pressed]:text-sev-high">
                       Baseline · no agents
@@ -312,7 +312,7 @@ export default function RangePage() {
               <li className="flex gap-3">
                 <span className="mono-data text-text-3">2</span>
                 <span>
-                  The gang only sees telemetry. No scenario names, no script, no hints. <span className="text-text-1">The import boundary is enforced in code and tests.</span>
+                  The garrison only sees telemetry. No scenario names, no script, no hints. <span className="text-text-1">The import boundary is enforced in code and tests.</span>
                 </span>
               </li>
               <li className="flex gap-3">
@@ -357,7 +357,7 @@ export default function RangePage() {
         <BlurFade delay={0.2} className="col-span-12 xl:col-span-6">
           <Card className="bezel-core h-full gap-0 border-0 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <p className="eyebrow">Gang response · live</p>
+              <p className="eyebrow">Garrison response · live</p>
               <Link href="/messages" className="text-[11px] text-cerulean hover:underline">
                 Read the texts
               </Link>

@@ -75,7 +75,7 @@ export async function runTool(
       migrationId: trace.migrationId,
     });
     const apprSpan = addSpan(trace, "approval", `approval ${approval.id}`, { approvalId: approval.id, status: "pending" });
-    // notify Cassidy's thread (composer import deferred to avoid cycle)
+    // notify Saqr's thread (composer import deferred to avoid cycle)
     const { notifyApprovalRequest } = await import("../messaging/composer");
     notifyApprovalRequest(agent, approval);
     const decision = await waitForDecision(approval.id);

@@ -349,7 +349,7 @@ function createThreat(hit: RuleHit): Threat | null {
     category: hit.category,
     severity: hit.severity,
     status: "detected",
-    summary: `${hit.title}. Detected by Cassidy's correlation over ${hit.signals.length} signal(s).`,
+    summary: `${hit.title}. Detected by Saqr's correlation over ${hit.signals.length} signal(s).`,
     source: sourceGeo(first),
     targetServerIds: hit.serverIds,
     handledBy: [],
@@ -395,19 +395,19 @@ async function cassidyMention(threat: Threat): Promise<void> {
   if (notifiedHigh.has(threat.id)) return;
   notifiedHigh.add(threat.id);
   if (store.s.settings.sim.quietHours && threat.severity === "medium") return;
-  const cassidy = store.agent("agt-cassidy")!;
+  const saqr = store.agent("agt-saqr")!;
   const firstStep = planFor(threat)[0];
-  const actor = firstStep ? agentForRole(firstStep.agentRole) : store.agent("agt-doc")!;
+  const actor = firstStep ? agentForRole(firstStep.agentRole) : store.agent("agt-athar")!;
   const sent: { msg?: Message } = {};
   const { text } = await narrate(
-    cassidy,
+    saqr,
     detectionCopy(threat, actor.name, firstStep?.tool ?? "investigating"),
-    { user: `Write Cassidy's one-line alert for: ${threat.title} (${threat.severity}). ${actor.name} is handling it.` },
+    { user: `Write Saqr's one-line alert for: ${threat.title} (${threat.severity}). ${actor.name} is handling it.` },
     (late) => {
       if (!sent.msg) return;
       sent.msg.text = late;
       store.markDirty();
-      bus.emit("message.updated", { threadId: sent.msg.threadId }, { summary: `${cassidy.name} rewrote the ${threat.id} alert`, href: "/messages" });
+      bus.emit("message.updated", { threadId: sent.msg.threadId }, { summary: `${saqr.name} rewrote the ${threat.id} alert`, href: "/messages" });
     }
   );
   sent.msg = threatAlert(threat, text);
@@ -488,7 +488,7 @@ function finishThreat(threat: Threat): void {
     summary: `${threat.id} ${threat.status}`,
     href: `/threats/${threat.id}`,
   });
-  // Doc writes the report for neutralized/prevented
+  // Athar writes the report for neutralized/prevented
   const text = prevented
     ? `Closed ${threat.id} — ${threat.title.toLowerCase()}. The path was shut before it was ever used; marked prevented.`
     : `Report on ${threat.id}: ${threat.title.toLowerCase()} — contained and neutralized. Evidence is on the trace.`;
@@ -516,7 +516,7 @@ function patrolDue(key: string, everySec: number): boolean {
 /** Called by the range engine at run start — patrols "just swept" so the
  * replay races live agents, not a wall of instant hardening. */
 export function staggerPatrols(): void {
-  for (const k of ["calamity-secrets", "calamity-registry", "belle-audit", "ringo-conformance"]) {
+  for (const k of ["bawwab-secrets", "bawwab-registry", "miftah-audit", "rahhal-conformance"]) {
     patrolAt[k] = store.s.tick;
   }
 }
@@ -541,20 +541,20 @@ export function queueSignal(sig: TelemetrySignal): void {
 }
 
 async function patrols(): Promise<void> {
-  const calamity = store.agent("agt-calamity")!;
-  const belle = store.agent("agt-belle")!;
-  const ringo = store.agent("agt-ringo")!;
+  const bawwab = store.agent("agt-bawwab")!;
+  const miftah = store.agent("agt-miftah")!;
+  const rahhal = store.agent("agt-rahhal")!;
   const paused = (a: Agent) => a.status === "paused";
   const w = store.s.world;
 
-  // Calamity: public-dataset secret sweep every 90 sim-s (no trace on a clean sweep)
-  if (!paused(calamity) && patrolDue("calamity-secrets", 90)) {
-    calamity.status = "investigating";
-    calamity.currentTask = "public dataset sweep";
+  // Bawwab: public-dataset secret sweep every 90 sim-s (no trace on a clean sweep)
+  if (!paused(bawwab) && patrolDue("bawwab-secrets", 90)) {
+    bawwab.status = "investigating";
+    bawwab.currentTask = "public dataset sweep";
     const exposed = w.tokens.filter((t) => t.exposedInDatasetId && !t.revoked);
     if (exposed.length) {
       for (const t of exposed) world.revealExposedToken(t.id);
-      patrolNote(calamity, `Calamity swept public datasets — ${exposed.length} exposed token(s)`);
+      patrolNote(bawwab, `Bawwab swept public datasets — ${exposed.length} exposed token(s)`);
       emitSignal("secrets.public-exposure", {
         severity: "high",
         attributes: {
@@ -564,58 +564,58 @@ async function patrols(): Promise<void> {
         },
       });
     } else {
-      patrolNote(calamity, "Calamity swept public datasets — no leaked secrets");
+      patrolNote(bawwab, "Bawwab swept public datasets — no leaked secrets");
     }
   }
-  // Calamity: registry plugin inventory every 120 s (locks only when open → trace)
-  if (!paused(calamity) && patrolDue("calamity-registry", 120)) {
+  // Bawwab: registry plugin inventory every 120 s (locks only when open → trace)
+  if (!paused(bawwab) && patrolDue("bawwab-registry", 120)) {
     if (w.registry.pluginInstallAllowed && !w.registry.locked) {
-      calamity.status = "investigating";
-      calamity.currentTask = "registry inventory";
-      const trace = startTrace(calamity, "patrol: registry plugin inventory", {});
+      bawwab.status = "investigating";
+      bawwab.currentTask = "registry inventory";
+      const trace = startTrace(bawwab, "patrol: registry plugin inventory", {});
       const o = addSpan(trace, "observe", "registry plugin/config check", { input: { patrol: "registry" } });
       endSpan(o);
-      await runTool(calamity, "lock_registry", {}, trace, { severity: "medium" });
+      await runTool(bawwab, "lock_registry", {}, trace, { severity: "medium" });
       endTrace(trace, "completed");
-      actUntil.set(calamity.id, store.s.tick + 2);
-      agentSay(calamity, `Registry was wide open — plugin installs allowed. Locked pkg-cache-01 until someone explains that.`, { kind: "status", severity: "low" });
+      actUntil.set(bawwab.id, store.s.tick + 2);
+      agentSay(bawwab, `Registry was wide open — plugin installs allowed. Locked pkg-cache-01 until someone explains that.`, { kind: "status", severity: "low" });
     } else {
-      patrolNote(calamity, `Calamity checked pkg-cache-01 — registry ${w.registry.locked ? "locked" : "clean"}`, `/fleet?server=${w.registry.serverId}`);
+      patrolNote(bawwab, `Bawwab checked pkg-cache-01 — registry ${w.registry.locked ? "locked" : "clean"}`, `/fleet?server=${w.registry.serverId}`);
     }
   }
-  // Belle: token audit every 120 s (read-only sweep; findings go to the threat pipeline)
-  if (!paused(belle) && patrolDue("belle-audit", 120)) {
-    belle.status = "investigating";
-    belle.currentTask = "token audit";
+  // Miftah: token audit every 120 s (read-only sweep; findings go to the threat pipeline)
+  if (!paused(miftah) && patrolDue("miftah-audit", 120)) {
+    miftah.status = "investigating";
+    miftah.currentTask = "token audit";
     const stale = w.tokens.filter((t) => !t.revoked && t.scope !== "read" && (!t.lastUsedAt || Date.parse(t.lastUsedAt) < store.s.simNowMs - 30 * 86400_000));
     const newAsn = w.tokens.filter((t) => !t.revoked && t.lastUsedFromASN);
     for (const t of newAsn.slice(0, 3)) {
       emitSignal("auth.anomaly", { severity: "medium", serverId: "srv-api-01", attributes: { tokenId: t.id, asn: t.lastUsedFromASN!, account: t.accountId } });
     }
-    patrolNote(belle, `Belle audited tokens — ${stale.length} stale, ${newAsn.length} seen from new ASNs`);
+    patrolNote(miftah, `Miftah audited tokens — ${stale.length} stale, ${newAsn.length} seen from new ASNs`);
   }
-  // Ringo: conformance on 3 servers / 30 s round-robin — trace only when remediating
-  if (!paused(ringo) && patrolDue("ringo-conformance", 30)) {
+  // Rahhal: conformance on 3 servers / 30 s round-robin — trace only when remediating
+  if (!paused(rahhal) && patrolDue("rahhal-conformance", 30)) {
     const servers = store.s.servers;
     for (let i = 0; i < 3; i++) {
       const srv = servers[rrCursor++ % servers.length];
-      ringo.status = "investigating";
-      ringo.currentTask = `conformance ${srv.hostname}`;
+      rahhal.status = "investigating";
+      rahhal.currentTask = `conformance ${srv.hostname}`;
       refreshServerConformance(srv);
       const fails = srv.checks.filter((c) => c.status === "fail");
       const pass = srv.checks.length - fails.length;
       const remediable = fails.filter((c) => c.autoRemediable && c.remediationTool);
       if (!remediable.length) {
-        patrolNote(ringo, `Ringo patrolled ${srv.hostname} — ${pass}/${srv.checks.length} checks pass`, `/fleet?server=${srv.id}`);
+        patrolNote(rahhal, `Rahhal patrolled ${srv.hostname} — ${pass}/${srv.checks.length} checks pass`, `/fleet?server=${srv.id}`);
         continue;
       }
-      const trace = startTrace(ringo, `remediate ${remediable[0].name} on ${srv.hostname}`, {});
+      const trace = startTrace(rahhal, `remediate ${remediable[0].name} on ${srv.hostname}`, {});
       for (const c of remediable.slice(0, 2)) {
-        await runTool(ringo, c.remediationTool!, { serverId: srv.id }, trace, { severity: "low" });
+        await runTool(rahhal, c.remediationTool!, { serverId: srv.id }, trace, { severity: "low" });
       }
       refreshServerConformance(srv);
       endTrace(trace, "completed");
-      actUntil.set(ringo.id, store.s.tick + 2);
+      actUntil.set(rahhal.id, store.s.tick + 2);
     }
   }
 }
@@ -651,7 +651,7 @@ export async function brainTick(paused = false): Promise<void> {
   if (paused) return;
   await patrols();
   // severity-first scheduling; one tool per agent per tick — different agents
-  // run their steps in parallel (Doc's evidence never delays Sundance's contain)
+  // run their steps in parallel (Athar's evidence never delays Hisn's contain)
   const SEV_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
   const usedAgents = new Set<ID>();
   const pending = [...plans.values()]

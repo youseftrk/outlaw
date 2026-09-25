@@ -10,7 +10,7 @@ import { store } from "../store";
 import { handleOperatorMessage } from "./commands";
 import { verifyTwilioSignature } from "./channels/twilio";
 
-export const INBOUND_THREAD = "thr-cassidy";
+export const INBOUND_THREAD = "thr-saqr";
 
 export type InboundResult =
   | { ok: true; sent: Message; replies: Message[] }

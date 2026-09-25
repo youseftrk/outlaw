@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { AnimatePresence, motion } from "motion/react";
 import { Check, DownloadSimple, X } from "@phosphor-icons/react";
 
 import { PageHeader } from "@/components/shell/page-header";
@@ -13,6 +14,8 @@ import { BlurFade } from "@/components/ui/blur-fade";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { DotPattern } from "@/components/ui/dot-pattern";
+import { TextEffect } from "@/components/ui/text-effect";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -27,6 +30,7 @@ import { api, useApprovals, useBootstrap, usePolicies, useTraces } from "@/lib/h
 import { VERDICT_CLASS, ago, clock, humanize } from "@/lib/format";
 import type { Approval, Policy, PolicyEffect, ToolRisk, Trace } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { LoadingState } from "@/components/beautiful-ui/loading-state";
 
 const EFFECT_CLASS: Record<PolicyEffect, string> = {
   allow: "text-lime",
@@ -307,13 +311,20 @@ function ApprovalsTab() {
   const pending = (approvals ?? []).filter((a) => a.status === "pending");
   const decided = (approvals ?? []).filter((a) => a.status !== "pending").slice(0, 30);
 
+  const [inflight, setInflight] = React.useState<Record<string, { decision: "approve" | "reject"; done: boolean }>>({});
+
   const decide = async (a: Approval, decision: "approve" | "reject") => {
+    setInflight((m) => ({ ...m, [a.id]: { decision, done: false } }));
     try {
       await api.governance.decide(a.id, decision);
+      setInflight((m) => ({ ...m, [a.id]: { decision, done: true } }));
       toast.success(decision === "approve" ? `Approved ${a.id}` : `Rejected ${a.id}`);
-      void mutate();
+      await new Promise((r) => setTimeout(r, 900));
+      await mutate();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Decision didn't go through");
+    } finally {
+      setInflight((m) => Object.fromEntries(Object.entries(m).filter(([id]) => id !== a.id)));
     }
   };
 
@@ -322,14 +333,16 @@ function ApprovalsTab() {
       <div className="col-span-12 xl:col-span-7">
         <p className="eyebrow mb-2">Waiting ({pending.length})</p>
         {pending.length === 0 ? (
-          <Card className="bezel-core gap-0 border-0 p-8 text-center">
-            <p className="font-display text-[22px] text-text-1">No approvals waiting.</p>
-            <p className="mt-1 text-text-2">The gang is riding autonomously. You&apos;ll be asked for prod rebuilds and database moves.</p>
+          <Card className="bezel-core relative gap-0 overflow-hidden border-0 p-8 text-center">
+            <DotPattern glow width={18} height={18} cr={0.8} className="[mask-image:radial-gradient(60%_80%_at_50%_50%,white,transparent)] text-lime/40" />
+            <p className="relative font-display text-[22px] text-text-1">No approvals waiting.</p>
+            <p className="relative mt-1 text-text-2">The garrison is running autonomously. You&apos;ll be asked for prod rebuilds and database moves.</p>
           </Card>
         ) : (
           <ul className="flex flex-col gap-3">
+            <AnimatePresence initial={false}>
             {pending.map((a) => (
-              <li key={a.id}>
+              <motion.li key={a.id} layout exit={{ opacity: 0, x: 24, height: 0, marginBottom: -12 }} transition={{ duration: 0.3, ease: [0.3, 0.7, 0.4, 1] }}>
                 <Card className="bezel-core gap-0 border-0 p-4">
                   <div className="flex items-start gap-3">
                     <AgentAvatar agentId={a.agentId} status="awaiting-approval" size={36} />
@@ -349,17 +362,31 @@ function ApprovalsTab() {
                       </p>
                     </div>
                   </div>
-                  <div className="mt-3 flex gap-2">
-                    <Button size="sm" onClick={() => decide(a, "approve")}>
-                      <Check weight="bold" /> Approve
-                    </Button>
-                    <Button size="sm" variant="secondary" onClick={() => decide(a, "reject")}>
-                      <X weight="bold" /> Reject
-                    </Button>
+                  <div className="mt-3 flex min-h-8 items-center gap-2">
+                    {inflight[a.id]?.done ? (
+                      <TextEffect
+                        per="char"
+                        preset="scale"
+                        speedReveal={2}
+                        className={cn("flex items-center gap-1.5 text-[13px] font-medium", inflight[a.id].decision === "approve" ? "text-lime" : "text-sev-critical")}
+                      >
+                        {inflight[a.id].decision === "approve" ? "✓ Approved — the garrison carries on" : "✕ Rejected — action withheld"}
+                      </TextEffect>
+                    ) : (
+                      <>
+                        <Button size="sm" loading={inflight[a.id]?.decision === "approve"} disabled={!!inflight[a.id]} onClick={() => decide(a, "approve")}>
+                          {inflight[a.id]?.decision !== "approve" && <Check weight="bold" />} Approve
+                        </Button>
+                        <Button size="sm" variant="secondary" loading={inflight[a.id]?.decision === "reject"} disabled={!!inflight[a.id]} onClick={() => decide(a, "reject")}>
+                          {inflight[a.id]?.decision !== "reject" && <X weight="bold" />} Reject
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </Card>
-              </li>
+              </motion.li>
             ))}
+            </AnimatePresence>
           </ul>
         )}
       </div>
@@ -437,7 +464,7 @@ function GovernanceInner() {
 
 export default function GovernancePage() {
   return (
-    <React.Suspense fallback={<div className="text-text-3">Loading governance…</div>}>
+    <React.Suspense fallback={<LoadingState label="Loading governance" variant="orbit" />}>
       <GovernanceInner />
     </React.Suspense>
   );

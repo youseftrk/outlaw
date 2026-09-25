@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, useBootstrap, useThreat } from "@/lib/hooks/use-data";
 import { SEVERITY_CLASS, SEVERITY_HEX, SERVER_STATUS_HEX, THREAT_STATUS_CLASS, THREAT_STATUS_LABEL, ago, clock, humanize } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { LoadingState } from "@/components/beautiful-ui/loading-state";
 
 export default function ThreatDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,7 +36,7 @@ export default function ThreatDetailPage() {
     }
   };
 
-  if (!data) return <div className="text-text-3">Loading threat…</div>;
+  if (!data) return <LoadingState label="Loading threat" variant="dots" />;
   const { threat, traces, servers, messages } = data;
 
   const arcs =
