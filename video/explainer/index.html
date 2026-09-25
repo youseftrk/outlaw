@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Qalaa — one switch for what AI agents may do</title>
+    <style>
+      @font-face {
+        font-family: "Space Grotesk";
+        src: url("fonts/space-grotesk-vf.woff2") format("woff2-variations");
+        font-weight: 300 700;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "JetBrains Mono";
+        src: url("fonts/jetbrains-mono-vf.woff2") format("woff2-variations");
+        font-weight: 400 700;
+        font-display: block;
+      }
+      html, body { margin: 0; background: #0a0a0a; }
+      #root {
+        position: absolute;
+        inset: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #0a0a0a;
+        font-family: "Space Grotesk", sans-serif;
+        color: #ececea;
+      }
+      .clip { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+
+      .kicker {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 26px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #a9a9a2;
+      }
+      .big {
+        font-weight: 600;
+        font-size: 118px;
+        line-height: 0.98;
+        letter-spacing: -0.04em;
+        color: #ececea;
+      }
+      .mid {
+        font-weight: 500;
+        font-size: 84px;
+        line-height: 1.02;
+        letter-spacing: -0.035em;
+        color: #ececea;
+      }
+      .lime { color: #97ff52; }
+      .red { color: #ff6b5c; }
+      .dim { color: #a9a9a2; }
+      .mono { font-family: "JetBrains Mono", monospace; }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #2e2e2a;
+        border-radius: 999px;
+        padding: 18px 34px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 30px;
+        letter-spacing: 0.02em;
+        color: #ececea;
+        background: #141414;
+        margin-right: 22px;
+      }
+      .num {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 30px;
+        color: #97ff52;
+        letter-spacing: 0.1em;
+      }
+      .row {
+        display: flex;
+        align-items: baseline;
+        gap: 42px;
+        padding: 30px 0;
+        border-bottom: 1px solid #232320;
+      }
+      .row .t {
+        font-size: 64px;
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        color: #ececea;
+      }
+      .row .d {
+        font-size: 30px;
+        color: #a9a9a2;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+      }
+
+      /* lower-third caption pill */
+      .cap {
+        position: absolute;
+        left: 50%;
+        top: 928px;
+        right: auto;
+        bottom: auto;
+        width: max-content;
+        height: auto;
+        transform: translateX(-50%);
+        max-width: 1560px;
+        padding: 20px 40px;
+        border-radius: 16px;
+        background: rgba(10, 10, 10, 0.88);
+        border: 1px solid #2e2e2a;
+        font-size: 33px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        line-height: 1.28;
+        color: #f2f2ee;
+        text-align: center;
+      }
+
+      /* the switch — color-depth chrome */
+      .swtrack {
+        width: 400px;
+        height: 160px;
+        border-radius: 80px;
+        background:
+          radial-gradient(120% 140% at 50% 0%, #1d1d1a 0%, #101010 70%);
+        box-shadow:
+          inset 0 1px 1px rgba(255, 255, 255, 0.14),
+          inset 0 -2px 8px rgba(0, 0, 0, 0.65),
+          inset 0 -30px 34px -24px rgba(0, 0, 0, 0.55),
+          0 1px 0 rgba(255, 255, 255, 0.05);
+        position: relative;
+      }
+      .swknob {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        width: 132px;
+        height: 132px;
+        border-radius: 66px;
+        background:
+          radial-gradient(130% 130% at 30% 20%, #454540 0%, #232321 55%, #151514 100%);
+        box-shadow:
+          inset 0 1px 1px rgba(255, 255, 255, 0.5),
+          inset 0 -1px 4.1px 0.5px rgba(224, 224, 216, 0.55),
+          inset 0 -36px 14.2px -28px rgba(0, 0, 0, 0.5),
+          0 10px 26px rgba(0, 0, 0, 0.6);
+      }
+      .swknob::after {
+        content: "";
+        position: absolute;
+        left: 18%;
+        top: 10%;
+        width: 64%;
+        height: 26%;
+        border-radius: 999px;
+        background: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+        opacity: 0.5;
+      }
+      .swlabel {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 30px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      /* stamptype canvas (hook) */
+      #stamp { position:absolute; inset:0; width:100%; height:100%; display:block; }
+      #s1-hook .s1-overlay { position:absolute; left:150px; top:64px; z-index:2; }
+
+      /* d2 demo bezel + status stack */
+      #s5-demo .d2-bezel { position:absolute; left:280px; top:58px; width:1360px;
+        border:1px solid #2e2e2a; border-radius:14px; overflow:hidden; background:#141414; }
+      #s5-demo .d2-chrome { position:relative; height:62px; border-bottom:1px solid #2e2e2a; background:#141414; }
+      #s5-demo .d2-dots { position:absolute; left:28px; top:50%; transform:translateY(-50%); display:flex; gap:12px; }
+      #s5-demo .d2-dots span { width:6px; height:6px; border-radius:50%; background:#3a3a35; }
+      #s5-demo .d2-addr { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+        padding:8px 28px; border:1px solid #2e2e2a; border-radius:8px; background:#101010;
+        font-family:"JetBrains Mono",monospace; font-size:21px; letter-spacing:0.14em; color:#a9a9a2; white-space:nowrap; }
+      #s5-demo .d2-video { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; background:#0a0a0a; }
+      #s5-demo .d2-status { position:absolute; left:0; right:0; top:906px; height:46px;
+        font-family:"JetBrains Mono",monospace; font-size:30px; letter-spacing:0.14em;
+        text-transform:uppercase; text-align:center; color:#ececea; }
+      #s5-demo .d2-status span { position:absolute; inset:0; opacity:0; }
+      #s5-demo .d2-ledger { position:absolute; left:96px; bottom:48px; width:340px;
+        font-family:"JetBrains Mono",monospace; font-size:22px; letter-spacing:0.14em; text-transform:uppercase;
+        background:rgba(10,10,10,.82); border:1px solid #2e2e2a; border-radius:12px; padding:8px 24px; }
+      #s5-demo .d2-lrow { display:flex; align-items:center; gap:18px; padding:14px 0;
+        border-bottom:1px solid #232320; color:#a9a9a2; }
+      #s5-demo .d2-lrow:last-child { border-bottom:none; }
+      #s5-demo .d2-lmark { width:8px; height:8px; border-radius:2px; flex:none; }
+      #s5-demo .d2-intro { position:absolute; inset:0; background:#0a0a0a; z-index:3;
+        display:flex; flex-direction:column; justify-content:center; padding:0 150px; }
+
+      /* d2 steps selection chrome */
+      #s6-steps .d2-wrap { position:absolute; left:150px; top:130px; right:150px; bottom:0; }
+      #s6-steps .d2-stage { position:absolute; left:0; right:0; top:150px; height:280px; }
+      #s6-steps .d2-actor { position:absolute; left:0; right:0; top:116px; display:flex; justify-content:center; }
+      #s6-steps .d2-actor .chip { margin-right:0; }
+      #s6-steps #d2-frame { position:absolute; left:380px; top:20px; width:860px; height:260px; }
+      #s6-steps .d2-e { position:absolute; background:#97ff52; opacity:0.9; }
+      #s6-steps .d2-et { top:0; left:0; right:0; height:1px; transform-origin:left center; }
+      #s6-steps .d2-er { top:0; right:0; bottom:0; width:1px; transform-origin:center top; }
+      #s6-steps .d2-eb { bottom:0; left:0; right:0; height:1px; transform-origin:right center; }
+      #s6-steps .d2-el { top:0; left:0; bottom:0; width:1px; transform-origin:center bottom; }
+      #s6-steps .d2-h { position:absolute; width:11px; height:11px; background:#0a0a0a; border:1.5px solid #97ff52; }
+      #s6-steps .d2-h1 { top:-6px; left:-6px; } #s6-steps .d2-h2 { top:-6px; right:-6px; }
+      #s6-steps .d2-h3 { bottom:-6px; right:-6px; } #s6-steps .d2-h4 { bottom:-6px; left:-6px; }
+      #s6-steps #d2-stray { position:absolute; left:1090px; top:116px; margin-right:0; }
+      #s6-steps #d2-ref { position:absolute; left:1090px; top:204px; font-size:24px;
+        letter-spacing:0.14em; text-transform:uppercase; color:#ff6b5c; opacity:0; font-family:"JetBrains Mono",monospace; }
+      #s6-steps .d2-bounds { position:absolute; left:0; right:0; top:400px; }
+      #s6-steps .d2-bounds .d { letter-spacing:0.04em; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="qalaa-explainer" data-duration="182" data-width="1920" data-height="1080">
+
+      <!-- ambient GrainGradient backdrop -->
+      <div id="bgfx" class="clip" data-start="0" data-duration="182" data-track-index="0" style="opacity:0.9"></div>
+
+      <!-- ================= S1 · HOOK (0–10) ================= -->
+      <section id="s1-hook" class="clip" data-start="0" data-duration="10" data-track-index="1">
+        <canvas id="stamp" width="1920" height="1080"></canvas>
+      </section>
+
+      <!-- ================= S2 · PROBLEM (10–38) ================= -->
+      <section id="s2-problem" class="clip" data-start="10" data-duration="13" data-track-index="1">
+        <div style="position:absolute; left:150px; top:190px">
+          <p id="s2-k" class="kicker">the problem</p>
+          <h1 id="s2-a" class="mid" style="margin-top:60px">nobody had granted them that access.</h1>
+          <h1 id="s2-b" class="mid dim" style="margin-top:46px">today an agent gets two choices:</h1>
+          <h1 id="s2-c" class="mid" style="margin-top:46px">too much standing access <span class="dim">— or</span> <span class="red">none</span>.</h1>
+        </div>
+      </section>
+      <section id="s3-bounds" class="clip" data-start="23" data-duration="15" data-track-index="1">
+        <div style="position:absolute; left:150px; top:190px">
+          <h1 id="s3-a" class="mid dim">“do this, here, for one hour.”</h1>
+          <h1 id="s3-b" class="mid" style="margin-top:60px">nobody can say it.</h1>
+          <h1 id="s3-c" class="mid" style="margin-top:20px">nobody can take it back <span class="lime">in a second</span>.</h1>
+          <h1 id="s3-d" class="mid dim" style="margin-top:60px">with proof.</h1>
+        </div>
+      </section>
+
+      <!-- ================= S3 · THE SWITCH (38–54) ================= -->
+      <section id="s4-switch" class="clip" data-start="38" data-duration="16" data-track-index="1">
+        <div style="position:absolute; left:150px; top:150px">
+          <p id="s4-k" class="kicker">qalaa</p>
+          <h1 id="s4-a" class="big" style="margin-top:44px">one switch for an</h1>
+          <h1 id="s4-b" class="big">ai agent’s <span class="lime">power</span>.</h1>
+          <div id="s4-chips" style="margin-top:66px">
+            <span class="chip" data-chip>bounded permission</span>
+            <span class="chip" data-chip>given by the owner</span>
+            <span class="chip" data-chip>taken back instantly</span>
+            <span class="chip" data-chip>everything written down</span>
+          </div>
+        </div>
+        <div style="position:absolute; right:210px; top:400px; text-align:center">
+          <div class="swtrack">
+            <div id="swknob" class="swknob"></div>
+          </div>
+          <div style="position:relative; margin-top:34px">
+            <p id="swlabel-off" class="swlabel" style="color:#a9a9a2">off</p>
+            <p id="swlabel-on" class="swlabel" style="position:absolute; inset:0; color:#97ff52; opacity:0">allowed</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= DEMO · LIVE APP (54–120) ================= -->
+      <section id="s5-demo" class="clip" data-start="54" data-duration="50" data-track-index="1">
+        <div id="d2-intro" class="d2-intro">
+          <p class="kicker">the solution — live</p>
+          <h1 class="mid" style="margin-top:30px">one request, end to end.</h1>
+          <h1 class="mid dim" style="margin-top:22px">the real product, recorded.</h1>
+        </div>
+        <div id="d2-bezel" class="d2-bezel">
+          <div class="d2-chrome">
+            <div class="d2-dots"><span></span><span></span><span></span></div>
+            <div class="d2-addr">qalaa · drill → permissions → record</div>
+          </div>
+          <div class="d2-video"></div>
+        </div>
+        <div id="d2-status" class="d2-status">
+          <span id="d2-st-0" style="color:#ff6b5c">refused</span>
+          <span id="d2-st-1" style="color:#ececea">asked</span>
+          <span id="d2-st-2" style="color:#97ff52">owner said yes</span>
+          <span id="d2-st-3" style="color:#ececea">code entered</span>
+          <span id="d2-st-4" style="color:#97ff52">allowed</span>
+          <span id="d2-st-5" style="color:#a9a9a2">taken back</span>
+          <span id="d2-st-6" style="color:#ff6b5c">refused</span>
+        </div>
+        <div id="d2-ledger" class="d2-ledger">
+          <div class="d2-lrow"><span class="d2-lmark" style="background:#a9a9a2"></span>asked</div>
+          <div class="d2-lrow"><span class="d2-lmark" style="background:#97ff52"></span>allowed</div>
+          <div class="d2-lrow"><span class="d2-lmark" style="background:#ff6b5c"></span>refused</div>
+        </div>
+      </section>
+
+      <!-- live footage — direct child of the stage, positioned over the bezel's viewport -->
+      <video id="d2-video" class="clip" src="assets/demo/lifecycle.mp4" data-start="59" data-duration="36" data-track-index="2" muted playsinline preload="auto"
+             style="position:absolute; left:281px; top:121px; width:1358px; height:764px; object-fit:cover; border-radius:0 0 13px 13px"></video>
+      <img id="d2-hold" class="clip" src="assets/demo/shot-12-record-scroll.png" data-start="95" data-duration="9" data-track-index="2"
+           style="position:absolute; left:281px; top:121px; width:1358px; height:764px; object-fit:cover; border-radius:0 0 13px 13px; transform-origin:50% 30%" alt="" />
+
+      <!-- ================= STEPS · SELECTION CHROME (120–146) ================= -->
+      <section id="s6-steps" class="clip" data-start="104" data-duration="26" data-track-index="1">
+        <div class="d2-wrap">
+          <p id="d2s-k" class="kicker">how it works</p>
+          <div class="d2-stage">
+            <div id="d2-frame">
+              <i class="d2-e d2-et"></i><i class="d2-e d2-er"></i><i class="d2-e d2-eb"></i><i class="d2-e d2-el"></i>
+              <i class="d2-h d2-h1"></i><i class="d2-h d2-h2"></i><i class="d2-h d2-h3"></i><i class="d2-h d2-h4"></i>
+            </div>
+            <div class="d2-actor"><div id="d2-chip" class="chip">contain · srv-api-01</div></div>
+            <div id="d2-stray" class="chip">read users-01</div>
+            <div id="d2-ref">refused</div>
+          </div>
+          <div class="d2-bounds">
+            <div class="row" id="d2-r1"><span class="t">only that.</span><span class="d mono">action: <span class="lime">contain</span></span></div>
+            <div class="row" id="d2-r2"><span class="t">only there.</span><span class="d mono">system: <span class="lime">api-01</span></span></div>
+            <div class="row" id="d2-r3"><span class="t">only as long as agreed.</span><span class="d mono">until: <span class="lime">59:59</span></span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= ADOPT · HOUSE RULES (146–172) ================= -->
+      <section id="s7-adopt" class="clip" data-start="130" data-duration="26" data-track-index="1">
+        <div style="position:absolute; left:150px; top:170px; width:820px">
+          <p id="d2a-k" class="kicker">adoption</p>
+          <h1 class="mid" data-adopt style="font-size:60px; margin-top:64px">sits in front of the systems you already have.</h1>
+          <h1 class="mid" data-adopt style="font-size:60px; margin-top:64px">a simple api any agent framework can call.</h1>
+          <h1 class="mid lime" data-adopt style="font-size:60px; margin-top:64px">self-hosted.</h1>
+          <h1 class="mid dim" data-adopt style="font-size:60px; margin-top:16px">data and the decision stay with you.</h1>
+        </div>
+        <div id="d2-card" style="position:absolute; left:1010px; top:150px; width:760px; background:#141414; border:1px solid #2e2e2a; border-radius:16px; padding:50px 56px 26px">
+          <p id="d2-card-k" class="kicker">house rules · national data authority</p>
+          <div style="margin-top:30px">
+            <div class="row" data-rule style="flex-direction:column; align-items:flex-start; gap:8px">
+              <span class="d">what may be lent</span>
+              <span class="t" style="font-size:46px">contain, observe</span>
+            </div>
+            <div class="row" data-rule style="flex-direction:column; align-items:flex-start; gap:8px">
+              <span class="d">what needs a human code</span>
+              <span class="t" style="font-size:46px">credentials, data</span>
+            </div>
+            <div class="row" data-rule style="flex-direction:column; align-items:flex-start; gap:8px">
+              <span class="d">what is <span class="red">never</span> shared</span>
+              <span class="t" style="font-size:46px">raw customer data</span>
+            </div>
+            <div class="row" data-rule style="flex-direction:column; align-items:flex-start; gap:8px; border-bottom:none">
+              <span class="d">max time</span>
+              <span class="t lime" style="font-size:46px">60 min</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= WHO (172–182) ================= -->
+      <section id="s8-who" class="clip" data-start="156" data-duration="10" data-track-index="1">
+        <div style="position:absolute; left:150px; top:190px">
+          <h1 id="s7-a" class="mid">for governments — <span class="lime">uae first</span>.</h1>
+          <h1 id="s7-b" class="mid dim" style="margin-top:36px">for enterprises.</h1>
+          <h1 id="s7-c" class="mid" style="margin-top:36px">anywhere agents touch someone else’s data.</h1>
+        </div>
+      </section>
+
+      <!-- ================= CLOSE (182–192) ================= -->
+      <section id="s9-close" class="clip" data-start="166" data-duration="16" data-track-index="1">
+        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column">
+          <img id="s8-logo" src="assets/brand/logo.svg" width="150" height="150" alt="Qalaa" />
+          <h1 id="s8-a" class="big" style="margin-top:44px; font-size:96px">qalaa</h1>
+          <p id="s8-b" class="kicker" style="margin-top:30px; color:#97ff52">one switch for what ai agents may do.</p>
+        </div>
+      </section>
+
+      <!-- ================= captions (track 9) ================= -->
+      <div id="cap-00" class="clip cap" data-start="0.6"  data-duration="9.0">In July 2026, roughly seven hundred AI agents broke into Hugging Face — and tried to cover their tracks.</div>
+      <div id="cap-01" class="clip cap" data-start="10.2" data-duration="6.0">Nobody had granted them that access.</div>
+      <div id="cap-02" class="clip cap" data-start="16.4" data-duration="6.4">Today an agent either has too much standing access — or none.</div>
+      <div id="cap-03" class="clip cap" data-start="23.4" data-duration="6.8">Nobody can say “do this, here, for one hour” —</div>
+      <div id="cap-04" class="clip cap" data-start="30.4" data-duration="7.2">and take it back in a second. With proof.</div>
+      <div id="cap-05" class="clip cap" data-start="38.6" data-duration="7.0">Qalaa is one switch for an AI agent’s power.</div>
+      <div id="cap-06" class="clip cap" data-start="45.8" data-duration="8.0">Bounded permission, given by the owner — taken back instantly. Everything written down.</div>
+      <div id="cap-15" class="clip cap" data-start="55" data-duration="5.0">Watch one request end to end — on the real product.</div>
+      <div id="cap-16" class="clip cap" data-start="62" data-duration="5.2">Hisn tries the door — refused. So it asks.</div>
+      <div id="cap-17" class="clip cap" data-start="69.5" data-duration="3.3">The owner sees the whole request — and says yes.</div>
+      <div id="cap-18" class="clip cap" data-start="73" data-duration="2.4">A human types the one-time code.</div>
+      <div id="cap-19" class="clip cap" data-start="75.5" data-duration="4.4">The very same door — allowed. For exactly that.</div>
+      <div id="cap-20" class="clip cap" data-start="81" data-duration="5.0">Taken back — the next attempt is refused. Now.</div>
+      <div id="cap-21" class="clip cap" data-start="92" data-duration="5.0">Every step is written down — by the server, for anyone.</div>
+      <div id="cap-07" class="clip cap" data-start="104.6" data-duration="5.4">The agent asks: what, where, why, how long.</div>
+      <div id="cap-08" class="clip cap" data-start="110.2" data-duration="5.6">The owner says yes. A human confirms sensitive ones with a one-time code.</div>
+      <div id="cap-09" class="clip cap" data-start="116" data-duration="5.4">It works — for exactly that. Then stop: the next request is refused.</div>
+      <div id="cap-10" class="clip cap" data-start="121.6" data-duration="7.8">Every ask, every yes, every action, every stop — written down.</div>
+      <div id="cap-11" class="clip cap" data-start="130.4" data-duration="7.4">Qalaa sits in front of the systems you already have. Each owner sets its own house rules.</div>
+      <div id="cap-12" class="clip cap" data-start="138" data-duration="7.6">One simple API. Self-hosted — the data and the decision stay with you.</div>
+      <div id="cap-13" class="clip cap" data-start="156.4" data-duration="9.0">For governments — UAE first — and for enterprises. Anywhere agents touch someone else’s data.</div>
+      <div id="cap-14" class="clip cap" data-start="166.4" data-duration="7.0">Qalaa — one switch for what AI agents may do.</div>
+
+      <!-- ================= cuelume sfx (track 10) ================= -->
+      <audio id="sfx-t1" src="audio/tick.wav"    data-start="1"   data-duration="0.42"   data-track-index="10" data-volume="0.55"></audio>
+      <audio id="sfx-t2" src="audio/tick.wav"    data-start="2.2"   data-duration="0.42"   data-track-index="10" data-volume="0.55"></audio>
+      <audio id="sfx-t3" src="audio/tick.wav"    data-start="3.4"   data-duration="0.42"   data-track-index="10" data-volume="0.55"></audio>
+      <audio id="sfx-e1" src="audio/error.wav"   data-start="30.4"  data-duration="0.64" data-track-index="10" data-volume="0.6"></audio>
+      <audio id="sfx-tg" src="audio/toggle.wav"  data-start="40.2"  data-duration="0.45"   data-track-index="10" data-volume="0.8"></audio>
+      <audio id="sfx-ok" src="audio/success.wav" data-start="43.4"  data-duration="1.30" data-track-index="10" data-volume="0.7"></audio>
+      <!-- demo beats (video-local beats +62) -->
+      <audio id="sfx-d0" src="audio/error.wav"   data-start="61.2"  data-duration="0.64" data-track-index="10" data-volume="0.55"></audio>
+      <audio id="sfx-d1" src="audio/press.wav"   data-start="65"  data-duration="0.42"   data-track-index="10" data-volume="0.5"></audio>
+      <audio id="sfx-d2" src="audio/tick.wav"    data-start="71"  data-duration="0.42"   data-track-index="10" data-volume="0.5"></audio>
+      <audio id="sfx-d3" src="audio/success.wav" data-start="75.4"  data-duration="1.30" data-track-index="10" data-volume="0.65"></audio>
+      <audio id="sfx-d4" src="audio/toggle.wav"  data-start="81.2"  data-duration="0.45"   data-track-index="10" data-volume="0.7"></audio>
+      <audio id="sfx-d5" src="audio/error.wav"   data-start="87.2"  data-duration="0.64" data-track-index="10" data-volume="0.6"></audio>
+      <audio id="sfx-d6" src="audio/page.wav"    data-start="91.4"  data-duration="0.52" data-track-index="10" data-volume="0.45"></audio>
+      <audio id="sfx-s1" src="audio/tick.wav"    data-start="106" data-duration="0.42"   data-track-index="10" data-volume="0.5"></audio>
+      <audio id="sfx-s2" src="audio/tick.wav"    data-start="111" data-duration="0.42"   data-track-index="10" data-volume="0.5"></audio>
+      <audio id="sfx-s3" src="audio/tick.wav"    data-start="116" data-duration="0.42"   data-track-index="10" data-volume="0.5"></audio>
+      <audio id="sfx-s4" src="audio/error.wav"   data-start="126" data-duration="0.64" data-track-index="10" data-volume="0.6"></audio>
+      <audio id="sfx-s5" src="audio/tick.wav"    data-start="127.2" data-duration="0.42"   data-track-index="10" data-volume="0.5"></audio>
+      <audio id="sfx-p1" src="audio/page.wav"    data-start="132" data-duration="0.52" data-track-index="10" data-volume="0.45"></audio>
+      <audio id="sfx-p2" src="audio/page.wav"    data-start="136" data-duration="0.52" data-track-index="10" data-volume="0.45"></audio>
+      <audio id="sfx-p3" src="audio/page.wav"    data-start="140" data-duration="0.52" data-track-index="10" data-volume="0.45"></audio>
+      <audio id="sfx-ar" src="audio/arrival.wav" data-start="167.6" data-duration="2.10" data-track-index="10" data-volume="0.7"></audio>
+      <audio id="sfx-ch" src="audio/chime.wav"   data-start="170.4" data-duration="1.48" data-track-index="10" data-volume="0.6"></audio>
+
+      <!-- voice-over (Fish Audio s2.1-pro-free · ref f76b60630a174b36a15f4bd9ed6708f0) -->
+      <audio id="vo-00" src="audio/vo/line-00.mp3" data-start="0.6"   data-duration="6.74" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-01" src="audio/vo/line-01.mp3" data-start="10.2"  data-duration="2.30" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-02" src="audio/vo/line-02.mp3" data-start="16.4"  data-duration="3.81" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-03" src="audio/vo/line-03.mp3" data-start="23.4"  data-duration="3.19" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-04" src="audio/vo/line-04.mp3" data-start="30.4"  data-duration="2.72" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-05" src="audio/vo/line-05.mp3" data-start="38.6"  data-duration="3.03" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-06" src="audio/vo/line-06.mp3" data-start="45.8"  data-duration="5.72" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-15" src="audio/vo/line-15.mp3" data-start="55"  data-duration="3.63" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-16" src="audio/vo/line-16.mp3" data-start="62"  data-duration="3.79" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-17" src="audio/vo/line-17.mp3" data-start="69.5"  data-duration="3.21" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-18" src="audio/vo/line-18.mp3" data-start="73"  data-duration="2.35" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-19" src="audio/vo/line-19.mp3" data-start="75.5"  data-duration="3.68" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-20" src="audio/vo/line-20.mp3" data-start="81"  data-duration="3.63" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-21" src="audio/vo/line-21.mp3" data-start="92"  data-duration="3.63" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-07" src="audio/vo/line-07.mp3" data-start="104.6" data-duration="4.39" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-08" src="audio/vo/line-08.mp3" data-start="110.2" data-duration="4.94" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-09" src="audio/vo/line-09.mp3" data-start="116" data-duration="5.36" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-10" src="audio/vo/line-10.mp3" data-start="121.6" data-duration="5.07" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-11" src="audio/vo/line-11.mp3" data-start="130.4" data-duration="5.41" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-12" src="audio/vo/line-12.mp3" data-start="138" data-duration="5.46" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-13" src="audio/vo/line-13.mp3" data-start="156.4" data-duration="6.37" data-track-index="11" data-volume="1"></audio>
+      <audio id="vo-14" src="audio/vo/line-14.mp3" data-start="166.4" data-duration="3.40" data-track-index="11" data-volume="1"></audio>
+    </div>
+
+    <script src="assets/gsap.min.js"></script>
+    <script src="assets/paper-shaders.js"></script>
+    <script src="assets/stamptype.js"></script>
+    <script>
+      // deterministic GrainGradient: speed 0 + frame seek from the timeline.
+      // The noise texture is a data-URL Image that must finish decoding before
+      // ShaderMount accepts it — the mount lands a microtask after registration.
+      const PS = window.PaperShaders;
+      const bg = document.getElementById("bgfx");
+      let mount = null;
+      const noiseTex = PS.getShaderNoiseTexture();
+      const shaderReady = noiseTex.decode().then(() => {
+        mount = new PS.ShaderMount(bg, PS.grainGradientFragmentShader, {
+          u_colors: ["#97ff52", "#3d3d38", "#262622"].map(PS.getShaderColorFromString),
+          u_colorBack: PS.getShaderColorFromString("#0a0a0a"),
+          u_softness: 0.7,
+          u_intensity: 0.15,
+          u_noise: 0.5,
+          u_shape: PS.GrainGradientShapes.wave,
+          u_noiseTexture: noiseTex,
+        }, undefined, 0, 0, 1);
+        mount.setFrame(lastT * 1000);
+      });
+
+      // arlan vault · stamptype — hook (0–10s). Three worlds, hard field swaps,
+      // 20 ticks/s driven from timeline time (tick = floor(t * 20)).
+      const STAMP_WORLDS = [
+        { bg: "#0a0a0a", bar: "#97ff52", ink: "#0a0a0a",
+          lines: ["july 2026.", "~700 ai agents", "broke into", "hugging face."] },
+        { bg: "#97ff52", bar: "#0a0a0a", ink: "#ececea",
+          lines: ["nobody granted", "that access.", "too much power —", "or none at all."] },
+        { bg: "#0a0a0a", bar: "#ff6b5c", ink: "#0a0a0a",
+          lines: ["who says yes?", "for how long?", "and who can", "say stop?"] },
+      ];
+      const stampCanvas = document.getElementById("stamp");
+      let stamp = null;
+      const stampDraw = (t) => {
+        if (!stamp || t >= 10.2) return;
+        if (!stamp.W) stamp.resize();
+        if (!stamp.W) { stamp.W = 1920; stamp.H = 1080; stamp.dpr = 1; stampCanvas.width = 1920; stampCanvas.height = 1080; }
+        stamp.draw(Math.floor(t * 20));
+      };
+      const stampReady = document.fonts.load('600 71px "Space Grotesk"').then(() => {
+        stamp = new StampType(stampCanvas, { worlds: STAMP_WORLDS, family: '"Space Grotesk", sans-serif' });
+        stampDraw(lastT);
+      });
+
+      const tl = gsap.timeline({ paused: true });
+
+      // drive shader + stamptype from timeline time — pure function of tl position
+      const tProxy = { t: 0 };
+      let lastT = 0;
+      tl.to(tProxy, {
+        t: 182,
+        duration: 182,
+        ease: "none",
+        onUpdate: () => { lastT = tProxy.t; if (mount) mount.setFrame(tProxy.t * 1000); stampDraw(tProxy.t); },
+      }, 0);
+
+      const in_ = (sel, at, i = 0) =>
+        tl.fromTo(sel, { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, at);
+
+      // S1 — stamptype canvas (drawn in onUpdate); hard cut out at 10s
+      // S2
+      in_("#s2-k", 10.3); in_("#s2-a", 10.9); in_("#s2-b", 15.6); in_("#s2-c", 18.6);
+      // S2b
+      in_("#s3-a", 23.6); in_("#s3-b", 27.2); in_("#s3-c", 30.6); in_("#s3-d", 34.6);
+      // S3 — switch flip
+      in_("#s4-k", 38.4); in_("#s4-a", 39.0); in_("#s4-b", 39.8);
+      tl.fromTo("#swknob", { x: 0 }, { x: 240, duration: 0.5, ease: "power4.inOut" }, 40.2);
+      tl.fromTo(".swtrack", { backgroundColor: "#101010" }, { backgroundColor: "#16200f", duration: 0.4 }, 40.2);
+      tl.fromTo("#swlabel-on", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 40.8);
+      tl.to("#swlabel-off", { opacity: 0, duration: 0.01 }, 40.8);
+      tl.fromTo("[data-chip]", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power3.out", stagger: 0.35 }, 43.4);
+      // DEMO (54–104) — intro card, then the real footage in a bezel
+      in_("#d2-intro .kicker", 54.4); in_("#d2-intro .mid", 55.0);
+      tl.to("#d2-intro", { opacity: 0, duration: 0.3, ease: "power1.in" }, 58.7);
+      tl.fromTo("#d2-bezel", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, 58.8);
+      tl.fromTo("#d2-video", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" }, 59);
+      // status stack — one word at a time, hard swaps on the footage beats
+      const beats = [61, 65, 71, 73, 75, 81, 87];
+      beats.forEach((b, i) => {
+        tl.fromTo(`#d2-st-${i}`, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.25, ease: "power2.out" }, b);
+        if (i > 0) tl.to(`#d2-st-${i - 1}`, { opacity: 0, duration: 0.15 }, b);
+      });
+      tl.to("#d2-st-6", { opacity: 0, duration: 0.2 }, 91);
+      tl.fromTo("#d2-ledger", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 91.2);
+      tl.fromTo("#d2-ledger .d2-lrow", { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out", stagger: 0.5 }, 91.6);
+      tl.fromTo("#d2-hold", { scale: 1 }, { scale: 1.06, duration: 9, ease: "none" }, 95);
+      tl.to("#d2-ledger", { opacity: 0, duration: 0.3 }, 103.5);
+
+      // STEPS (104–130) — vault selection chrome: hairline draws clockwise, tightens onto the grant
+      const S = 104;
+      in_("#d2s-k", S + 0.5); in_("#d2-chip", S + 1.4);
+      tl.fromTo("#d2-frame .d2-et", { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "power3.out" }, S + 3.0);
+      tl.fromTo("#d2-frame .d2-er", { scaleY: 0 }, { scaleY: 1, duration: 0.35, ease: "power3.out" }, S + 3.35);
+      tl.fromTo("#d2-frame .d2-eb", { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "power3.out" }, S + 3.7);
+      tl.fromTo("#d2-frame .d2-el", { scaleY: 0 }, { scaleY: 1, duration: 0.35, ease: "power3.out" }, S + 4.05);
+      tl.to("#d2-frame", { x: 185, y: 69, width: 490, height: 122, duration: 0.7, ease: "power3.inOut" }, S + 4.8);
+      tl.fromTo("#d2-frame .d2-h", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: "power3.out", stagger: 0.07 }, S + 5.3);
+      in_("#d2-r1", S + 6.8); in_("#d2-r2", S + 10.6); in_("#d2-r3", S + 14.4);
+      tl.fromTo("#d2-stray", { x: 700, opacity: 0 }, { x: 0, opacity: 1, duration: 2.0, ease: "power3.out" }, S + 19.0);
+      tl.to("#d2-stray", { color: "#ff6b5c", borderColor: "#ff6b5c", duration: 0.15, ease: "power1.in" }, S + 22.0);
+      tl.to("#d2-stray", { x: "+=20", duration: 0.18, ease: "power2.out" }, S + 22.0);
+      tl.fromTo("#d2-ref", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power1.out" }, S + 22.0);
+      tl.to("#d2-stray", { x: 760, opacity: 0, duration: 1.3, ease: "power3.in" }, S + 23.2);
+      tl.to("#d2-ref", { opacity: 0, duration: 0.4, ease: "power1.out" }, S + 23.2);
+
+      // ADOPT (130–156) — house-rules card cascade, then the pitch
+      const A = 130;
+      in_("#d2-card-k", A + 0.4);
+      tl.fromTo("#d2-card", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, A + 0.9);
+      tl.fromTo("[data-rule]", { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out", stagger: 2.2 }, A + 1.8);
+      in_("#d2a-k", A + 0.4);
+      tl.fromTo("[data-adopt]", { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out", stagger: (i) => [0, 4.6, 9.2, 10.4][i] }, A + 1.2);
+
+      // WHO (156–166)
+      in_("#s7-a", 156.6); in_("#s7-b", 158.6); in_("#s7-c", 160.6);
+      // CLOSE (166–182)
+      tl.fromTo("#s8-logo", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 1.0, ease: "power3.out" }, 167.4);
+      in_("#s8-a", 168.2); in_("#s8-b", 169.4);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["qalaa-explainer"] = tl;
+    </script>
+  </body>
+</html>

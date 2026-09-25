@@ -38,6 +38,10 @@ const eslintConfig = defineConfig([
     // playwright artifacts
     "playwright-report/**",
     "test-results/**",
+    // vendored + generated video assets (not product code)
+    "video/explainer/assets/**",
+    "video/explainer/scripts/**",
+    "video/explainer/scenes/**",
   ]),
 ]);
 
