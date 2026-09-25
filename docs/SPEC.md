@@ -21,8 +21,9 @@ Noise attack origins (for map arcs): Tor exits (DE, NL), VN, BR, RU, CN, US resi
 ```
 app/            routes (UI pages + app/api/** route handlers)
 components/     ui/ (shadcn), vendor/ (adapted designeer components), brand/, shell/, ...
-lib/            types.ts (contract), utils.ts (cn), api.ts + hooks/ (client data layer)
+lib/            types.ts (contract), utils.ts (cn), api.ts + hooks/ (client data layer), auth/ (session + gate; Web Crypto, shared with proxy.ts)
 server/         backend (see §2). Node runtime only. Never imported by client components.
+proxy.ts        optional auth gate (§7.1); imports server/auth for disk+env state only
 desktop/        Electron shell (main.cjs, preload.cjs)
 scripts/        dev/build helpers, blind-boundary check
 docs/           SPEC.md, COMPONENTS.md (attribution of vendored components)
@@ -147,6 +148,9 @@ Every threat: Cassidy `map_attack` (kill chain from techniques), status transiti
 ## 7. LLM (optional, `agents/llm.ts`)
 OpenAI-compatible `POST {baseUrl}/chat/completions`. Presets: groq `https://api.groq.com/openai/v1` `openai/gpt-oss-20b`; gemini `https://generativelanguage.googleapis.com/v1beta/openai` `gemini-2.5-flash`; mistral `https://api.mistral.ai/v1` `mistral-small-latest`; cerebras `https://api.cerebras.ai/v1` `llama3.1-8b`; openrouter `https://openrouter.ai/api/v1` `meta-llama/llama-3.3-70b-instruct:free`; huggingface `https://router.huggingface.co/v1` `meta-llama/Meta-Llama-3.1-8B-Instruct`; custom. Key persisted to `.data/secrets.json` (never returned; client sees `apiKeySet`). Timeout 8 s, 1 retry, global limiter 1 call / 3 s (excess → fallback templates). Used for: reason-span narration, Cassidy's operator copy, Doc's research summaries, freeform operator questions in threads (context = relevant observable state only). Record `LLMUsage` on the span (`fallback: true` when templates used). `POST /api/settings/llm/test` sends "Reply with one word: ready" and stores `lastTest`.
 
+### 7.1 Auth (optional, `server/auth.ts` + `lib/auth/*` + `proxy.ts`)
+Single-org password gate, **off unless** `QALAA_AUTH_PASSWORD` is set or `auth.passwordHash` exists in `.data/secrets.json` (Settings wins). Passwords hashed with `crypto.scrypt` (`scrypt$<salt>$<hash>`, constant-time compare). Session = HttpOnly `SameSite=Lax` cookie `qalaa_session` = `base64url(payload).base64url(HMAC-SHA256)`, payload `{iat, exp}`, TTL 12 h, re-issued by the proxy when under 6 h remain. HMAC secret `auth.sessionSecret` is generated on first boot and persisted next to the LLM key; with `QALAA_NO_PERSIST=1` it is derived from the env password instead. `lib/auth/session.ts` uses Web Crypto only so the same verifier runs in `proxy.ts`; `lib/auth/gate.ts` holds the pure `decide()` (allow | redirect `/login?next=` | 401 JSON). Public paths: `/login`, `/api/auth/*`, `/api/health`, `/_next/*`, `/brand/*`, `/icon.svg`. Login failures rate-limited in memory (5/min/IP → 429). Routes in §10.
+
 ## 8. Messaging
 One `Thread` per agent + `thr-qalaa` system thread (digests, range results). Operator commands (case-insensitive, in any thread; Cassidy replies unless addressed agent owns the tool): `status`, `report`, `help`, `approve <A-id>`, `reject <A-id>`, `isolate <host>`, `release <host>`, `block <ip>`, `revoke <token-id|all exposed>`, `quarantine <dataset>`, `rotate <secret-kind|host>`, `cordon <cluster>`, `migrate <host> to <region>`, `pause|resume [agent]`, `who's on <host>`, `what happened on <host>` (freeform → narrator). Unknown text → narrator freeform answer (LLM) or template "I didn't catch that — try `help`". Every operator command produces a trace with `input.from = "operator"`. Messages carry `quickReplies` for approvals and `attachments` linking threats/servers/traces. `deliveredAt` set immediately, `readAt` when `POST .../read`.
 
@@ -194,15 +198,18 @@ Director (`POST /api/director`): `brute-force`, `c2-beacon`, `exfil`, `prompt-in
 | GET `/insights?window=` | `InsightsSummary` |
 | GET `/range` · POST `/range/run` · GET `/range/[runId]` · POST `/range/[runId]/[action]` | `{scenarios, activeRun, history}` · `{scenarioId, mode, speed}` · run · action ∈ pause, resume, abort, speed (`{speed}`) |
 | POST `/director` | `{scenario: DirectorScenario}` |
-| GET `/settings` · PATCH `/settings` · POST `/settings/llm/test` | `Settings` · `{llm?:{provider,baseUrl,model,apiKey?,enabled}, operator?, sim?}` · test result |
+| GET `/settings` · PATCH `/settings` · POST `/settings/llm/test` | `Settings` (+ `auth:{enabled, source:"settings"|"env"|"off"}`) · `{llm?:{provider,baseUrl,model,apiKey?,enabled}, operator?, sim?}` · test result |
+| PATCH `/settings/auth` | `{password: string|null}` → `{auth}`; sets (≥8 chars, scrypt-hashed) or clears the operator password; 401 without a session while auth is on; 409 when persistence is disabled |
+| POST `/auth/login` · POST `/auth/logout` · GET `/auth/me` | `{password}` → `{ok}` + `Set-Cookie qalaa_session` (401 wrong, 429 rate-limited, 400 auth off) · clears cookie · `{enabled, authenticated}` |
 | GET `/health` | `{ok, uptimeSec, tick, clients}` |
 
-Errors: `{ error: string }` with 400/404/409. Validate bodies with zod.
+Errors: `{ error: string }` with 400/404/409. Validate bodies with zod. When auth is enabled (§7.1) every route except `/health` and `/auth/*` answers `401 {"error":"unauthorized"}` without a valid `qalaa_session` cookie — enforced in `proxy.ts`, not per route.
 
 ## 11. Tests (`npm test` = vitest + blind-boundary check)
 - policy engine (deny wins, approval, autonomy caps), command parser, conformance scoring.
 - range: baseline run in fast-forward reaches step 14 with `stagesSucceeded === 14`; protected run in fast-forward ends with `stagesBlocked ≥ 8`, grade ≥ B, and at least one `prevented` threat; no agent module imports range.
 - SSE route emits heartbeat and replays `since`.
+- auth: session sign/verify/tamper/expiry, `decide()` for every public path and `/api/events`, scrypt hashing, login route (wrong/right/rate-limit), `PATCH /settings/auth` guard.
 
 ## 12. Desktop (`desktop/`)
 Electron (CommonJS). `main.cjs`: `BrowserWindow` 1440×900 min 1100×700, `titleBarStyle: "hiddenInset"`, `trafficLightPosition: {x: 18, y: 18}`, `backgroundColor: "#04101a"`, `vibrancy: "under-window"` (mac only), `webPreferences: { preload, contextIsolation: true }`. Dev: load `http://localhost:3000` (`QALAA_URL` override). Packaged: spawn `node .next/standalone/server.js` on a free port with `HOSTNAME=127.0.0.1`, wait for `/api/health`, load it; kill on quit. `preload.cjs` exposes `window.qalaa = { isDesktop: true, platform }`. Scripts: `desktop` = concurrently `next dev` + `wait-on http://localhost:3000` → `electron .`; `desktop:build:mac` = `next build` → `scripts/prepare-standalone.mjs` (copy `.next/static` → `.next/standalone/.next/static`, `public` → `.next/standalone/public`) → `electron-builder --mac dmg --arm64 --x64` (unsigned; `mac.identity: null`). `next.config.ts`: `output: "standalone"`. Verify on Windows: `electron .` opens against the dev server.

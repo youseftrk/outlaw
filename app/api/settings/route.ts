@@ -3,6 +3,7 @@ import { rt, json, parseBody } from "@/app/api/_lib/util";
 import { store } from "@/server/store";
 import { bus } from "@/server/bus";
 import { LLM_PRESETS } from "@/server/agents/llm";
+import { authEnabled, authSource } from "@/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,6 +14,7 @@ export async function GET() {
   return json({
     ...s,
     llm: { ...s.llm, apiKeySet: !!store.secrets.llmApiKey },
+    auth: { enabled: authEnabled(), source: authSource() },
     llmPresets: LLM_PRESETS,
   });
 }
@@ -54,5 +56,5 @@ export async function PATCH(req: Request) {
   if (sim) Object.assign(s.sim, sim);
   store.markDirty();
   bus.emit("system", { settings: s }, { summary: "settings updated", href: "/settings" });
-  return json({ settings: { ...s, llm: { ...s.llm, apiKeySet: !!store.secrets.llmApiKey } } });
+  return json({ settings: { ...s, llm: { ...s.llm, apiKeySet: !!store.secrets.llmApiKey }, auth: { enabled: authEnabled(), source: authSource() } } });
 }
