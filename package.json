@@ -12,7 +12,8 @@
     "test": "node scripts/check-blind-boundary.mjs && eslint --max-warnings=0 && vitest run",
     "typecheck": "tsc --noEmit",
     "desktop": "concurrently -k \"next dev\" \"wait-on http-get://localhost:3000 && cross-env QALAA_URL=http://localhost:3000 electron .\"",
-    "desktop:build:mac": "next build && node scripts/prepare-standalone.mjs && electron-builder --mac dmg --arm64 --x64",
+    "desktop:icon": "electron scripts/make-mac-icon.cjs",
+    "desktop:build:mac": "next build && node scripts/prepare-standalone.mjs && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg --arm64 --x64",
     "desktop:build:win": "next build && node scripts/prepare-standalone.mjs && electron-builder --win dir"
   },
   "dependencies": {
@@ -91,10 +92,9 @@
     "productName": "Qalaa",
     "files": [
       "desktop/**",
-      "public/**",
       ".next/standalone/**",
-      ".next/static/**",
-      "package.json"
+      "package.json",
+      "!node_modules/**"
     ],
     "extraMetadata": {
       "main": "desktop/main.cjs"
@@ -106,6 +106,7 @@
     "mac": {
       "category": "public.app-category.developer-tools",
       "target": "dmg",
+      "icon": "desktop/icon.icns",
       "identity": null
     },
     "win": {
