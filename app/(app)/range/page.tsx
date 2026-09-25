@@ -86,6 +86,9 @@ function StepChip({ step, result, active }: { step: RangeStep; result?: RangeSte
 function ScoreCard({ run, scenario }: { run: RangeRun; scenario: RangeScenario }) {
   const s = run.score;
   if (!s) return null;
+  const stopped = run.stepResults.find((r) => r.status === "blocked");
+  const stoppedStep = stopped ? scenario.steps.find((st) => st.id === stopped.stepId) : undefined;
+  const neverReached = run.stepResults.filter((r) => r.status === "skipped").length;
   return (
     <Card className="bezel-core relative gap-0 overflow-hidden border-0 p-5">
       <div className="thermal pointer-events-none absolute inset-0 opacity-40" />
@@ -96,18 +99,23 @@ function ScoreCard({ run, scenario }: { run: RangeRun; scenario: RangeScenario }
         </div>
         <div className="col-span-12 grid grid-cols-2 gap-4 md:col-span-9 md:grid-cols-4">
           {[
-            ["Stages blocked", `${s.stagesBlocked} / ${s.stagesTotal}`],
-            ["Detected at", s.detectedAtMs !== undefined ? `${Math.round(s.detectedAtMs / 1000)}s` : "never"],
-            ["Contained at", s.containedAtMs !== undefined ? `${Math.round(s.containedAtMs / 1000)}s` : "—"],
-            ["Nodes compromised", `${s.nodesCompromised}`],
-            ["Credentials harvested", `${s.credentialsHarvested}`],
-            ["Datasets accessed", `${s.datasetsAccessed}`],
-            ["Servers isolated", `${s.serversIsolated}`],
-            ["False positives", `${s.falsePositives}`],
-          ].map(([k, v]) => (
+            ["Got through", `${s.stagesSucceeded} / ${s.stagesTotal}`, undefined],
+            [
+              "Chain stopped at",
+              stoppedStep ? `stage ${stoppedStep.order}` : "never",
+              stopped?.blockedBy ? `${stopped.blockedBy.toolName} · ${neverReached} never reached` : undefined,
+            ],
+            ["Detected at", s.detectedAtMs !== undefined ? `${Math.round(s.detectedAtMs / 1000)}s` : "never", "scenario clock"],
+            ["Contained at", s.containedAtMs !== undefined ? `${Math.round(s.containedAtMs / 1000)}s` : "—", "scenario clock"],
+            ["Nodes compromised", `${s.nodesCompromised}`, undefined],
+            ["Credentials harvested", `${s.credentialsHarvested}`, undefined],
+            ["Datasets accessed", `${s.datasetsAccessed}`, undefined],
+            ["False positives", `${s.falsePositives}`, undefined],
+          ].map(([k, v, sub]) => (
             <div key={k}>
               <p className="text-[12px] text-text-3">{k}</p>
               <p className="mono-data text-[22px] leading-none text-text-1">{v}</p>
+              {sub && <p className="mono-data mt-1 text-[10px] text-text-3">{sub}</p>}
             </div>
           ))}
           <div className="col-span-2 rounded-[12px] bg-bg-0/50 p-3 md:col-span-4">
@@ -280,7 +288,7 @@ export default function RangePage() {
                     clock <NumberFlow value={elapsed} />s · {shown.speed}×
                   </span>
                   <span className="ml-auto text-[12px] text-text-2">
-                    <span className="text-lime">{blocked} blocked</span> · <span className="text-sev-critical">{through} got through</span>
+                    <span className="text-sev-critical">{through} got through</span> · <span className="text-lime">{blocked ? `stopped at stage ${(shown.stepResults.findIndex((r) => r.status === "blocked")) + 1}` : "not stopped yet"}</span>
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4 xl:grid-cols-7">
