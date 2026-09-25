@@ -76,6 +76,8 @@ Detection and response are deterministic and always on. An LLM adds narrated rea
 
 Settings → Agent brain → pick a preset (Groq is free, no card, fastest), paste a key, **Save & test**. Presets: Groq, Gemini, Mistral, Cerebras, OpenRouter, Hugging Face router, or any OpenAI-compatible endpoint. Keys live in `.data/secrets.json` (gitignored) and never reach the browser.
 
+**Devin as the brain.** Pick the *Devin (Cognition)* preset and paste an API key from app.devin.ai/settings/api-keys. Qalaa opens one long-lived, unlisted Devin session (title "Qalaa agent brain", ACU-capped) and messages it per prompt instead of calling a chat-completions endpoint. Devin answers in tens of seconds, so the agents stay non-blocking: alerts and `status` replies go out from templates immediately and are rewritten in place when Devin's copy lands; freeform questions get a holding reply and a follow-up text. The session link shows under the provider picker once it exists; a new session is opened automatically when the old one finishes or hits its ACU cap.
+
 ## Optional: message delivery
 
 Messages always land in the in-app phone (`/messages`). Optionally, the garrison's alerts, approval requests and reports are *also* pushed to one real channel, and your replies from that channel run through the same command parser as the in-app thread. Off by default; the deterministic engine is unaffected when nothing is configured.

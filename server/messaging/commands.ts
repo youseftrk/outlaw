@@ -11,7 +11,7 @@ import { decide } from "../governance/approvals";
 import { startTrace, addSpan, endSpan, endTrace } from "../governance/traces";
 import { runTool } from "../agents/toolbelt";
 import { narrate, statusCopy } from "../agents/narrator";
-import { llmConfigured, llmChat } from "../agents/llm";
+import { llmConfigured, llmChat, llmChatDeferred, llmIsSlow } from "../agents/llm";
 import * as world from "../world/world";
 
 export interface ParsedCommand {
@@ -56,11 +56,19 @@ export async function handleOperatorMessage(threadId: string, text: string): Pro
   const replies: Message[] = [];
   const say = (t: string, opts: Parameters<typeof agentSay>[2] = {}) => replies.push(agentSay(responder, t, opts));
   const sayAs = (agent: Agent, t: string, opts: Parameters<typeof agentSay>[2] = {}) => replies.push(agentSay(agent, t, opts));
+  /** follow-up posted after this handler has returned (slow LLM providers) */
+  const sayLate = (t: string) => {
+    agentSay(responder, t);
+    bus.emit("message.updated", { threadId }, { summary: `${responder.name} followed up`, href: "/messages" });
+  };
 
   const v = cmd.verb;
   try {
     if (v === "status") {
-      const { text: t, llm } = await narrate(responder, statusCopy(), { user: `Summarize current state in one or two short sentences: ${statusCopy()()}` });
+      const { text: t, llm } = await narrate(responder, statusCopy(), { user: `Summarize current state in one or two short sentences: ${statusCopy()()}` }, (late, usage) => {
+        span.llm = usage;
+        sayLate(late);
+      });
       span.input = { from: "operator", text };
       if (llm) span.llm = llm;
       say(t);
@@ -155,12 +163,19 @@ export async function handleOperatorMessage(threadId: string, text: string): Pro
     } else {
       // freeform → narrator (LLM) or template
       if (llmConfigured()) {
-        const { text: t, usage } = await llmChat(
-          "You are Saqr of Qalaa answering the operator in one or two short sentences. Only use observable fleet state.",
-          `Operator asks: ${cmd.raw}\nState: ${statusCopy()()}`
-        );
-        if (usage) span.llm = usage;
-        say(t ?? "I didn't catch that — try `help`.");
+        const system = "You are Saqr of Qalaa answering the operator in one or two short sentences. Only use observable fleet state.";
+        const user = `Operator asks: ${cmd.raw}\nState: ${statusCopy()()}`;
+        if (llmIsSlow()) {
+          llmChatDeferred(system, user, (late, usage) => {
+            span.llm = usage;
+            sayLate(late);
+          });
+          say("Let me think on that — I'll text you back in a minute.");
+        } else {
+          const { text: t, usage } = await llmChat(system, user);
+          if (usage) span.llm = usage;
+          say(t ?? "I didn't catch that — try `help`.");
+        }
       } else {
         say("I didn't catch that — try `help`.");
       }
