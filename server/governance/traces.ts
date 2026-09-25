@@ -60,14 +60,24 @@ export function endSpan(span: TraceSpan, status: TraceSpan["status"] = "ok", out
   store.markDirty();
 }
 
+/** riskScore = tool risk weight × threat severity weight (+20 for high/critical). */
+export function riskScoreFor(trace: Trace, toolNames: ToolName[]): number {
+  const maxRisk = toolNames.reduce((m, t) => Math.max(m, RISK_WEIGHT[toolSpec(t).risk]), 0);
+  const threat = trace.threatId ? store.threat(trace.threatId) : undefined;
+  const sevW = SEVERITY_WEIGHT[threat?.severity ?? "medium"];
+  return Math.round(Math.min(100, maxRisk * sevW + (sevW >= 0.8 ? 20 : 0)));
+}
+
+/** Raise the in-progress score so a pending approval already reflects the gated tool. */
+export function projectRisk(trace: Trace, tool: ToolName): void {
+  trace.riskScore = Math.max(trace.riskScore, riskScoreFor(trace, [tool]));
+  store.markDirty();
+}
+
 export function endTrace(trace: Trace, verdict: TraceVerdict): void {
   trace.verdict = verdict;
   trace.endedAt = store.now();
-  // riskScore = max tool risk weight × severity weight
-  const maxRisk = trace.spans.reduce((m, s) => (s.toolName ? Math.max(m, RISK_WEIGHT[toolSpec(s.toolName).risk]) : m), 0);
-  const threat = trace.threatId ? store.threat(trace.threatId) : undefined;
-  const sevW = SEVERITY_WEIGHT[threat?.severity ?? "medium"];
-  trace.riskScore = Math.round(Math.min(100, maxRisk * sevW + (sevW >= 0.8 ? 20 : 0)));
+  trace.riskScore = riskScoreFor(trace, trace.spans.flatMap((s) => (s.toolName ? [s.toolName] : [])));
   const agent = store.agent(trace.agentId);
   if (agent) agent.metrics.actionsTaken += trace.spans.filter((s) => s.kind === "tool").length;
   store.markDirty();

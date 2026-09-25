@@ -78,4 +78,20 @@ export async function expectNoHorizontalOverflow(page: Page) {
       message: "document should not scroll horizontally",
     })
     .toBeLessThanOrEqual(0);
+  // dense tables must fit their container too — an inner overflow-x-auto scroll
+  // keeps the document width honest while still clipping columns off-screen
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() =>
+          Math.max(
+            0,
+            ...Array.from(document.querySelectorAll<HTMLElement>("[data-slot='table-container']")).map(
+              (el) => el.scrollWidth - el.clientWidth,
+            ),
+          ),
+        ),
+      { message: "no table should scroll horizontally inside its container" },
+    )
+    .toBeLessThanOrEqual(0);
 }

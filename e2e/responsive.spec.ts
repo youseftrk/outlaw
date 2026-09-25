@@ -3,7 +3,7 @@ import { expectNoHorizontalOverflow } from "./helpers";
 
 test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 
-const PAGES = ["/", "/fleet", "/threats", "/messages", "/governance"];
+const PAGES = ["/", "/fleet", "/threats", "/messages", "/governance", "/governance?tab=policies"];
 
 test.describe("responsive @ 390×844", () => {
   for (const path of PAGES) {

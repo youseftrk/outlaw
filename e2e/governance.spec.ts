@@ -20,7 +20,9 @@ test.describe("governance approvals", () => {
     await expect(card).toBeVisible();
     await expect(card.getByText("Sundance", { exact: true })).toBeVisible();
     await expect(card.getByText("block_egress").first()).toBeVisible();
-    await expect(card.getByText("Risk score")).toBeVisible();
+    // pending approvals carry a projected score, not the 0 of an in-progress trace
+    await expect(card.getByText("Risk score").locator("xpath=following-sibling::dd")).toHaveText(/^[1-9]\d?\/100$|^100\/100$/);
+    await expect(card.getByText("Target").locator("xpath=following-sibling::dd")).not.toHaveText("—");
     await expect(card.getByTestId("approval-expiry")).toHaveText(/\d+m \d+s|\d+s/);
     await expect(card.getByText(/Autonomy cap: act-with-approval — risk medium requires approval/)).toBeVisible();
 

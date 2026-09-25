@@ -266,7 +266,7 @@ function PoliciesTab() {
           {rows.map((p) => (
             <TableRow key={p.id} className={cn("border-line", !p.enabled && "opacity-50")}>
               <TableCell className="mono-data hidden text-text-3 md:table-cell">{p.priority}</TableCell>
-              <TableCell>
+              <TableCell className="wrap-anywhere whitespace-normal md:whitespace-nowrap">
                 <p className="text-text-1">{p.name}</p>
                 <p className="text-[12px] text-text-3">{p.description}</p>
               </TableCell>
@@ -289,7 +289,7 @@ function PoliciesTab() {
                   .join(" · ") || "everything"}
               </TableCell>
               <TableCell className="mono-data hidden text-right text-text-2 md:table-cell">{p.hits}</TableCell>
-              <TableCell className="text-right">
+              <TableCell className="overflow-x-clip text-right">
                 <Switch checked={p.enabled} onCheckedChange={(v) => toggle(p, Boolean(v))} />
               </TableCell>
             </TableRow>
