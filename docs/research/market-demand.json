@@ -1,0 +1,83 @@
+{
+  "generated": "2026-09-25",
+  "series": [
+    {
+      "name": "Agentic AI market (global, $B)",
+      "unit": "USD B",
+      "source": "https://www.statista.com/statistics/1552183/global-agentic-ai-market-value/",
+      "source_detail": "Capgemini figures via Statista; CAGR >44%",
+      "points": [
+        {"year": 2024, "value": 5.1},
+        {"year": 2030, "value": 47.1}
+      ]
+    },
+    {
+      "name": "AI TRiSM / AI trust, risk & security market (global, $B)",
+      "unit": "USD B",
+      "source": "https://www.prnewswire.co.uk/news-releases/ai-trism-market-worth-11-61-billion-by-2031--exclusive-report-by-marketsandmarkets-302859163.html",
+      "source_detail": "MarketsandMarkets; CAGR 30.3% (2026-2031)",
+      "points": [
+        {"year": 2025, "value": 2.23},
+        {"year": 2026, "value": 3.09},
+        {"year": 2031, "value": 11.61}
+      ]
+    },
+    {
+      "name": "Non-human identity (NHI) security market (global, $B)",
+      "unit": "USD B",
+      "source": "https://www.mordorintelligence.com/industry-reports/non-human-identity-nhi-security-market",
+      "source_detail": "Mordor Intelligence; CAGR 22.78% (2026-2031)",
+      "points": [
+        {"year": 2025, "value": 6.82},
+        {"year": 2026, "value": 8.22},
+        {"year": 2031, "value": 22.94}
+      ]
+    },
+    {
+      "name": "AI governance market (global, $B)",
+      "unit": "USD B",
+      "source": "https://www.globenewswire.com/news-release/2026/08/25/3350690/0/en/ai-governance-market-surges-to-5-78-billion-at-a-cagr-45-3-by-2029-report-by-marketsandmarkets.html",
+      "source_detail": "MarketsandMarkets; CAGR 45.3% (2024-2029)",
+      "points": [
+        {"year": 2024, "value": 0.89},
+        {"year": 2029, "value": 5.78}
+      ]
+    },
+    {
+      "name": "AI spending, Middle East & Africa ($B)",
+      "unit": "USD B",
+      "source": "https://www.khaleejtimes.com/business/uae-saudi-arabia-to-drive-regions-ai-spending-growth-at-worlds-fastest-rate",
+      "source_detail": "IDC forecast; CAGR 29.7% (2022-2026); UAE and Saudi Arabia are the drivers",
+      "points": [
+        {"year": 2023, "value": 3.0},
+        {"year": 2026, "value": 6.4}
+      ]
+    }
+  ],
+  "callouts": [
+    {
+      "label": "UAE: 50% of government sectors, services and operations on Agentic AI within 2 years (announced Apr 2026)",
+      "source": "https://mediaoffice.ae/en/news/2026/april/23-04/mohammed-bin-rashid-chairs-uae-cabinet-meeting"
+    },
+    {
+      "label": "Abu Dhabi: world's first fully AI-native government by 2027 — AED 13B, 100% sovereign cloud, 200+ AI solutions",
+      "source": "https://www.dge.gov.ae/en/news/adg-digital-strategy"
+    },
+    {
+      "label": "UAE AI spending to reach $5.78B by 2029 (IDC)",
+      "source": "https://gecnewswire.com/gbm-ibm-and-idc-partner-to-scale-sovereign-agentic-ai-in-the-uae/"
+    },
+    {
+      "label": "AI to contribute ~$96B / 13.6% of UAE GDP by 2030 (PwC)",
+      "source": "https://www.khaleejtimes.com/business/ai-expected-to-contribute-over-96-billion-to-the-uaes-gdp-by-2031"
+    },
+    {
+      "label": "Dubai: a Chief AI Officer in every government entity — 230+ appointed (Apr 2025)",
+      "source": "https://www.khaleejtimes.com/business/tech/dubai-ai-future-business-minister"
+    },
+    {
+      "label": "Gartner: >40% of agentic AI projects cancelled by end-2027, citing inadequate risk controls",
+      "source": "https://www.gartner.com/en/newsroom/press-releases/2025-06-25-gartner-predicts-over-40-percent-of-agentic-ai-projects-will-be-canceled-by-end-of-2027"
+    }
+  ]
+}
