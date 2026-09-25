@@ -14,6 +14,14 @@ Qalaa is that switch. An agent asks for **exactly one thing**: *what* it may do,
 
 The whole proof in one line: **refused → owner says yes → allowed → owner takes it back → refused again**, against the same protected action, checked on the server and not in the screen.
 
+## Who it serves
+
+- **Government** — ministries and authorities whose systems and citizens' data will be worked on by AI agents from other entities. The owner of the data keeps the switch; the data never has to move.
+- **Enterprise** — banks, telecoms, hospitals and utilities running agents across business units or with partners. Every agent action is bounded, approved by the system owner and recorded for audit.
+- **The people who run the agents** — the six-agent garrison in this repo shows what an AI workforce looks like when it operates under permission rather than standing administrator access.
+
+No rewiring: Qalaa sits in front of the system it protects, owners set their own house rules, and the record is written by the server as things happen.
+
 ## What you see
 
 | Page | What it does |
@@ -45,7 +53,7 @@ Anyone can bypass the UI and hit the protected endpoint directly:
 ```bash
 curl -X POST localhost:3000/api/protected/ent-data/contain \
   -H 'content-type: application/json' \
-  -d '{"agentId":"agt-hisn","serverId":"srv-dataset-worker-02"}'
+  -d '{"actorId":"agt-hisn","serverId":"srv-api-01"}'
 # → 403 {"error":"AUTHORITY_REQUIRED"} … accept + code … → 200 … revoke … → 403 {"error":"AUTHORITY_REVOKED"}
 ```
 
@@ -81,6 +89,7 @@ npm run build
 - **Language model** — Settings → Agent brain. Groq, Gemini, Mistral, Cerebras, OpenRouter, Hugging Face, any OpenAI-compatible endpoint, or Devin (one long-lived session). Adds narrated reasoning and drafted explanations; the permission decision never depends on it. Keys stay in `.data/secrets.json`.
 - **Message delivery** — Settings → Delivery. Push alerts, approvals and codes to a webhook, Slack or Twilio SMS; replies come back through `/api/messages/inbound`.
 - **Auth** — `QALAA_AUTH_PASSWORD=…` or Settings → Access puts the UI and API behind one operator password. Off by default.
+- **Real hosts (SSH)** — Settings → Real hosts. Point a system at a real machine over SSH so an allowed action runs for real instead of in the simulated estate. Simulated by default.
 
 ## Layout
 
