@@ -34,11 +34,25 @@ Desktop shell (dev server + native window):
 npm run desktop
 ```
 
-Build the macOS app (must run on a Mac; unsigned .dmg lands in `release/`):
+Build the macOS app (must run on a Mac; Node 24, no Apple Developer account needed):
 
 ```bash
 npm run desktop:build:mac
+# = next build && node scripts/prepare-standalone.mjs
+#   && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg --arm64 --x64
 ```
+
+Output (gitignored):
+
+| Path | What |
+| --- | --- |
+| `release/Qalaa-<version>-arm64.dmg` | Apple Silicon installer (~155 MB) |
+| `release/Qalaa-<version>.dmg` | Intel installer (~159 MB) |
+| `release/mac-arm64/Qalaa.app`, `release/mac/Qalaa.app` | unpacked apps |
+
+The DMG is **unsigned and not notarized**. On first launch macOS says it "could not verify" the app — right-click `Qalaa.app` → *Open*, or *System Settings → Privacy & Security → Open Anyway*. If the app was quarantined by a browser download, `xattr -cr /Applications/Qalaa.app` also works. Signing/notarization is listed in `HANDOFF.md`.
+
+Packaged app internals: Electron spawns `.next/standalone/server.js` (Node mode) on a free localhost port and points the window at it. Logs go to `~/Library/Application Support/Qalaa/qalaa.log`; state lives in `~/Library/Application Support/Qalaa/data/` (override with `QALAA_DATA_DIR`). The app icon (`desktop/icon.icns`) is regenerated from `public/brand/logo.svg` with `npm run desktop:icon`.
 
 Tests (policy engine, command parser, blind range, boundary check):
 
