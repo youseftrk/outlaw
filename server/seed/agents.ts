@@ -77,7 +77,7 @@ const AGENTS: AgentSpec[] = [
 ];
 
 export function seedAgents(nowIso: string, serverIdsByRole: Record<string, string[]>): Agent[] {
-  const rng = makeRng("outlaw-2026:agents");
+  const rng = makeRng("qalaa-2026:agents");
   const assign: Record<string, string[]> = {
     cassidy: [], // sees everything
     sundance: [...serverIdsByRole.prodAll],

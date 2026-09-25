@@ -3,14 +3,14 @@
  * All entities from Bootstrap plus traces, messages, telemetry ring (2000),
  * events ring (5000), range runs and research queries.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
 import type {
   Agent,
   Approval,
   Message,
   Migration,
-  OutlawEvent,
+  QalaaEvent,
   Policy,
   RangeRun,
   ResearchQuery,
@@ -24,15 +24,28 @@ import type {
   ID,
 } from "@/lib/types";
 import type { World } from "./world/world";
+import type { SshAdapterConfig } from "./fleet/adapters/ssh-config";
 
 export const TELEMETRY_CAP = 2000;
 export const EVENTS_CAP = 5000;
 
-export interface OutlawSecrets {
+export interface QalaaSecrets {
   llmApiKey?: string;
+  /** `devin` provider — id of the persistent brain session (api.devin.ai) */
+  devinSessionId?: string;
+  /** SshAdapterConfig — non-secret shape, but kept out of state.json so the whole adapter config travels with the key material */
+  ssh?: SshAdapterConfig;
+  /** keyRef → PEM/OpenSSH private key. Never returned by any API. */
+  sshKeys?: Record<string, string>;
+  /** `host:port` → base64 host key blob pinned by the strict / accept-new host-key policy */
+  sshKnownHosts?: Record<string, string>;
+  /** HMAC key for outbound webhooks + shared secret for generic inbound */
+  deliverySecret?: string;
+  twilioAuthToken?: string;
+  auth?: { passwordHash?: string; sessionSecret?: string };
 }
 
-export interface OutlawState {
+export interface QalaaState {
   bootedAt: ISODate;
   /** sim-time epoch ms — advances 1000 per tick */
   simNowMs: number;
@@ -48,41 +61,42 @@ export interface OutlawState {
   traces: Trace[];
   settings: Settings;
   telemetry: TelemetrySignal[];
-  events: OutlawEvent[];
+  events: QalaaEvent[];
   rangeRuns: RangeRun[];
   activeRunId: ID | null;
   research: ResearchQuery[];
   world: World;
 }
 
-const DATA_DIR = join(process.cwd(), ".data");
+const DATA_DIR = process.env.QALAA_DATA_DIR || join(process.cwd(), ".data");
 const STATE_FILE = join(DATA_DIR, "state.json");
 const SECRETS_FILE = join(DATA_DIR, "secrets.json");
 
 const persistEnabled = () =>
-  !process.env.VITEST && process.env.OUTLAW_NO_PERSIST !== "1";
+  !process.env.VITEST && process.env.QALAA_NO_PERSIST !== "1";
 
 import { G } from "./shared";
 
 export const store = {
-  get state(): OutlawState | null {
-    return G.__outlawState ?? null;
+  get state(): QalaaState | null {
+    return G.__qalaaState ?? null;
   },
-  set state(v: OutlawState | null) {
-    G.__outlawState = v;
+  set state(v: QalaaState | null) {
+    G.__qalaaState = v;
   },
-  get secrets(): OutlawSecrets {
-    return (G.__outlawSecrets ??= {});
+  get secrets(): QalaaSecrets {
+    return (G.__qalaaSecrets ??= {});
   },
   dirty: false,
   lastWriteMs: 0,
   flushTimer: null as ReturnType<typeof setTimeout> | null,
+  persistEnabled,
 
-  init(state: OutlawState): void {
+  init(state: QalaaState): void {
     this.state = state;
   },
 
-  get s(): OutlawState {
+  get s(): QalaaState {
     if (!this.state) throw new Error("store not initialized — getRuntime() first");
     return this.state;
   },
@@ -121,7 +135,7 @@ export const store = {
       this.dirty = false;
       this.lastWriteMs = Date.now();
     } catch (err) {
-      console.error("[outlaw] state flush failed:", err);
+      console.error("[qalaa] state flush failed:", err);
     }
   },
 
@@ -131,29 +145,29 @@ export const store = {
       mkdirSync(DATA_DIR, { recursive: true });
       writeFileSync(SECRETS_FILE, JSON.stringify(this.secrets));
     } catch (err) {
-      console.error("[outlaw] secrets flush failed:", err);
+      console.error("[qalaa] secrets flush failed:", err);
     }
   },
 
   loadSecrets(): void {
     try {
       if (existsSync(SECRETS_FILE)) {
-        G.__outlawSecrets = JSON.parse(readFileSync(SECRETS_FILE, "utf8"));
+        G.__qalaaSecrets = JSON.parse(readFileSync(SECRETS_FILE, "utf8"));
       }
     } catch {
-      G.__outlawSecrets = {};
+      G.__qalaaSecrets = {};
     }
   },
 
-  load(): OutlawState | null {
+  load(): QalaaState | null {
     if (!persistEnabled()) return null;
     try {
       if (existsSync(STATE_FILE)) {
-        const parsed = JSON.parse(readFileSync(STATE_FILE, "utf8")) as OutlawState;
+        const parsed = JSON.parse(readFileSync(STATE_FILE, "utf8")) as QalaaState;
         return parsed;
       }
     } catch (err) {
-      console.error("[outlaw] state load failed:", err);
+      console.error("[qalaa] state load failed:", err);
     }
     return null;
   },
@@ -161,7 +175,6 @@ export const store = {
   wipe(): void {
     try {
       if (existsSync(STATE_FILE)) {
-        const { unlinkSync } = require("node:fs") as typeof import("node:fs");
         unlinkSync(STATE_FILE);
       }
     } catch {
@@ -175,7 +188,7 @@ export const store = {
     t.push(sig);
     if (t.length > TELEMETRY_CAP) t.splice(0, t.length - TELEMETRY_CAP);
   },
-  pushEvent(ev: OutlawEvent): void {
+  pushEvent(ev: QalaaEvent): void {
     const e = this.s.events;
     e.push(ev);
     if (e.length > EVENTS_CAP) e.splice(0, e.length - EVENTS_CAP);

@@ -146,6 +146,7 @@ export function ChartAreaInteractive() {
 
   React.useEffect(() => {
     if (isMobile) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- shadcn dashboard-01 block: narrows the range once the viewport is known
       setTimeRange("7d")
     }
   }, [isMobile])

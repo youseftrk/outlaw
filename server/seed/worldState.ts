@@ -22,7 +22,7 @@ const DATASET_NAMES = [
 ];
 
 export function seedWorld(nowIso: string): World {
-  const rng = makeRng("outlaw-2026:world");
+  const rng = makeRng("qalaa-2026:world");
   const now = new Date(nowIso).getTime();
 
   // 40 accounts; first 5 are weak-creds + no MFA

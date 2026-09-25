@@ -59,6 +59,7 @@ function Reasoning({
 
   useEffect(() => {
     if (isStreaming && !wasAutoOpened) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- prompt-kit upstream: auto-open/close follows the streaming flag
       if (!isControlled) setInternalOpen(true)
       setWasAutoOpened(true)
     }
@@ -161,9 +162,11 @@ function ReasoningContent({
         "overflow-hidden transition-[max-height] duration-150 ease-out",
         className
       )}
+      /* eslint-disable react-hooks/refs -- prompt-kit upstream: max-height animates to the measured content height */
       style={{
         maxHeight: isOpen ? contentRef.current?.scrollHeight : "0px",
       }}
+      /* eslint-enable react-hooks/refs */
       {...props}
     >
       <div

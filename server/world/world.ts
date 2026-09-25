@@ -269,7 +269,7 @@ export function isolateHost(serverId: string, by?: Actor): { ok: boolean; summar
   return { ok: true, summary: `isolated ${srv.hostname}` };
 }
 
-export function releaseHost(serverId: string, by?: Actor): { ok: boolean; summary: string } {
+export function releaseHost(serverId: string, _by?: Actor): { ok: boolean; summary: string } {
   const srv = store.server(serverId);
   if (!srv) return { ok: false, summary: `server ${serverId} not found` };
   srv.status = "healthy";

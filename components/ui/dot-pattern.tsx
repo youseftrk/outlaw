@@ -102,7 +102,9 @@ export function DotPattern({
       return {
         x: col * width + cx + x,
         y: row * height + cy + y,
+        // eslint-disable-next-line react-hooks/purity -- magicui upstream: per-dot glow timing is intentionally randomised each render
         delay: Math.random() * 5,
+        // eslint-disable-next-line react-hooks/purity -- magicui upstream: per-dot glow timing is intentionally randomised each render
         duration: Math.random() * 3 + 2,
       }
     }

@@ -9,14 +9,12 @@ import { bus } from "../bus";
 import { store } from "../store";
 import * as world from "../world/world";
 import { evaluate } from "../governance/policy";
-import { addSpan, endSpan, policySpan } from "../governance/traces";
+import { addSpan, endSpan, policySpan, projectRisk } from "../governance/traces";
 import { createApproval, waitForDecision } from "../governance/approvals";
 import { toolSpec } from "./tools";
-import { SimAdapter } from "../fleet/adapters/sim";
+import { adapterFor } from "../fleet/adapters";
 import { refreshServerConformance } from "../fleet/conformance";
 import { telemetryWindow } from "../telemetry";
-
-const adapter = new SimAdapter();
 
 export interface ToolArgs {
   serverId?: ID;
@@ -38,6 +36,8 @@ export interface ToolArgs {
 export interface ToolResult {
   ok: boolean;
   summary: string;
+  /** exact command/plan the adapter ran on the host, when a fleet adapter was involved */
+  command?: string;
   evidence?: Record<string, unknown>;
 }
 
@@ -61,13 +61,16 @@ export async function runTool(
   }
 
   if (effect === "require-approval") {
+    projectRisk(trace, tool);
+    const explicitTargets = [args.serverId, args.datasetId, args.tokenId, args.clusterId].filter(Boolean) as string[];
+    const threatTargets = trace.threatId ? (store.threat(trace.threatId)?.targetServerIds ?? []) : [];
     const approval = createApproval({
       traceId: trace.id,
       agent,
       toolName: tool,
       summary: `${agent.name} wants to ${tool} ${args.serverId ? `on ${server?.hostname ?? args.serverId}` : ""}`.trim(),
       risk: spec.risk,
-      targets: [args.serverId, args.datasetId, args.tokenId, args.clusterId].filter(Boolean) as string[],
+      targets: explicitTargets.length ? explicitTargets : threatTargets,
       threatId: ctx.severity ? trace.threatId : undefined,
       migrationId: trace.migrationId,
     });
@@ -135,8 +138,7 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
     }
     case "rotate_credentials": {
       if (args.serverId) {
-        const r = await adapter.rotateSecret(args.serverId, "*", by);
-        return { ok: r.ok, summary: r.summary };
+        return adapterFor(args.serverId).rotateSecret(args.serverId, "*", by);
       }
       const r = world.rotateSecret(args.secretKind ?? "cloud", by);
       return { ok: r.ok, summary: r.summary };
@@ -167,8 +169,7 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
       return { ok: true, summary: findings.length ? findings.join("; ") : "worker clean", evidence: { findings } };
     }
     case "isolate_host": {
-      const r = await adapter.isolate(args.serverId!, by);
-      return { ok: r.ok, summary: r.summary };
+      return adapterFor(args.serverId).isolate(args.serverId!, by);
     }
     case "block_egress": {
       if (args.ip) {
@@ -183,12 +184,12 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
     case "lock_registry":
       return world.lockRegistry(by);
     case "patch_service": {
-      const r = await adapter.applyPatch(args.serverId!, "latest-known-cves", by);
+      const r = await adapterFor(args.serverId).applyPatch(args.serverId!, "latest-known-cves", by);
       if (r.ok && args.serverId) {
         const srv = store.server(args.serverId);
         if (srv) refreshServerConformance(srv);
       }
-      return { ok: r.ok, summary: r.summary };
+      return r;
     }
     case "harden_sandbox":
       return world.hardenSandbox(by);
@@ -201,7 +202,7 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
       return { ok: r.ok, summary: r.summary };
     }
     case "snapshot_evidence":
-      return adapter.snapshot(args.serverId ?? "");
+      return adapterFor(args.serverId).snapshot(args.serverId ?? "");
     case "enrich_ioc":
       return { ok: true, summary: `enriched IOCs for ${args.threatId ?? "threat"}`, evidence: { threatId: args.threatId } };
     case "map_attack":
@@ -228,8 +229,7 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
     case "remediate_drift":
       return world.remediateConfig(args.serverId!, by);
     case "migrate_workload": {
-      const r = await adapter.migrate(args.serverId!, undefined, [args.workload ?? "workloads"]);
-      return { ok: r.ok, summary: r.summary };
+      return adapterFor(args.serverId).migrate(args.serverId!, undefined, [args.workload ?? "workloads"]);
     }
     case "notify_human":
       return { ok: true, summary: "operator notified" };

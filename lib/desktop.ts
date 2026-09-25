@@ -4,21 +4,21 @@ import * as React from "react";
 
 declare global {
   interface Window {
-    outlaw?: { isDesktop: boolean; platform: NodeJS.Platform | string; version?: string };
+    qalaa?: { isDesktop: boolean; platform: NodeJS.Platform | string; version?: string };
   }
 }
 
+// `window.qalaa` is injected once by the Electron preload and never changes, so there is nothing to subscribe to.
+const subscribeToNothing = () => () => {};
+const notOnServer = () => false;
+const readIsDesktop = () => Boolean(window.qalaa?.isDesktop);
+const readIsDesktopMac = () => Boolean(window.qalaa?.isDesktop && window.qalaa.platform === "darwin");
+
 /** True when running inside the Electron shell on macOS (traffic lights need room). */
 export function useDesktopMac() {
-  const [mac, setMac] = React.useState(false);
-  React.useEffect(() => {
-    setMac(Boolean(window.outlaw?.isDesktop && window.outlaw.platform === "darwin"));
-  }, []);
-  return mac;
+  return React.useSyncExternalStore(subscribeToNothing, readIsDesktopMac, notOnServer);
 }
 
 export function useIsDesktop() {
-  const [desktop, setDesktop] = React.useState(false);
-  React.useEffect(() => setDesktop(Boolean(window.outlaw?.isDesktop)), []);
-  return desktop;
+  return React.useSyncExternalStore(subscribeToNothing, readIsDesktop, notOnServer);
 }

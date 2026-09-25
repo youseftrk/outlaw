@@ -73,7 +73,7 @@ const SPECS: Spec[] = [
 ];
 
 export function seedFleet(nowIso: string, world: World): Server[] {
-  const rng = makeRng("outlaw-2026:fleet");
+  const rng = makeRng("qalaa-2026:fleet");
   const obs = projectWorld(world);
   return SPECS.map((spec, i) => {
     const createdAt = iso(new Date(nowIso).getTime() - (30 + rng.int(0, 300)) * 86400_000);

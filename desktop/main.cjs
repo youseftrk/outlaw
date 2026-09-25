@@ -1,13 +1,17 @@
 /**
- * Outlaw — Electron main process (SPEC §12).
+ * Qalaa — Electron main process (SPEC §12).
  *
- * Dev:    OUTLAW_URL=http://localhost:3000 electron .
+ * Dev:    QALAA_URL=http://localhost:3000 electron .
  * Packed: spawns .next/standalone/server.js on a free port, waits for
  *         /api/health, then loads it.
  *
- * Debug:  OUTLAW_SHOT=<path.png> captures the window ~4s after load and quits.
+ * Debug:  QALAA_SHOT=<path.png> captures the window ~4s after load and quits.
  *         (env var, not a flag — Chromium on Windows eats "/x" and URL-like
  *         positional args.)
+ *
+ * Data:   packaged builds persist .data/ under app.getPath("userData")
+ *         (macOS: ~/Library/Application Support/Qalaa/data) via QALAA_DATA_DIR,
+ *         and append main + server output to <userData>/qalaa.log.
  */
 const { app, BrowserWindow } = require("electron");
 const { spawn } = require("child_process");
@@ -15,11 +19,27 @@ const path = require("path");
 const fs = require("fs");
 const net = require("net");
 
-const DEV_URL = process.env.OUTLAW_URL || null;
-const SHOT = process.env.OUTLAW_SHOT || null;
+const DEV_URL = process.env.QALAA_URL || null;
+const SHOT = process.env.QALAA_SHOT || null;
 
 let serverProc = null;
 let mainWin = null;
+let logStream = null;
+
+function log(...parts) {
+  const line = parts.map((p) => (p instanceof Error ? p.stack ?? p.message : String(p))).join(" ");
+  console.log(line);
+  logStream?.write(`${new Date().toISOString()} ${line}\n`);
+}
+
+function openLog() {
+  if (!app.isPackaged) return;
+  try {
+    const dir = app.getPath("userData");
+    fs.mkdirSync(dir, { recursive: true });
+    logStream = fs.createWriteStream(path.join(dir, "qalaa.log"), { flags: "a" });
+  } catch { /* logging is best-effort */ }
+}
 
 function freePort() {
   return new Promise((resolve, reject) => {
@@ -57,15 +77,19 @@ async function standaloneUrl() {
   if (!fs.existsSync(entry)) throw new Error(`standalone server not found at ${entry} — run npm run build && node scripts/prepare-standalone.mjs`);
   const port = await freePort();
   const url = `http://127.0.0.1:${port}`;
+  const dataDir = process.env.QALAA_DATA_DIR || path.join(app.getPath("userData"), "data");
+  fs.mkdirSync(dataDir, { recursive: true });
+  log(`[qalaa] standalone ${entry} → ${url} (data: ${dataDir})`);
   // process.execPath is the Electron binary in a packaged app — run it as Node
   serverProc = spawn(process.execPath, [entry], {
     cwd: dir,
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", PORT: String(port), HOSTNAME: "127.0.0.1" },
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", PORT: String(port), HOSTNAME: "127.0.0.1", QALAA_DATA_DIR: dataDir },
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
   });
-  serverProc.stderr?.on("data", (d) => console.error("[outlaw-server]", String(d).trim()));
-  serverProc.on("exit", (code) => console.log(`[outlaw-server] exited ${code}`));
+  serverProc.stdout?.on("data", (d) => log("[qalaa-server]", String(d).trim()));
+  serverProc.stderr?.on("data", (d) => log("[qalaa-server]", String(d).trim()));
+  serverProc.on("exit", (code) => log(`[qalaa-server] exited ${code}`));
   const ok = await waitFor(`${url}/api/health`);
   if (!ok) throw new Error(`standalone server did not come up on ${url}`);
   return url;
@@ -80,7 +104,7 @@ async function createWindow() {
     minWidth: 1100,
     minHeight: 700,
     backgroundColor: "#040e17",
-    title: "Outlaw",
+    title: "Qalaa",
     show: false,
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 18, y: 18 },
@@ -99,9 +123,9 @@ async function createWindow() {
         const img = await mainWin.webContents.capturePage();
         fs.mkdirSync(path.dirname(SHOT), { recursive: true });
         fs.writeFileSync(SHOT, img.toPNG());
-        console.log(`[outlaw] screenshot → ${SHOT}`);
+        log(`[qalaa] screenshot → ${SHOT}`);
       } catch (e) {
-        console.error("[outlaw] screenshot failed:", e);
+        log("[qalaa] screenshot failed:", e);
       } finally {
         app.quit();
       }
@@ -110,10 +134,11 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  openLog();
   try {
     await createWindow();
   } catch (e) {
-    console.error("[outlaw] failed to start:", e);
+    log("[qalaa] failed to start:", e);
     app.quit();
   }
 });

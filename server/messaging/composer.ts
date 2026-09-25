@@ -112,5 +112,5 @@ export function threatResolved(threat: Threat, text: string): Message {
 }
 
 export function systemSay(text: string, opts: SendOpts = {}): Message {
-  return sendMessage("thr-outlaw", "system", text, { kind: "system", ...opts });
+  return sendMessage("thr-qalaa", "system", text, { kind: "system", ...opts });
 }

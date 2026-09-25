@@ -99,7 +99,7 @@ function TitleSlide() {
           <span className="aura absolute inset-0 rounded-full opacity-50 blur-3xl" />
           <Image src="/brand/logo.svg" alt="" width={140} height={140} priority className="relative drop-shadow-[0_20px_50px_rgba(21,197,220,0.45)]" />
         </span>
-        <Image src="/brand/wordmark.png" alt="Outlaw" width={520} height={128} priority className="-mt-6 h-auto w-[min(520px,60vw)]" />
+        <Image src="/brand/wordmark.png" alt="Qalaa" width={520} height={128} priority className="-mt-6 h-auto w-[min(520px,60vw)]" />
         <Image src="/brand/tagline-sign.png" alt="Every AI Agent, Protected" width={560} height={261} priority className="mt-2 h-auto w-[min(560px,58vw)]" />
         <p className="eyebrow mt-10 text-[12px] text-text-2">Threat intelligence run by AI agents · 2026</p>
       </div>
@@ -180,7 +180,7 @@ function ThesisSlide() {
     <div className="relative flex h-full flex-col items-center justify-center text-center">
       <ThermalBg />
       <div className="relative flex flex-col items-center">
-        <Eyebrow>Outlaw</Eyebrow>
+        <Eyebrow>Qalaa</Eyebrow>
         <Sign className="mt-6">
           <span className="font-display text-[clamp(40px,5.6vw,96px)] leading-[1] text-carbon">
             A gang of AI agents
@@ -222,23 +222,31 @@ function GangSlide({ agents }: { agents: { id: string; name: string; role: strin
   );
 }
 
-function FlowSlide() {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const refs = {
-    telemetry: React.useRef<HTMLDivElement>(null),
-    cassidy: React.useRef<HTMLDivElement>(null),
-    policy: React.useRef<HTMLDivElement>(null),
-    tools: React.useRef<HTMLDivElement>(null),
-    text: React.useRef<HTMLDivElement>(null),
-    trace: React.useRef<HTMLDivElement>(null),
-  };
-  const Node = ({ r, label, sub, children }: { r: React.RefObject<HTMLDivElement | null>; label: string; sub: string; children?: React.ReactNode }) => (
+function FlowNode({ r, label, sub, children }: { r: React.RefObject<HTMLDivElement | null>; label: string; sub: string; children?: React.ReactNode }) {
+  return (
     <div ref={r} className="z-10 flex w-[15vw] min-w-[160px] flex-col items-center rounded-[20px] bg-bg-1 p-5 text-center ring-1 ring-line">
       {children}
       <p className="font-display mt-3 text-[clamp(18px,1.6vw,26px)] leading-none text-text-1">{label}</p>
       <p className="mt-1.5 text-[12px] text-text-3">{sub}</p>
     </div>
   );
+}
+
+function FlowSlide() {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const telemetryRef = React.useRef<HTMLDivElement>(null);
+  const cassidyRef = React.useRef<HTMLDivElement>(null);
+  const policyRef = React.useRef<HTMLDivElement>(null);
+  const toolsRef = React.useRef<HTMLDivElement>(null);
+  const textRef = React.useRef<HTMLDivElement>(null);
+  const traceRef = React.useRef<HTMLDivElement>(null);
+  const beams = [
+    [telemetryRef, cassidyRef],
+    [cassidyRef, policyRef],
+    [policyRef, toolsRef],
+    [toolsRef, textRef],
+    [toolsRef, traceRef],
+  ] as const;
   return (
     <div className="relative flex h-full flex-col justify-center px-[6vw]">
       <CarbonBg />
@@ -246,16 +254,16 @@ function FlowSlide() {
         <Eyebrow>How it works</Eyebrow>
         <Headline className="mt-3 text-[clamp(36px,4.6vw,72px)]">Telemetry in. Governed action out. Text on your phone.</Headline>
         <div ref={containerRef} className="relative mt-12 flex items-center justify-between">
-          <Node r={refs.telemetry} label="Telemetry" sub="servers · datasets · tokens · network">
+          <FlowNode r={telemetryRef} label="Telemetry" sub="servers · datasets · tokens · network">
             <span className="mono-data text-[11px] text-cerulean">auth.admin-token-minted</span>
-          </Node>
-          <Node r={refs.cassidy} label="Cassidy" sub="correlates · triages · assigns">
+          </FlowNode>
+          <FlowNode r={cassidyRef} label="Cassidy" sub="correlates · triages · assigns">
             <AgentAvatar agentId="agt-cassidy" status="investigating" size={56} />
-          </Node>
-          <Node r={refs.policy} label="Policy" sub="allow · deny · require approval">
+          </FlowNode>
+          <FlowNode r={policyRef} label="Policy" sub="allow · deny · require approval">
             <span className="mono-data text-[11px] text-lime">10 policies · deny wins</span>
-          </Node>
-          <Node r={refs.tools} label="Tools on servers" sub="isolate · revoke · patch · migrate">
+          </FlowNode>
+          <FlowNode r={toolsRef} label="Tools on servers" sub="isolate · revoke · patch · migrate">
             <span className="flex -space-x-2">
               {["agt-sundance", "agt-belle", "agt-ringo", "agt-calamity"].map((id) => (
                 <span key={id} className="rounded-full ring-2 ring-bg-1">
@@ -263,24 +271,16 @@ function FlowSlide() {
                 </span>
               ))}
             </span>
-          </Node>
+          </FlowNode>
           <div className="flex flex-col gap-6">
-            <Node r={refs.text} label="Text" sub="iMessage-style, two-way">
+            <FlowNode r={textRef} label="Text" sub="iMessage-style, two-way">
               <span className="bubble-agent px-3 py-1.5 text-[12px]">Locked the registry. Doc is on evidence.</span>
-            </Node>
-            <Node r={refs.trace} label="Trace" sub="every span, every policy hit">
+            </FlowNode>
+            <FlowNode r={traceRef} label="Trace" sub="every span, every policy hit">
               <span className="mono-data text-[11px] text-text-2">TR-2091 · 7 spans · risk 62</span>
-            </Node>
+            </FlowNode>
           </div>
-          {(
-            [
-              [refs.telemetry, refs.cassidy],
-              [refs.cassidy, refs.policy],
-              [refs.policy, refs.tools],
-              [refs.tools, refs.text],
-              [refs.tools, refs.trace],
-            ] as const
-          ).map(([a, b], i) => (
+          {beams.map(([a, b], i) => (
             <AnimatedBeam key={i} containerRef={containerRef} fromRef={a} toRef={b} duration={4 + i} delay={i * 0.6} pathColor="rgba(214,240,246,0.12)" gradientStartColor="#24c7d6" gradientStopColor="#d0ff78" curvature={i === 4 ? 40 : i === 3 ? -40 : 0} />
           ))}
         </div>
@@ -511,13 +511,18 @@ function CloseSlide() {
 
 /* ────────────────────────────── deck shell ────────────────────────────── */
 
+/** `?slide=N` (1-based) from the current URL; `null` on the server, where there is no URL to consult. */
+const subscribeToNothing = () => () => {};
+const readSlideParam = () => Number(new URLSearchParams(window.location.search).get("slide"));
+const readSlideParamOnServer = () => null;
+
 function DeckInner() {
   const { data: boot } = useBootstrap();
   const { data: range } = useRange();
   const [index, setIndex] = React.useState(0);
   const [dir, setDir] = React.useState(1);
 
-  const agents = boot?.agents ?? [];
+  const agents = React.useMemo(() => boot?.agents ?? [], [boot]);
   const cassidyThread = boot?.threads.find((t) => t.id === "thr-cassidy") ?? boot?.threads[0];
   const cassidy = agents.find((a) => a.id === "agt-cassidy");
 
@@ -573,20 +578,18 @@ function DeckInner() {
   );
 
   // Deep-link: /deck?slide=7 opens slide 7; the URL follows navigation so a slide can be reloaded in place.
-  const urlSynced = React.useRef(false);
+  const urlSlide = React.useSyncExternalStore(subscribeToNothing, readSlideParam, readSlideParamOnServer);
+  const [urlConsulted, setUrlConsulted] = React.useState(false);
+  if (urlSlide !== null && !urlConsulted) {
+    setUrlConsulted(true);
+    if (urlSlide >= 1 && urlSlide <= slides.length) setIndex(urlSlide - 1);
+  }
   React.useEffect(() => {
-    if (!urlSynced.current) {
-      urlSynced.current = true;
-      const n = Number(new URLSearchParams(window.location.search).get("slide"));
-      if (n >= 1 && n <= slides.length && n - 1 !== index) {
-        setIndex(n - 1);
-        return;
-      }
-    }
+    if (!urlConsulted) return;
     const url = new URL(window.location.href);
     url.searchParams.set("slide", String(index + 1));
     window.history.replaceState(null, "", url.toString());
-  }, [index, slides.length]);
+  }, [index, urlConsulted]);
 
   const go = React.useCallback(
     (delta: number) => {

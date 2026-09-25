@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Aceternity UI `world-map` (dotted-map + motion), adapted for Outlaw:
+ * Aceternity UI `world-map` (dotted-map + motion), adapted for Qalaa:
  * - always-dark palette driven by brand tokens (no next-themes dependency)
  * - per-arc colour, plus standalone `markers` (protected servers) with status colours
  * - dotted map memoised (it was rebuilt on every render upstream)
@@ -60,6 +60,7 @@ export default function WorldMap({
 
   return (
     <div className={`relative aspect-[2/1] w-full font-sans ${className}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- aceternity upstream: inline SVG data URI generated at render time; not optimisable by next/image */}
       <img
         src={`data:image/svg+xml;utf8,${encodeURIComponent(svgMap)}`}
         className="pointer-events-none h-full w-full select-none [mask-image:linear-gradient(to_bottom,transparent,white_8%,white_92%,transparent)]"

@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode } from "react"
 
-/** Magic UI `iphone` (15 Pro frame), adapted for Outlaw: a `children` slot renders live UI inside the screen. */
+/** Magic UI `iphone` (15 Pro frame), adapted for Qalaa: a `children` slot renders live UI inside the screen. */
 
 const PHONE_WIDTH = 433
 const PHONE_HEIGHT = 882
@@ -98,6 +98,7 @@ export function Iphone({
             borderRadius: `${RADIUS_H}% / ${RADIUS_V}%`,
           }}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element -- device mockup: `src` is caller-supplied and may be any URL, so next/image remotePatterns cannot be configured here */}
           <img
             src={src}
             alt=""

@@ -7,7 +7,7 @@
  * threats, the observed world, and store entities.
  */
 import type {
-  Agent, GeoPoint, IOC, KillChainStageName, Severity, TelemetrySignal,
+  Agent, GeoPoint, IOC, KillChainStageName, Message, Severity, TelemetrySignal,
   Threat, ThreatCategory, ToolName, ID,
 } from "@/lib/types";
 import { bus } from "../bus";
@@ -17,7 +17,7 @@ import * as world from "../world/world";
 import { ids } from "../ids";
 import { startTrace, addSpan, endSpan, endTrace } from "../governance/traces";
 import { runTool, type ToolArgs } from "./toolbelt";
-import { narrate, detectionCopy, resolutionCopy } from "./narrator";
+import { narrate, detectionCopy } from "./narrator";
 import { agentSay, threatAlert, threatResolved } from "../messaging/composer";
 import { refreshServerConformance } from "../fleet/conformance";
 import { G } from "../shared";
@@ -232,7 +232,6 @@ function exposedTokenIds(t: Threat): ID[] | undefined {
 }
 
 function planFor(t: Threat): PlanStep[] {
-  const sid = () => threatServerId(t);
   switch (t.category) {
     case "account-hijack":
       return [
@@ -399,13 +398,20 @@ async function cassidyMention(threat: Threat): Promise<void> {
   const cassidy = store.agent("agt-cassidy")!;
   const firstStep = planFor(threat)[0];
   const actor = firstStep ? agentForRole(firstStep.agentRole) : store.agent("agt-doc")!;
+  const sent: { msg?: Message } = {};
   const { text } = await narrate(
     cassidy,
     detectionCopy(threat, actor.name, firstStep?.tool ?? "investigating"),
-    { user: `Write Cassidy's one-line alert for: ${threat.title} (${threat.severity}). ${actor.name} is handling it.` }
+    { user: `Write Cassidy's one-line alert for: ${threat.title} (${threat.severity}). ${actor.name} is handling it.` },
+    (late) => {
+      if (!sent.msg) return;
+      sent.msg.text = late;
+      store.markDirty();
+      bus.emit("message.updated", { threadId: sent.msg.threadId }, { summary: `${cassidy.name} rewrote the ${threat.id} alert`, href: "/messages" });
+    }
   );
-  const msg = threatAlert(threat, text);
-  threat.messageIds.push(msg.id);
+  sent.msg = threatAlert(threat, text);
+  threat.messageIds.push(sent.msg.id);
 }
 
 async function advancePlan(plan: Plan): Promise<void> {
@@ -483,7 +489,6 @@ function finishThreat(threat: Threat): void {
     href: `/threats/${threat.id}`,
   });
   // Doc writes the report for neutralized/prevented
-  const doc = store.agent("agt-doc")!;
   const text = prevented
     ? `Closed ${threat.id} — ${threat.title.toLowerCase()}. The path was shut before it was ever used; marked prevented.`
     : `Report on ${threat.id}: ${threat.title.toLowerCase()} — contained and neutralized. Evidence is on the trace.`;
@@ -495,7 +500,7 @@ function finishThreat(threat: Threat): void {
 
 /** patrol timers — globalThis-shared: range arming (route context) staggers
  * them, the ticker context reads them. */
-const patrolAt = (G.__outlawPatrolAt ??= {});
+const patrolAt = (G.__qalaaPatrolAt ??= {});
 /** agentId → last tick "acting" may show — held ≥2 ticks so the UI sees it */
 const actUntil = new Map<ID, number>();
 

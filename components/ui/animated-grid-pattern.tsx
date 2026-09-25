@@ -87,6 +87,7 @@ export function AnimatedGridPattern({
 
   useEffect(() => {
     if (dimensions.width && dimensions.height) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- magicui upstream: squares are regenerated once the container is measured
       setSquares(generateSquares(numSquares))
     }
   }, [dimensions.width, dimensions.height, generateSquares, numSquares])

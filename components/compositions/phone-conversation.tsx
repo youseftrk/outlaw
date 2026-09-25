@@ -31,6 +31,14 @@ function timeShort(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+const CHANNEL_LABEL: Record<string, string> = { webhook: "webhook", slack: "Slack", twilio: "SMS" };
+
+function deliverySuffix(d: NonNullable<Message["delivery"]>[number]) {
+  if (d.status === "sent") return `· sent via ${CHANNEL_LABEL[d.channel] ?? d.channel}`;
+  if (d.status === "failed") return "· delivery failed";
+  return "· sending…";
+}
+
 function Attachment({ a }: { a: NonNullable<Message["attachments"]>[number] }) {
   const href =
     a.type === "threat-card"
@@ -126,7 +134,7 @@ export function PhoneConversation({
         <div className="flex flex-1 flex-col items-center">
           {agent ? <AgentAvatar agent={agent} size={compact ? 28 : 44} face="mouth" /> : <span className="aura size-9 rounded-full" />}
           <span className="mt-1 text-[12px] font-medium leading-none">{title}</span>
-          <span className="mt-0.5 text-[10px] text-text-3">Outlaw · {agent ? agent.role : "system"} ›</span>
+          <span className="mt-0.5 text-[10px] text-text-3">Qalaa · {agent ? agent.role : "system"} ›</span>
         </div>
         <div className="flex w-10 justify-end gap-2 text-cerulean">
           <VideoCamera weight="regular" className="size-4" />
@@ -217,6 +225,9 @@ export function PhoneConversation({
               {!fromAgent && last && (
                 <span className="mono-data mt-0.5 self-end pr-1 text-[10px] text-text-3">{m.readAt ? "Read" : m.deliveredAt ? "Delivered" : "Sent"}</span>
               )}
+              {fromAgent && m.delivery?.length ? (
+                <span className="mono-data mt-0.5 self-start pl-1 text-[10px] text-text-3">{timeShort(m.sentAt)} {deliverySuffix(m.delivery[m.delivery.length - 1])}</span>
+              ) : null}
             </React.Fragment>
           );
         })}

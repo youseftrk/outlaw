@@ -80,7 +80,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     <CommandDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Outlaw command"
+      title="Qalaa command"
       description="Navigate, text an agent, or direct the demo"
       className="bezel-core border-line"
     >

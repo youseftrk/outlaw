@@ -1,5 +1,5 @@
 /**
- * Outlaw — shared domain contract.
+ * Qalaa — shared domain contract.
  *
  * Consumed by the UI (client) and the backend (server/**, app/api/**).
  * Append-only: add fields/types, do not rename or remove without touching both sides.
@@ -76,9 +76,15 @@ export interface ConformanceCheck {
   remediationTool?: ToolName;
 }
 
+/** which fleet adapter executes tools on this server; `sim` (default) mutates the world model, `ssh` reaches a real host */
+export type ServerAdapterKind = "sim" | "ssh";
+
 export interface Server {
   id: ID;
   hostname: string;
+  adapter?: ServerAdapterKind;
+  /** reachable `host[:port]` for the ssh adapter (mirrors `hostMap[id]`); unset → the host is unreachable */
+  sshTarget?: string;
   role: ServerRole;
   provider: Provider;
   region: Region;
@@ -492,6 +498,16 @@ export interface QuickReply {
   tone?: "primary" | "danger" | "neutral";
 }
 
+export type DeliveryStatus = "queued" | "sent" | "failed";
+
+/** Outcome of pushing a message to an outbound channel (webhook / slack / twilio). */
+export interface MessageDelivery {
+  channel: string;
+  status: DeliveryStatus;
+  at: ISODate;
+  error?: string;
+}
+
 export interface Message {
   id: ID;
   threadId: ID;
@@ -506,9 +522,11 @@ export interface Message {
   threatId?: ID;
   traceId?: ID;
   sentAt: ISODate;
+  /** set immediately for in-app messages; for channel-delivered messages only once the channel confirms */
   deliveredAt?: ISODate;
   readAt?: ISODate;
   tapback?: Tapback;
+  delivery?: MessageDelivery[];
 }
 
 /* ─────────────────────────── Research ─────────────────────────── */
@@ -711,7 +729,7 @@ export type EventType =
   | "insights.updated"
   | "system";
 
-export interface OutlawEvent<T = unknown> {
+export interface QalaaEvent<T = unknown> {
   id: ID;
   type: EventType;
   at: ISODate;
@@ -769,6 +787,7 @@ export type LLMProvider =
   | "cerebras"
   | "openrouter"
   | "huggingface"
+  | "devin"
   | "custom";
 
 export interface LLMSettings {
@@ -778,13 +797,83 @@ export interface LLMSettings {
   enabled: boolean;
   /** key is stored server-side only; the client only learns whether one is set */
   apiKeySet: boolean;
+  /** `devin` provider only — the long-lived brain session answering the agents' prompts */
+  sessionUrl?: string;
   lastTest?: { ok: boolean; at: ISODate; latencyMs?: number; error?: string; sample?: string };
+}
+
+export type SshHostKeyPolicy = "strict" | "accept-new";
+
+/** Redacted view of the SshAdapterConfig kept in .data/secrets.json — key material never leaves the server. */
+export interface SshSettings {
+  user: string;
+  port: number;
+  hostKeyPolicy: SshHostKeyPolicy;
+  sudo: boolean;
+  timeoutMs: number;
+  /** a private key is stored for `keyRef` */
+  keySet: boolean;
+  bastion?: { host: string; port: number; user: string; keySet: boolean };
+  /** serverId → reachable host[:port] */
+  hostMap: Record<ID, string>;
+  /** pinned host keys (strict / accept-new) */
+  knownHostsCount: number;
+  orchestratorUrl?: string;
+  lastTest?: { ok: boolean; at: ISODate; serverId?: ID; latencyMs?: number; error?: string; sample?: string };
+}
+
+/** PATCH /api/settings `ssh` body. Keys are write-only ("" clears); `bastion: null` / `orchestratorUrl: null` remove. */
+export interface SshSettingsPatch {
+  user?: string;
+  port?: number;
+  hostKeyPolicy?: SshHostKeyPolicy;
+  sudo?: boolean;
+  timeoutMs?: number;
+  privateKey?: string;
+  bastion?: { host?: string; port?: number; user?: string; privateKey?: string } | null;
+  hostMap?: Record<ID, string>;
+  orchestratorUrl?: string | null;
+  /** drop every pinned host key (e.g. after a legitimate host re-key) */
+  forgetKnownHosts?: boolean;
+}
+
+export type DeliveryChannel = "off" | "webhook" | "slack" | "twilio";
+
+/** Which agent/system messages leave the app. Empty `kinds` / `agentIds` = no restriction. */
+export interface DeliveryFilter {
+  minSeverity: Severity;
+  kinds: MessageKind[];
+  agentIds: ID[];
+}
+
+export interface DeliverySettings {
+  channel: DeliveryChannel;
+  /** generic webhook or Slack incoming-webhook URL */
+  url: string;
+  twilio: { accountSid: string; from: string; to: string };
+  filter: DeliveryFilter;
+  /** HMAC / inbound shared secret is stored server-side only */
+  secretSet: boolean;
+  twilioAuthTokenSet: boolean;
+  lastTest?: { ok: boolean; at: ISODate; channel: DeliveryChannel; latencyMs?: number; error?: string };
+}
+
+export type AuthSource = "settings" | "env" | "off";
+
+export interface AuthSettings {
+  enabled: boolean;
+  /** where the password comes from; "off" = no login required */
+  source: AuthSource;
 }
 
 export interface Settings {
   llm: LLMSettings;
+  ssh: SshSettings;
   operator: { name: string; phone: string; org: string };
   sim: { speed: number; autoRun: boolean; quietHours: boolean };
+  delivery: DeliverySettings;
+  /** computed server-side from env + secrets; not persisted in state */
+  auth?: AuthSettings;
 }
 
 /* ─────────────────────────── API envelopes ─────────────────────────── */

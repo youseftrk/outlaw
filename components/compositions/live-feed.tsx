@@ -7,7 +7,7 @@ import { AnimatedListItem } from "@/components/ui/animated-list";
 import { AgentAvatar } from "@/components/shell/agent-avatar";
 import { useLive } from "@/lib/hooks/use-live";
 import { clock, SEVERITY_HEX } from "@/lib/format";
-import type { EventType, OutlawEvent } from "@/lib/types";
+import type { EventType, QalaaEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const FEED_TYPES: EventType[] = [
@@ -23,7 +23,7 @@ const FEED_TYPES: EventType[] = [
   "trace.completed",
 ];
 
-function describe(e: OutlawEvent) {
+function describe(e: QalaaEvent) {
   if (e.summary) return e.summary;
   const p = e.payload as Record<string, unknown> | undefined;
   for (const k of ["summary", "text", "title", "intent", "label"]) {

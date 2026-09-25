@@ -6,7 +6,7 @@ import type { IOC, ResearchKind, ResearchQuery, ResearchResult } from "@/lib/typ
 import { bus } from "../bus";
 import { ids } from "../ids";
 import { store } from "../store";
-import { searchKB, CVES, TECHNIQUES, ACTORS } from "./kb";
+import { searchKB, ACTORS } from "./kb";
 import { startTrace, addSpan, endSpan, endTrace } from "../governance/traces";
 import { narrate } from "../agents/narrator";
 

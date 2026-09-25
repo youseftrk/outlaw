@@ -1,12 +1,14 @@
-/** Deterministic seed — assembles the full OutlawState (SPEC §0, §2). */
-import type { OutlawState } from "../store";
+/** Deterministic seed — assembles the full QalaaState (SPEC §0, §2). */
+import type { QalaaState } from "../store";
 import { seedWorld } from "./worldState";
 import { seedFleet } from "./fleet";
 import { seedAgents } from "./agents";
 import { seedPolicies } from "./policies";
 import { seedHistory } from "./history";
+import { DEFAULT_SSH_SETTINGS } from "../fleet/adapters/ssh-config";
+import { defaultDeliverySettings } from "../messaging/delivery";
 
-export function buildSeed(nowMs: number): OutlawState {
+export function buildSeed(nowMs: number): QalaaState {
   const nowIso = new Date(nowMs).toISOString();
   const world = seedWorld(nowIso);
 
@@ -51,8 +53,10 @@ export function buildSeed(nowMs: number): OutlawState {
     research: [],
     settings: {
       llm: { provider: "none", baseUrl: "", model: "", enabled: false, apiKeySet: false },
+      ssh: { ...DEFAULT_SSH_SETTINGS, hostMap: {} },
       operator: { name: "Operator", phone: "+1 555 0100", org: "Frontier Hub" },
       sim: { speed: 1, autoRun: true, quietHours: false },
+      delivery: defaultDeliverySettings(),
     },
     world,
   };

@@ -1,7 +1,7 @@
 <p align="center">
-  <img src="public/brand/logo.png" width="96" alt="Outlaw" />
+  <img src="public/brand/logo.png" width="96" alt="Qalaa" />
 </p>
-<h1 align="center">Outlaw</h1>
+<h1 align="center">Qalaa</h1>
 <p align="center"><em>Every AI agent, protected.</em><br/>Threat intelligence run by a gang of autonomous AI agents — with a governance trace for every decision, and texts on your phone instead of tickets.</p>
 
 ---
@@ -23,7 +23,7 @@ Every visual component is sourced from the designeer.xyz / libraries.dev catalog
 ## Run it (Mac or anywhere)
 
 ```bash
-git clone https://github.com/youseftrk/outlaw.git && cd outlaw
+git clone https://github.com/youseftrk/qalaa.git && cd qalaa
 npm install
 npm run dev            # http://localhost:3000
 ```
@@ -34,23 +34,79 @@ Desktop shell (dev server + native window):
 npm run desktop
 ```
 
-Build the macOS app (must run on a Mac; unsigned .dmg lands in `release/`):
+Build the macOS app (must run on a Mac; Node 24, no Apple Developer account needed):
 
 ```bash
 npm run desktop:build:mac
+# = next build && node scripts/prepare-standalone.mjs
+#   && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg --arm64 --x64
 ```
 
-Tests (policy engine, command parser, blind range, boundary check):
+Output (gitignored):
+
+| Path | What |
+| --- | --- |
+| `release/Qalaa-<version>-arm64.dmg` | Apple Silicon installer (~155 MB) |
+| `release/Qalaa-<version>.dmg` | Intel installer (~159 MB) |
+| `release/mac-arm64/Qalaa.app`, `release/mac/Qalaa.app` | unpacked apps |
+
+The DMG is **unsigned and not notarized**. On first launch macOS says it "could not verify" the app — right-click `Qalaa.app` → *Open*, or *System Settings → Privacy & Security → Open Anyway*. If the app was quarantined by a browser download, `xattr -cr /Applications/Qalaa.app` also works. Signing/notarization is listed in `HANDOFF.md`.
+
+Packaged app internals: Electron spawns `.next/standalone/server.js` (Node mode) on a free localhost port and points the window at it. Logs go to `~/Library/Application Support/Qalaa/qalaa.log`; state lives in `~/Library/Application Support/Qalaa/data/` (override with `QALAA_DATA_DIR`). The app icon (`desktop/icon.icns`) is regenerated from `public/brand/logo.svg` with `npm run desktop:icon`.
+
+Tests (policy engine, command parser, blind range, boundary check, jsdom component tests):
 
 ```bash
 npm test
 ```
+
+Browser end-to-end tests (Playwright, Chromium). The config builds and starts the app itself on port 3411 with `QALAA_RESET=1` and an isolated `QALAA_DATA_DIR=.e2e-data`, so a running `npm run dev` is not disturbed:
+
+```bash
+npx playwright install chromium   # once
+npm run test:e2e                  # e2e/*.spec.ts — golden paths, responsive @ 390px, deck PDF
+npx playwright show-report        # HTML report after a run
+```
+
+`.github/workflows/ci.yml` runs `npm test`, `npm run build` and the Chromium e2e suite on every push/PR.
 
 ## Optional: give the agents a language model
 
 Detection and response are deterministic and always on. An LLM adds narrated reasoning, natural texts and freeform answers, with automatic fallback so the demo never stalls.
 
 Settings → Agent brain → pick a preset (Groq is free, no card, fastest), paste a key, **Save & test**. Presets: Groq, Gemini, Mistral, Cerebras, OpenRouter, Hugging Face router, or any OpenAI-compatible endpoint. Keys live in `.data/secrets.json` (gitignored) and never reach the browser.
+
+**Devin as the brain.** Pick the *Devin (Cognition)* preset and paste an API key from app.devin.ai/settings/api-keys. Qalaa opens one long-lived, unlisted Devin session (title "Qalaa agent brain", ACU-capped) and messages it per prompt instead of calling a chat-completions endpoint. Devin answers in tens of seconds, so the agents stay non-blocking: alerts and `status` replies go out from templates immediately and are rewritten in place when Devin's copy lands; freeform questions get a holding reply and a follow-up text. The session link shows under the provider picker once it exists; a new session is opened automatically when the old one finishes or hits its ACU cap.
+
+## Optional: message delivery
+
+Messages always land in the in-app phone (`/messages`). Optionally, the gang's alerts, approval requests and reports are *also* pushed to one real channel, and your replies from that channel run through the same command parser as the in-app thread. Off by default; the deterministic engine is unaffected when nothing is configured.
+
+Settings → Delivery → pick a channel, fill it in, **Save & send test**. A **minimum severity** and an **only alerts + approval requests** switch filter what leaves the box. Every pushed message shows `· sent via …` / `· delivery failed` under its bubble.
+
+| Channel | Setup |
+|---|---|
+| **Webhook** | Any URL. Qalaa `POST`s a JSON envelope `{ id, threadId, from, agentName, kind, severity, text, quickReplies, href, sentAt }`. Set a **signing secret** and verify `X-Qalaa-Signature: sha256=<hex HMAC-SHA256 of the raw body>`. 5 s timeout, 3 attempts with backoff, bounded in-memory queue. |
+| **Slack** | Create an [incoming webhook](https://api.slack.com/messaging/webhooks) and paste the `hooks.slack.com` URL (auto-detected even under "Webhook"). Rendered as Block Kit: severity → emoji + colour bar, quick replies as `Reply:` hints. |
+| **Twilio SMS** | Account SID, auth token, your Twilio number (From) and your phone (To). Plain `fetch` to the Messages API with basic auth, body `[Qalaa · Cassidy · critical] <text>` + `Reply: Approve A-12 / Reject A-12`, truncated to 1 500 chars. |
+
+**Replying from the channel** — `POST /api/messages/inbound`:
+
+- **Twilio**: point the number's *A message comes in* webhook at `https://<your-host>/api/messages/inbound`. Qalaa validates `X-Twilio-Signature` with the auth token, feeds `Body` to the command parser (`approve A-12`, `status`, `isolate stg-worker-01`, …) and answers with TwiML so the agents' replies come back as SMS. For a laptop, expose the dev server with `ngrok http 3000` and use the ngrok URL — the signature is computed over the public URL, and Qalaa honours `X-Forwarded-Proto/Host`.
+- **Generic**: `POST` JSON `{ "text": "approve A-12", "secret": "<signing secret>" }` → `{ sent, replies }`. Uses the same webhook signing secret. Bad secret / signature → `401`. The inbound route is exempt from the optional operator login (it authenticates itself), so channel callbacks keep working with auth on.
+
+Secrets (signing secret, Twilio auth token) live in `.data/secrets.json` and never reach the browser; the API only reports `secretSet` / `twilioAuthTokenSet`.
+
+## Optional: auth
+
+Off by default — nothing to configure for the demo or the desktop app. To put the whole UI and API (including the SSE stream) behind a single operator password, do one of:
+
+- **Env var**: `QALAA_AUTH_PASSWORD=your-secret npm run dev` (or `npm start`).
+- **Settings → Access**: type a password (≥8 chars), **Save**. It is stored as a scrypt hash in `.data/secrets.json` and takes effect immediately; a Settings password wins over the env var.
+
+When enabled, page requests redirect to `/login`, `/api/**` returns `401 {"error":"unauthorized"}`, and a successful login sets an HttpOnly `qalaa_session` cookie (HMAC-SHA256, 12 h, renewed while you keep using the app). Five wrong passwords per minute per IP are rate-limited. **Sign out** appears at the bottom of the sidebar.
+
+Reset: **Settings → Access → Clear password** while signed in, or stop the server and delete the `"auth"` key from `.data/secrets.json` (deleting `auth.sessionSecret` also invalidates every existing session). If the password came from `QALAA_AUTH_PASSWORD`, just unset the variable.
 
 ## Demo script (≈8 minutes)
 
@@ -70,8 +126,9 @@ Keyboard: `⌘K` command palette · deck `←` `→` `F` `Esc` · `/deck?slide=N
 ```
 app/           pages (App Router) + app/api/** route handlers
 components/    ui/ (shadcn + registries), vendor/, kibo-ui/, shell/, compositions/
-lib/           types.ts (contract), api.ts, hooks/, format.ts
-server/        runtime, world model, agents, governance, fleet, messaging, research, insights, range
+lib/           types.ts (contract), api.ts, hooks/, format.ts, auth/ (session + gate, Web Crypto)
+server/        runtime, world model, agents, governance, fleet, messaging, research, insights, range, auth
+proxy.ts       optional login gate (Next 16 proxy) — no-op unless a password is configured
 desktop/       Electron main + preload
 docs/          SPEC.md (system), DESIGN.md (design direction), COMPONENTS.md (inventory)
 ```

@@ -1,10 +1,11 @@
 /**
- * Typed client for the Outlaw API (see docs/SPEC.md §10).
+ * Typed client for the Qalaa API (see docs/SPEC.md §10).
  * Client components use the SWR hooks in lib/hooks; server components may call these directly.
  */
 import type {
   Agent,
   Approval,
+  AuthSettings,
   Bootstrap,
   CVE,
   AttackTechnique,
@@ -15,18 +16,22 @@ import type {
   Message,
   Migration,
   Policy,
+  QalaaEvent,
   RangeMode,
   RangeRun,
   RangeScenario,
   ResearchKind,
   ResearchQuery,
   Server,
+  ServerAdapterKind,
   Settings,
+  SshSettingsPatch,
   Thread,
   Threat,
   Trace,
   Autonomy,
   Tapback,
+  DeliverySettings,
 } from "@/lib/types";
 
 export class ApiError extends Error {
@@ -72,6 +77,8 @@ export interface AgentDetail {
   messages: Message[];
   threats: Threat[];
   servers: Server[];
+  /** last 200 persisted events for this agent (ring buffer), oldest first */
+  events: QalaaEvent[];
 }
 export interface ThreatDetail {
   threat: Threat;
@@ -103,6 +110,13 @@ const unwrap =
 
 export const api = {
   bootstrap: () => get<Bootstrap>("/bootstrap"),
+
+  auth: {
+    me: () => get<{ enabled: boolean; authenticated: boolean }>("/auth/me"),
+    login: (password: string) => post<{ ok: true }>("/auth/login", { password }),
+    logout: () => post<{ ok: true }>("/auth/logout"),
+  },
+
   health: () => get<{ ok: boolean; uptimeSec: number; tick: number; clients: number }>("/health"),
 
   agents: {
@@ -114,6 +128,7 @@ export const api = {
         messages: r.messages ?? [],
         threats: r.threats ?? [],
         servers: r.servers ?? [],
+        events: r.events ?? [],
       })),
     update: (id: string, body: { autonomy?: Autonomy; paused?: boolean; assignedServerIds?: string[] }) =>
       patch<Agent>(`/agents/${id}`, body),
@@ -137,6 +152,9 @@ export const api = {
         migrations: r.migrations ?? [],
       })),
     runConformance: (id: string) => post<{ traceId: string }>(`/fleet/servers/${id}/conformance`),
+    /** flip a server between the simulated world and a real host (`sshTarget` = reachable host[:port]; "" clears) */
+    updateServer: (id: string, body: { adapter?: ServerAdapterKind; sshTarget?: string }) =>
+      patch<{ server: Server }>(`/fleet/servers/${id}`, body).then((r) => r.server),
     migrations: () => get<{ migrations: Migration[] }>("/fleet/migrations").then(unwrap<Migration[]>("migrations")),
     createMigration: (body: {
       sourceServerId: string;
@@ -206,11 +224,29 @@ export const api = {
     get: () => get<Settings>("/settings"),
     update: (body: {
       llm?: Partial<Settings["llm"]> & { apiKey?: string };
+      ssh?: SshSettingsPatch;
       operator?: Partial<Settings["operator"]>;
       sim?: Partial<Settings["sim"]>;
+      delivery?: {
+        channel?: DeliverySettings["channel"];
+        url?: string;
+        twilio?: Partial<DeliverySettings["twilio"]>;
+        filter?: Partial<DeliverySettings["filter"]>;
+        secret?: string;
+        twilioAuthToken?: string;
+      };
     }) => patch<Settings>("/settings", body),
     testLlm: () => post<Settings["llm"]["lastTest"]>("/settings/llm/test"),
+    /** runs `echo qalaa-ok` over ssh against `serverId`; non-2xx (ApiError) when the host did not answer */
+    testSsh: (serverId: string) =>
+      post<NonNullable<Settings["ssh"]["lastTest"]> & { command: string }>("/settings/ssh/test", { serverId }),
+    testDelivery: () => post<DeliverySettings["lastTest"]>("/settings/delivery/test"),
+    setPassword: (password: string | null) => patch<{ auth: AuthSettings }>("/settings/auth", { password }),
   },
+
+  /** Generic inbound (same path Twilio hits): text goes through the operator command parser. */
+  inbound: (text: string, secret: string, threadId?: string) =>
+    post<{ sent: Message; replies: Message[] }>("/messages/inbound", { text, secret, threadId }),
 };
 
 function qs(params: Record<string, string | number | undefined>) {

@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Broadcast,
   ChatsCircle,
@@ -32,9 +32,10 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AgentAvatar } from "@/components/shell/agent-avatar";
-import { useBootstrap } from "@/lib/hooks/use-data";
+import { api, useAuthMe, useBootstrap } from "@/lib/hooks/use-data";
 import { useDesktopMac } from "@/lib/desktop";
 import { cn } from "@/lib/utils";
 
@@ -55,9 +56,21 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const mac = useDesktopMac();
+  const router = useRouter();
   const { data } = useBootstrap();
+  const { data: me } = useAuthMe();
   const unread = data?.threads.reduce((n, t) => n + t.unread, 0) ?? 0;
   const agents = data?.agents ?? [];
+  const canSignOut = !!me?.enabled && !!me?.authenticated;
+
+  const signOut = async () => {
+    try {
+      await api.auth.logout();
+    } finally {
+      router.replace("/login");
+      router.refresh();
+    }
+  };
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -67,7 +80,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton
               size="lg"
               className="app-no-drag data-[slot=sidebar-menu-button]:p-1.5! hover:bg-transparent"
-              render={<Link href="/" aria-label="Outlaw home" />}
+              render={<Link href="/" aria-label="Qalaa home" />}
             >
               <span className="relative grid size-8 shrink-0 place-items-center">
                 <span className="aura absolute inset-0 rounded-full opacity-40 blur-md" />
@@ -75,7 +88,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
               </span>
               <Image
                 src="/brand/wordmark.png"
-                alt="Outlaw"
+                alt="Qalaa"
                 width={90}
                 height={22}
                 priority
@@ -160,6 +173,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             ))}
           </div>
         </SidebarGroup>
+        {canSignOut && (
+          <Button variant="ghost" size="sm" onClick={signOut} className="justify-start text-text-2 group-data-[collapsible=icon]:hidden">
+            Sign out
+          </Button>
+        )}
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

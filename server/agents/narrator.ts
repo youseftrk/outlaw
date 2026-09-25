@@ -3,18 +3,24 @@
  * message copy — LLM when enabled + key set, templates otherwise.
  * Voice: DESIGN.md §5 — first person, short, concrete, names hosts/ids.
  */
-import type { Agent, Severity, Threat } from "@/lib/types";
-import { llmChat, llmConfigured } from "./llm";
+import type { Agent, LLMUsage, Threat } from "@/lib/types";
+import { llmChat, llmChatDeferred, llmConfigured, llmIsSlow } from "./llm";
 import { store } from "../store";
 
-const SYSTEM = `You write one-line operator texts for Outlaw, an agent-run threat-intel platform. First person, short, concrete. Name hosts and ids. No jargon, no exclamation marks.`;
+const SYSTEM = `You write one-line operator texts for Qalaa, an agent-run threat-intel platform. First person, short, concrete. Name hosts and ids. No jargon, no exclamation marks.`;
 
 export async function narrate(
   agent: Agent,
   template: () => string,
-  llmPrompt?: { system?: string; user: string }
-): Promise<{ text: string; llm?: import("@/lib/types").LLMUsage }> {
+  llmPrompt?: { system?: string; user: string },
+  /** slow providers (Devin): the template goes out now and this receives the LLM text when it lands */
+  onLate?: (text: string, llm: LLMUsage) => void
+): Promise<{ text: string; llm?: LLMUsage }> {
   if (llmPrompt && llmConfigured()) {
+    if (llmIsSlow() && onLate) {
+      llmChatDeferred(llmPrompt.system ?? SYSTEM, llmPrompt.user, onLate);
+      return { text: template() };
+    }
     const { text, usage } = await llmChat(llmPrompt.system ?? SYSTEM, llmPrompt.user);
     if (text) return { text, llm: usage };
     return { text: template(), llm: usage }; // fallback flag recorded
