@@ -198,7 +198,7 @@ export const api = {
     ask: (query: string, kind?: ResearchKind) => post<ResearchQuery>("/research", { query, kind }),
     kb: (type: "cve" | "technique" | "actor", q = "") =>
       get<Record<string, Array<CVE | AttackTechnique | ThreatActor>>>(`/research/kb${qs({ type, q })}`).then(
-        (r) => (Object.values(r).find((v) => Array.isArray(v)) ?? []) as Array<CVE | AttackTechnique | ThreatActor>,
+        (r) => (r[KB_KEY[type]] ?? Object.values(r).find((v) => Array.isArray(v)) ?? []) as Array<CVE | AttackTechnique | ThreatActor>,
       ),
   },
 
@@ -248,6 +248,8 @@ export const api = {
   inbound: (text: string, secret: string, threadId?: string) =>
     post<{ sent: Message; replies: Message[] }>("/messages/inbound", { text, secret, threadId }),
 };
+
+const KB_KEY = { cve: "cves", technique: "techniques", actor: "actors" } as const;
 
 function qs(params: Record<string, string | number | undefined>) {
   const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== "");

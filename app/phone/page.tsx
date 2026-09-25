@@ -24,7 +24,7 @@ function PhoneInner() {
   const agent = thread && thread.id !== "thr-qalaa" ? boot?.agents.find((a) => a.id === thread.agentId) : undefined;
 
   return (
-    <main className="thermal relative grid min-h-svh place-items-center overflow-hidden p-6">
+    <main className="thermal relative grid min-h-svh grid-cols-[minmax(0,1fr)] place-items-center overflow-hidden p-6">
       <FlickeringGrid className="absolute inset-0 -z-0 opacity-30 [mask-image:radial-gradient(60%_60%_at_50%_50%,black,transparent)]" squareSize={3} gridGap={8} color="#99d6ea" maxOpacity={0.25} flickerChance={0.08} />
       <span className="grain fixed inset-0" />
       <Link href="/messages" className="absolute right-5 top-5 z-10 grid size-9 place-items-center rounded-full bg-bg-1/70 text-text-2 backdrop-blur hover:text-text-1" aria-label="Back to Qalaa">

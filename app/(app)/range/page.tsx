@@ -255,7 +255,7 @@ export default function RangePage() {
                     className="rounded-[10px] bg-bg-2 p-1"
                   >
                     <ToggleGroupItem value="protected" className="h-8 rounded-[8px] px-3 text-[12px] text-text-2 data-[pressed]:bg-bg-3 data-[pressed]:text-lime">
-                      Protected · gang on duty
+                      Protected · garrison on duty
                     </ToggleGroupItem>
                     <ToggleGroupItem value="baseline" className="h-8 rounded-[8px] px-3 text-[12px] text-text-2 data-[pressed]:bg-bg-3 data-[pressed]:text-sev-high">
                       Baseline · no agents
@@ -357,7 +357,7 @@ export default function RangePage() {
         <BlurFade delay={0.2} className="col-span-12 xl:col-span-6">
           <Card className="bezel-core h-full gap-0 border-0 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <p className="eyebrow">Gang response · live</p>
+              <p className="eyebrow">Garrison response · live</p>
               <Link href="/messages" className="text-[11px] text-cerulean hover:underline">
                 Read the texts
               </Link>

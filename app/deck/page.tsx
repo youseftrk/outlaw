@@ -632,7 +632,7 @@ function DeckInner() {
         </span>
         <div className="flex items-center gap-1.5">
           {slides.map((s, i) => (
-            <button key={s.key} type="button" aria-label={`Slide ${i + 1}`} aria-current={i === index ? "step" : undefined} onClick={() => { setDir(i > index ? 1 : -1); setIndex(i); }} className="group/dot flex h-6 items-center rounded-full px-0.5 outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <button key={s.key} type="button" aria-label={`Slide ${i + 1}`} aria-current={i === index ? "step" : undefined} onClick={() => { setDir(i > index ? 1 : -1); setIndex(i); }} className="group/dot flex h-8 min-w-6 items-center justify-center rounded-full px-1 outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <span aria-hidden className={cn("block h-1.5 rounded-full transition-[width,background-color] duration-500 ease-[var(--ease-spring)]", i === index ? "w-6 bg-lime" : "w-1.5 bg-text-3/50 group-hover/dot:bg-text-3")} />
             </button>
           ))}

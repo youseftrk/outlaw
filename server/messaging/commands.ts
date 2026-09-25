@@ -135,7 +135,7 @@ export async function handleOperatorMessage(threadId: string, text: string): Pro
       const names = target ? [target] : store.s.agents;
       for (const a of names) a.status = v === "pause" ? "paused" : "idle";
       store.markDirty();
-      bus.emit("agent.status", { agents: names.map((a) => a.id) }, { summary: `${v}d ${target ? target.name : "the whole gang"}`, href: "/agents" });
+      bus.emit("agent.status", { agents: names.map((a) => a.id) }, { summary: `${v}d ${target ? target.name : "the whole garrison"}`, href: "/agents" });
       say(v === "pause" ? `${target ? target.name : "The garrison"} is paused.` : `${target ? target.name : "The garrison"} is back on watch.`);
     } else if (/^who/.test(v) || /who'?s on/.test(cmd.raw.toLowerCase())) {
       const host = cmd.args[cmd.args.length - 1] ?? "";
@@ -143,7 +143,7 @@ export async function handleOperatorMessage(threadId: string, text: string): Pro
       if (!srv) say(`Can't find host ${host}.`);
       else {
         const on = srv.protectedBy.map((id) => store.agent(id)?.name).filter(Boolean);
-        say(`${srv.hostname}: ${srv.role} · ${srv.status} · conformance ${srv.conformanceScore}. Riding it: ${on.join(", ") || "the whole gang (no dedicated agent)"}.`);
+        say(`${srv.hostname}: ${srv.role} · ${srv.status} · conformance ${srv.conformanceScore}. Watching it: ${on.join(", ") || "the whole garrison (no dedicated agent)"}.`);
       }
     } else if (/^what/.test(v) || /what happened/.test(cmd.raw.toLowerCase())) {
       const host = cmd.args[cmd.args.length - 1] ?? "";
