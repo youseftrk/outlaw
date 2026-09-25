@@ -5,6 +5,7 @@ import { seedFleet } from "./fleet";
 import { seedAgents } from "./agents";
 import { seedPolicies } from "./policies";
 import { seedHistory } from "./history";
+import { defaultDeliverySettings } from "../messaging/delivery";
 
 export function buildSeed(nowMs: number): QalaaState {
   const nowIso = new Date(nowMs).toISOString();
@@ -53,6 +54,7 @@ export function buildSeed(nowMs: number): QalaaState {
       llm: { provider: "none", baseUrl: "", model: "", enabled: false, apiKeySet: false },
       operator: { name: "Operator", phone: "+1 555 0100", org: "Frontier Hub" },
       sim: { speed: 1, autoRun: true, quietHours: false },
+      delivery: defaultDeliverySettings(),
     },
     world,
   };

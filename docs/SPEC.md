@@ -152,7 +152,26 @@ OpenAI-compatible `POST {baseUrl}/chat/completions`. Presets: groq `https://api.
 Single-org password gate, **off unless** `QALAA_AUTH_PASSWORD` is set or `auth.passwordHash` exists in `.data/secrets.json` (Settings wins). Passwords hashed with `crypto.scrypt` (`scrypt$<salt>$<hash>`, constant-time compare). Session = HttpOnly `SameSite=Lax` cookie `qalaa_session` = `base64url(payload).base64url(HMAC-SHA256)`, payload `{iat, exp}`, TTL 12 h, re-issued by the proxy when under 6 h remain. HMAC secret `auth.sessionSecret` is generated on first boot and persisted next to the LLM key; with `QALAA_NO_PERSIST=1` it is derived from the env password instead. `lib/auth/session.ts` uses Web Crypto only so the same verifier runs in `proxy.ts`; `lib/auth/gate.ts` holds the pure `decide()` (allow | redirect `/login?next=` | 401 JSON). Public paths: `/login`, `/api/auth/*`, `/api/health`, `/_next/*`, `/brand/*`, `/icon.svg`. Login failures rate-limited in memory (5/min/IP → 429). Routes in §10.
 
 ## 8. Messaging
-One `Thread` per agent + `thr-qalaa` system thread (digests, range results). Operator commands (case-insensitive, in any thread; Cassidy replies unless addressed agent owns the tool): `status`, `report`, `help`, `approve <A-id>`, `reject <A-id>`, `isolate <host>`, `release <host>`, `block <ip>`, `revoke <token-id|all exposed>`, `quarantine <dataset>`, `rotate <secret-kind|host>`, `cordon <cluster>`, `migrate <host> to <region>`, `pause|resume [agent]`, `who's on <host>`, `what happened on <host>` (freeform → narrator). Unknown text → narrator freeform answer (LLM) or template "I didn't catch that — try `help`". Every operator command produces a trace with `input.from = "operator"`. Messages carry `quickReplies` for approvals and `attachments` linking threats/servers/traces. `deliveredAt` set immediately, `readAt` when `POST .../read`.
+One `Thread` per agent + `thr-qalaa` system thread (digests, range results). Operator commands (case-insensitive, in any thread; Cassidy replies unless addressed agent owns the tool): `status`, `report`, `help`, `approve <A-id>`, `reject <A-id>`, `isolate <host>`, `release <host>`, `block <ip>`, `revoke <token-id|all exposed>`, `quarantine <dataset>`, `rotate <secret-kind|host>`, `cordon <cluster>`, `migrate <host> to <region>`, `pause|resume [agent]`, `who's on <host>`, `what happened on <host>` (freeform → narrator). Unknown text → narrator freeform answer (LLM) or template "I didn't catch that — try `help`". Every operator command produces a trace with `input.from = "operator"`. Messages carry `quickReplies` for approvals and `attachments` linking threats/servers/traces. `deliveredAt` set immediately, `readAt` when `POST .../read` — unless the message is pushed to a real channel (§8.1), in which case `deliveredAt` is cleared on enqueue and set only when the channel confirms.
+
+### 8.1 Optional outbound delivery (`messaging/delivery.ts`, `messaging/channels/*`)
+Off by default; the engine never depends on it. `runtime.ts` boot subscribes once to `message.sent` and calls `deliver(msg)` for `from ∈ {agent, system}` — operator messages are never echoed. `deliver` applies `settings.delivery.filter` (`minSeverity`, `kinds`, `agentIds`; empty arrays = unrestricted; missing severity counts as `info`), appends `{ channel, status: "queued", at }` to `Message.delivery`, and hands the message to a bounded in-memory queue (cap 200, overflow → immediate `failed: "delivery queue full"`). One worker drains the queue off the tick loop: up to 3 attempts with backoff 500 ms / 2 s, 5 s timeout per attempt (`AbortSignal.timeout`). The outcome is written back as `sent` (sets `deliveredAt`) or `failed` (`error` ≤ 200 chars) and emits `message.updated { threadId, messageId, delivery }`.
+
+Envelope (`messaging/envelope.ts`): `{ id, threadId, from, agentName, kind, severity, text, quickReplies, href: "/messages?thread=<id>", sentAt }`.
+
+| channel | resolution | wire |
+|---|---|---|
+| `webhook` | `channel="webhook"` + `url` (non-`hooks.slack.com`) | `POST url`, JSON envelope, `content-type: application/json`, `X-Qalaa-Signature: sha256=<hex HMAC-SHA256(rawBody, secrets.deliverySecret)>` (header omitted when no secret). Non-2xx → retry. |
+| `slack` | `channel="slack"`, or any `url` whose host ends with `hooks.slack.com` | Block Kit `{ text, attachments:[{ color, blocks:[section(header+text), context(Reply: \`cmd\` / …), context(Qalaa · href · sentAt)] }] }`; severity → emoji + colour (`SLACK_SEVERITY`). |
+| `twilio` | `channel="twilio"` + `twilio.{accountSid, from, to}` + `secrets.twilioAuthToken` | `POST https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json`, form-encoded `From/To/Body`, `Authorization: Basic base64(sid:token)`, no SDK. Body `[Qalaa · <agent> · <severity>] <text>` + `\nReply: <label> / <label>`; truncated to 1 500 chars with `…`. |
+
+Config: `Settings.delivery = { channel: off|webhook|slack|twilio, url, twilio:{accountSid, from, to}, filter, secretSet, twilioAuthTokenSet, lastTest? }`. Secrets (`deliverySecret`, `twilioAuthToken`) live in `.data/secrets.json` (`QalaaSecrets`), are write-only through `PATCH /settings { delivery: { secret?, twilioAuthToken? } }` (`""` clears) and are never returned; the client sees the `*Set` flags. `POST /settings/delivery/test` sends one direct (no-retry) status envelope and stores `lastTest { ok, at, channel, latencyMs?, error? }` (200 / 502).
+
+### 8.2 Inbound (`POST /messages/inbound`, `messaging/inbound.ts`)
+Operator replies from the channel re-enter the normal command path (`parseCommand` → `handleOperatorMessage`) as if typed in `/messages`; the operator message and the agents' replies are persisted and broadcast exactly like `POST /messages/threads/[id]`.
+- **Twilio** (`content-type: application/x-www-form-urlencoded`): validates `X-Twilio-Signature` = base64(HMAC-SHA1(token, url + Σ sorted `key+value`)) over the externally visible URL (honours `X-Forwarded-Proto` / `X-Forwarded-Host`, e.g. ngrok); `Body` → command in `thr-cassidy`; responds `text/xml` TwiML with one `<Message>` per agent reply.
+- **Generic** (`application/json`): `{ text, secret, threadId? }`, `secret` must equal `secrets.deliverySecret` (constant-time compare); responds `{ sent, replies }`.
+- `401` bad signature/secret · `400` empty text / bad body · `503` when the corresponding secret is not configured.
 
 ## 9. Blind cyber range (`server/range`)
 Scenario `hf-2026` "Autonomous agent swarm vs. AI model hub", based on the July 2026 OpenAI–Hugging Face incident (sources: openai.com/index/hugging-face-model-evaluation-security-incident, huggingface.co/blog/security-incident-july-2026, OpenAI technical report PDF, trufflesecurity.com/blog/the-stolen-keys-openai-used-to-breach-hugging-face, en.wikipedia.org/wiki/OpenAI–HuggingFace_incident). Baseline: detected "Jul 14" (≈6 days after escape), disclosed "Jul 16", ≈33 % infra rebuilt, 4+ credential classes harvested, internal datasets accessed.
@@ -194,21 +213,23 @@ Director (`POST /api/director`): `brute-force`, `c2-beacon`, `exfil`, `prompt-in
 | GET `/governance/approvals?status=` · POST `/governance/approvals/[id]` | list · `{decision:"approve"|"reject"}` |
 | GET `/governance/export` | audit bundle (Content-Disposition attachment) |
 | GET `/messages/threads` · GET `/messages/threads/[id]?limit=` · POST `/messages/threads/[id]` · POST `/messages/threads/[id]/read` · POST `/messages/[id]/tapback` | threads · messages · `{text}` → `{sent: Message, replies: Message[]}` · mark read · `{tapback}` |
+| POST `/messages/inbound` | Twilio form (`Body`, `From`, `X-Twilio-Signature`) → TwiML · JSON `{text, secret, threadId?}` → `{sent, replies}` · 401 on bad auth (§8.2) |
 | GET `/research/queries` · POST `/research` · GET `/research/kb?type=&q=` | list · `{query, kind?}` → `ResearchQuery` (completes async; `research.updated`) · KB search |
 | GET `/insights?window=` | `InsightsSummary` |
 | GET `/range` · POST `/range/run` · GET `/range/[runId]` · POST `/range/[runId]/[action]` | `{scenarios, activeRun, history}` · `{scenarioId, mode, speed}` · run · action ∈ pause, resume, abort, speed (`{speed}`) |
 | POST `/director` | `{scenario: DirectorScenario}` |
-| GET `/settings` · PATCH `/settings` · POST `/settings/llm/test` | `Settings` (+ `auth:{enabled, source:"settings"|"env"|"off"}`) · `{llm?:{provider,baseUrl,model,apiKey?,enabled}, operator?, sim?}` · test result |
+| GET `/settings` · PATCH `/settings` · POST `/settings/llm/test` · POST `/settings/delivery/test` | `Settings` (secrets redacted to `apiKeySet` / `secretSet` / `twilioAuthTokenSet`; + `auth:{enabled, source:"settings"|"env"|"off"}`) · `{llm?:{provider,baseUrl,model,apiKey?,enabled}, operator?, sim?, delivery?:{channel,url,twilio,filter,secret?,twilioAuthToken?}}` · test result · delivery test result (§8.1) |
 | PATCH `/settings/auth` | `{password: string|null}` → `{auth}`; sets (≥8 chars, scrypt-hashed) or clears the operator password; 401 without a session while auth is on; 409 when persistence is disabled |
 | POST `/auth/login` · POST `/auth/logout` · GET `/auth/me` | `{password}` → `{ok}` + `Set-Cookie qalaa_session` (401 wrong, 429 rate-limited, 400 auth off) · clears cookie · `{enabled, authenticated}` |
 | GET `/health` | `{ok, uptimeSec, tick, clients}` |
 
-Errors: `{ error: string }` with 400/404/409. Validate bodies with zod. When auth is enabled (§7.1) every route except `/health` and `/auth/*` answers `401 {"error":"unauthorized"}` without a valid `qalaa_session` cookie — enforced in `proxy.ts`, not per route.
+Errors: `{ error: string }` with 400/404/409. Validate bodies with zod. When auth is enabled (§7.1) every route except `/health`, `/auth/*` and `/messages/inbound` (self-authenticating, §8.2) answers `401 {"error":"unauthorized"}` without a valid `qalaa_session` cookie — enforced in `proxy.ts`, not per route.
 
 ## 11. Tests (`npm test` = vitest + blind-boundary check)
 - policy engine (deny wins, approval, autonomy caps), command parser, conformance scoring.
 - range: baseline run in fast-forward reaches step 14 with `stagesSucceeded === 14`; protected run in fast-forward ends with `stagesBlocked ≥ 8`, grade ≥ B, and at least one `prevented` threat; no agent module imports range.
 - SSE route emits heartbeat and replays `since`.
+- delivery (`fetch` stubbed, no network): envelope + HMAC, Slack blocks, Twilio body/auth/truncation, retry → `failed`, queue cap, filter, bus hook ignores operator messages, Twilio signature valid/invalid, inbound `approve <id>` resolves the approval.
 - auth: session sign/verify/tamper/expiry, `decide()` for every public path and `/api/events`, scrypt hashing, login route (wrong/right/rate-limit), `PATCH /settings/auth` guard.
 
 ## 12. Desktop (`desktop/`)
