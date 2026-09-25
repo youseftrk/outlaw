@@ -72,6 +72,9 @@ function migrateState(state: QalaaState): void {
     if (!a.metrics.avgTimeToDetectSec) a.metrics.avgTimeToDetectSec = 12 + Math.round(Math.random() * 20);
     if (a.metrics.avgTimeToContainSec > 120) a.metrics.avgTimeToContainSec = 60 + Math.round(Math.random() * 50);
   }
+  // state written before the rename used thr-outlaw for the system thread
+  for (const t of state.threads) if (t.id === "thr-outlaw") t.id = "thr-qalaa";
+  for (const m of state.messages) if (m.threadId === "thr-outlaw") m.threadId = "thr-qalaa";
   // thr-qalaa keeps agentId but always reads as the system thread
   const qalaa = state.threads.find((t) => t.id === "thr-qalaa");
   if (qalaa) { qalaa.title = "Qalaa"; qalaa.agentId = "agt-cassidy"; }
