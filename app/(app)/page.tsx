@@ -12,7 +12,6 @@ import { LiveFeed } from "@/components/compositions/live-feed";
 import { AgentAvatar } from "@/components/shell/agent-avatar";
 import WorldMap from "@/components/ui/world-map";
 import { BlurFade } from "@/components/ui/blur-fade";
-import { BorderBeam } from "@/components/ui/border-beam";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +23,7 @@ import { cn } from "@/lib/utils";
 
 const timelineConfig: ChartConfig = {
   detected: { label: "Detected", color: "var(--color-sev-high)" },
-  neutralized: { label: "Neutralized", color: "var(--color-cerulean)" },
+  neutralized: { label: "Neutralized", color: "var(--color-text-2)" },
   prevented: { label: "Prevented", color: "var(--color-lime)" },
 };
 
@@ -45,7 +44,7 @@ function Panel({
 }) {
   return (
     <Card className={cn("bezel-core relative gap-0 overflow-hidden border-0 p-0", className)}>
-      {glow && <BorderBeam size={120} duration={8} colorFrom="#d0ff78" colorTo="#99d6ea" borderWidth={1.5} />}
+      {glow && <span className="active-ring motion-reduce:hidden" />}
       <CardHeader className="flex flex-row items-start justify-between gap-3 px-4 pt-4 pb-0">
         <div>
           {eyebrow && <CardDescription className="eyebrow mb-1.5">{eyebrow}</CardDescription>}
@@ -111,7 +110,7 @@ export default function CommandCenter() {
           <Button nativeButton={false} render={<Link href="/range" />} className="gap-2 overflow-visible">
             <Play weight="fill" className="size-3.5" />
             {activeRun ? "Watch the replay" : "Start the July 2026 replay"}
-            <BorderBeam size={56} duration={5} borderWidth={1.5} colorFrom="var(--color-cerulean)" colorTo="var(--color-lime)" className="motion-reduce:hidden" />
+            <span className="active-ring motion-reduce:hidden" />
           </Button>
         }
       />
@@ -274,21 +273,13 @@ export default function CommandCenter() {
           <Panel eyebrow="Seven days" title="Detected · neutralized · prevented" className="h-full">
             <ChartContainer config={timelineConfig} className="h-[220px] w-full aspect-auto">
               <AreaChart data={timeline} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-                <defs>
-                  {(["detected", "neutralized", "prevented"] as const).map((k) => (
-                    <linearGradient key={k} id={`fill-${k}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={`var(--color-${k})`} stopOpacity={0.45} />
-                      <stop offset="100%" stopColor={`var(--color-${k})`} stopOpacity={0} />
-                    </linearGradient>
-                  ))}
-                </defs>
                 <CartesianGrid vertical={false} stroke="rgba(217, 217, 214,0.06)" />
                 <XAxis dataKey="t" tickLine={false} axisLine={false} tick={{ fill: "#75787b", fontSize: 11 }} />
                 <YAxis tickLine={false} axisLine={false} tick={{ fill: "#75787b", fontSize: 11 }} allowDecimals={false} />
                 <ChartTooltip cursor={{ stroke: "rgba(217, 217, 214,0.15)" }} content={<ChartTooltipContent />} />
-                <Area type="monotone" dataKey="detected" stroke="var(--color-detected)" strokeWidth={1.5} fill="url(#fill-detected)" />
-                <Area type="monotone" dataKey="neutralized" stroke="var(--color-neutralized)" strokeWidth={1.5} fill="url(#fill-neutralized)" />
-                <Area type="monotone" dataKey="prevented" stroke="var(--color-prevented)" strokeWidth={2} fill="url(#fill-prevented)" />
+                <Area type="monotone" dataKey="detected" stroke="var(--color-detected)" strokeWidth={1.5} fill="var(--color-detected)" fillOpacity={0.14} />
+                <Area type="monotone" dataKey="neutralized" stroke="var(--color-neutralized)" strokeWidth={1.5} fill="var(--color-neutralized)" fillOpacity={0.14} />
+                <Area type="monotone" dataKey="prevented" stroke="var(--color-prevented)" strokeWidth={2} fill="var(--color-prevented)" fillOpacity={0.18} />
               </AreaChart>
             </ChartContainer>
           </Panel>

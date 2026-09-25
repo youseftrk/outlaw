@@ -18,7 +18,7 @@ import type { InsightsWindow } from "@/lib/types";
 
 const timelineConfig: ChartConfig = {
   detected: { label: "Detected", color: "var(--color-sev-high)" },
-  neutralized: { label: "Neutralized", color: "var(--color-cerulean)" },
+  neutralized: { label: "Neutralized", color: "var(--color-text-2)" },
   prevented: { label: "Prevented", color: "var(--color-lime)" },
 };
 const catConfig: ChartConfig = { count: { label: "Threats", color: "var(--color-cerulean)" } };
@@ -90,21 +90,13 @@ export default function InsightsPage() {
           <Panel eyebrow={window} title="Detected · neutralized · prevented">
             <ChartContainer config={timelineConfig} className="h-[240px] w-full aspect-auto">
               <AreaChart data={timeline} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-                <defs>
-                  {(["detected", "neutralized", "prevented"] as const).map((k) => (
-                    <linearGradient key={k} id={`ins-${k}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={`var(--color-${k})`} stopOpacity={0.45} />
-                      <stop offset="100%" stopColor={`var(--color-${k})`} stopOpacity={0} />
-                    </linearGradient>
-                  ))}
-                </defs>
                 <CartesianGrid vertical={false} stroke="rgba(217, 217, 214,0.06)" />
                 <XAxis dataKey="t" tickLine={false} axisLine={false} tick={{ fill: "#75787b", fontSize: 11 }} />
                 <YAxis tickLine={false} axisLine={false} tick={{ fill: "#75787b", fontSize: 11 }} allowDecimals={false} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Area type="monotone" dataKey="detected" stroke="var(--color-detected)" strokeWidth={1.5} fill="url(#ins-detected)" />
-                <Area type="monotone" dataKey="neutralized" stroke="var(--color-neutralized)" strokeWidth={1.5} fill="url(#ins-neutralized)" />
-                <Area type="monotone" dataKey="prevented" stroke="var(--color-prevented)" strokeWidth={2} fill="url(#ins-prevented)" />
+                <Area type="monotone" dataKey="detected" stroke="var(--color-detected)" strokeWidth={1.5} fill="var(--color-detected)" fillOpacity={0.14} />
+                <Area type="monotone" dataKey="neutralized" stroke="var(--color-neutralized)" strokeWidth={1.5} fill="var(--color-neutralized)" fillOpacity={0.14} />
+                <Area type="monotone" dataKey="prevented" stroke="var(--color-prevented)" strokeWidth={2} fill="var(--color-prevented)" fillOpacity={0.18} />
               </AreaChart>
             </ChartContainer>
           </Panel>

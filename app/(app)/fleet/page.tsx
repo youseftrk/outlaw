@@ -12,7 +12,6 @@ import { AgentAvatar } from "@/components/shell/agent-avatar";
 import { KpiCard } from "@/components/compositions/kpi-card";
 import { TraceView } from "@/components/compositions/trace-view";
 import { AnimatedBeam } from "@/components/ui/animated-beam";
-import { BorderBeam } from "@/components/ui/border-beam";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -97,13 +96,7 @@ function ServerSheet({ serverId, onClose }: { serverId: string | null; onClose: 
                   <p className="eyebrow">Load</p>
                   <ChartContainer config={loadConfig} className="mt-1 h-16 w-full aspect-auto">
                     <AreaChart data={s.load.map((v, i) => ({ i, v }))} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-                      <defs>
-                        <linearGradient id="load-fill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="var(--color-cerulean)" stopOpacity={0.5} />
-                          <stop offset="100%" stopColor="var(--color-cerulean)" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <Area type="monotone" dataKey="v" stroke="var(--color-cerulean)" strokeWidth={1.5} fill="url(#load-fill)" dot={false} isAnimationActive={false} />
+                      <Area type="monotone" dataKey="v" stroke="var(--color-cerulean)" strokeWidth={1.5} fill="var(--color-cerulean)" fillOpacity={0.14} dot={false} isAnimationActive={false} />
                     </AreaChart>
                   </ChartContainer>
                 </Card>
@@ -229,7 +222,7 @@ function MigrationCard({ m, servers }: { m: Migration; servers: Server[] }) {
 
   return (
     <Card className="bezel-core relative gap-0 overflow-hidden border-0 p-4">
-      {live && <BorderBeam size={100} duration={6} colorFrom="#d0ff78" colorTo="#99d6ea" borderWidth={1.5} />}
+      {live && <span className="active-ring motion-reduce:hidden" />}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="eyebrow">
@@ -276,7 +269,7 @@ function MigrationCard({ m, servers }: { m: Migration; servers: Server[] }) {
           duration={live ? 3 : 8}
           pathColor="rgba(217, 217, 214,0.15)"
           gradientStartColor="#d0ff78"
-          gradientStopColor="#99d6ea"
+          gradientStopColor="#d0ff78"
         />
       </div>
 

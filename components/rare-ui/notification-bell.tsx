@@ -163,9 +163,10 @@ function DigitColumn({ value, reduced }: { value: number; reduced: boolean }) {
   const position = useSpring(value, COLUMN_SPRING);
   const y = useTransform(position, (p) => `${-p * 100}%`);
   const velocity = useVelocity(position);
-  const mask = useTransform(velocity, (v) => {
-    const fade = Math.min(ROLL_FADE, (Math.abs(v) / ROLL_VELOCITY) * ROLL_FADE);
-    return `linear-gradient(to bottom, transparent 0%, #000 ${fade}%, #000 ${100 - fade}%, transparent 100%)`;
+  // fast rolls dip the column's opacity instead of masking the digits
+  const rollOpacity = useTransform(velocity, (v) => {
+    const dip = Math.min(ROLL_FADE, (Math.abs(v) / ROLL_VELOCITY) * ROLL_FADE);
+    return 1 - dip / (ROLL_FADE * 2.5);
   });
 
   useEffect(() => {
@@ -181,8 +182,7 @@ function DigitColumn({ value, reduced }: { value: number; reduced: boolean }) {
       className="relative inline-block h-[1em] overflow-hidden"
       style={{
         width: "1ch",
-        maskImage: reduced ? undefined : mask,
-        WebkitMaskImage: reduced ? undefined : mask,
+        opacity: reduced ? undefined : rollOpacity,
       }}
     >
       <motion.span className="absolute inset-0" style={{ y }}>

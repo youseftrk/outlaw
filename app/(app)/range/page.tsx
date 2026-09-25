@@ -10,7 +10,6 @@ import { PageHeader } from "@/components/shell/page-header";
 import { AgentAvatar } from "@/components/shell/agent-avatar";
 import { LiveFeed } from "@/components/compositions/live-feed";
 import { BlurFade } from "@/components/ui/blur-fade";
-import { BorderBeam } from "@/components/ui/border-beam";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -44,7 +43,7 @@ function StepChip({ step, result, active }: { step: RangeStep; result?: RangeSte
           />
         }
       >
-        {active && <BorderBeam size={60} duration={4} colorFrom="#99d6ea" colorTo="#d0ff78" borderWidth={1.5} />}
+        {active && <span className="active-ring motion-reduce:hidden" />}
         <span className="mono-data text-[10px] opacity-70">
           {String(step.order).padStart(2, "0")} · {step.realWorldLabel}
         </span>
@@ -91,7 +90,6 @@ function ScoreCard({ run, scenario }: { run: RangeRun; scenario: RangeScenario }
   const neverReached = run.stepResults.filter((r) => r.status === "skipped").length;
   return (
     <Card className="bezel-core relative gap-0 overflow-hidden border-0 p-5">
-      <div className="thermal pointer-events-none absolute inset-0 opacity-40" />
       <div className="relative grid grid-cols-12 gap-4">
         <div className="col-span-12 md:col-span-3">
           <p className="eyebrow">Grade · {run.mode}</p>
@@ -213,7 +211,7 @@ export default function RangePage() {
       <div className="grid grid-cols-12 gap-4">
         <BlurFade delay={0.05} className="col-span-12 xl:col-span-8">
           <Card className="bezel-core relative gap-0 overflow-hidden border-0 p-5">
-            {run?.status === "running" && <BorderBeam size={160} duration={10} colorFrom="#ff5d6c" colorTo="#d0ff78" borderWidth={1.5} />}
+            {run?.status === "running" && <span className="active-ring-critical motion-reduce:hidden" />}
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="eyebrow">Based on</p>

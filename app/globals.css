@@ -170,10 +170,13 @@
   }
   @keyframes shimmer-text {
     0% {
-      background-position: 150%;
+      opacity: 0.45;
+    }
+    50% {
+      opacity: 1;
     }
     100% {
-      background-position: -50%;
+      opacity: 0.45;
     }
   }
 }
@@ -241,12 +244,6 @@
   --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
   --shadow-ambient: 0 24px 64px -32px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
-  --gradient-aura: radial-gradient(circle at 50% 50%, #71c5e8 0%, #a9e3f2 49%, #d0ffc8 100%);
-  --gradient-thermal:
-    radial-gradient(ellipse 80% 60% at 20% 110%, rgba(113, 197, 232, 0.32) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 85% -10%, rgba(208, 255, 200, 0.22) 0%, transparent 55%),
-    radial-gradient(ellipse 90% 70% at 60% 60%, rgba(51, 63, 72, 0.6) 0%, transparent 70%),
-    linear-gradient(180deg, #0c0e11 0%, #131619 100%);
 }
 
 @layer base {
@@ -320,14 +317,6 @@
   box-shadow: var(--shadow-ambient);
 }
 
-@utility thermal {
-  background: var(--gradient-thermal);
-}
-
-@utility aura {
-  background: var(--gradient-aura);
-}
-
 /* Agent message bubble: lime, carbon text, iMessage tail on the left. */
 @utility bubble-agent {
   background: var(--color-lime);
@@ -337,7 +326,7 @@
 }
 /* Operator bubble: cerulean, white text, tail on the right. */
 @utility bubble-operator {
-  background: linear-gradient(180deg, #b5e3f1 0%, #99d6ea 100%);
+  background: var(--color-cerulean);
   color: #101820;
   border-radius: var(--radius-bubble);
   border-bottom-right-radius: 6px;
@@ -347,15 +336,6 @@
   color: var(--color-text-1);
   border-radius: var(--radius-bubble);
   border-bottom-left-radius: 6px;
-}
-
-/* Film grain — use only on fixed, pointer-events-none overlays (deck, hero panels). */
-@utility grain {
-  pointer-events: none;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  background-size: 240px 240px;
-  mix-blend-mode: screen;
 }
 
 /* Severity color helpers: `sev-critical` etc. set both a text color and a --sev variable. */
@@ -405,57 +385,20 @@
   background: transparent;
 }
 
-/* Deck print: one slide per page (Cmd+P → PDF). */
-@media print {
-  @page {
-    size: 1920px 1080px;
-    margin: 0;
-  }
-  html,
-  body {
-    background: #040e17;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
-  .deck {
-    position: static !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-  .deck > section,
-  .deck-chrome {
-    display: none !important;
-  }
-  .deck-print {
-    display: block !important;
-  }
-  .deck-print > section {
-    height: 1080px;
-    width: 1920px;
-    break-after: page;
-    break-inside: avoid;
-    page-break-after: always;
-    page-break-inside: avoid;
-    background: #040e17;
-  }
-  .deck-print > section:last-child {
-    break-after: auto;
-    page-break-after: auto;
-  }
-  /* Entry animations never run for the hidden print copy — force their end state. */
-  .deck-print .opacity-0,
-  .deck-print [style*="opacity: 0"] {
-    opacity: 1 !important;
-  }
-  .deck-print [style*="blur("] {
-    filter: none !important;
-  }
-  .deck-print *,
-  .deck-print *::before,
-  .deck-print *::after {
-    animation: none !important;
-    transition: none !important;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
+/* Flat accent hairline ring — replaces the old gradient beam on live/active cards. */
+@utility active-ring {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 1px rgba(208, 255, 120, 0.6);
+  animation: pulse-soft 2.4s var(--ease-spring) infinite;
+}
+@utility active-ring-critical {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 1px rgba(255, 93, 108, 0.6);
+  animation: pulse-soft 2.4s var(--ease-spring) infinite;
 }

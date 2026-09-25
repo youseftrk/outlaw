@@ -15,7 +15,6 @@
 - **Blind cyber range** — a replay of the July 2026 autonomous-swarm intrusion of a model hub. The agents don't know it's a drill; the import boundary is enforced in code and tests. Protected vs baseline scoring.
 - **Research workbench** — IOC enrichment, CVEs, ATT&CK, actors, freeform investigations by Athar.
 - **Insights** — the company view of what the agents protected.
-- **Deck** — a brand slideshow at `/deck` (← → to navigate, `F` fullscreen, `⌘P` → PDF).
 - **Desktop** — Electron shell with macOS inset traffic lights.
 
 Every visual component is sourced from the designeer.xyz / libraries.dev catalogs (see `docs/COMPONENTS.md`). No hand-rolled UI.
@@ -64,7 +63,7 @@ Browser end-to-end tests (Playwright, Chromium). The config builds and starts th
 
 ```bash
 npx playwright install chromium   # once
-npm run test:e2e                  # e2e/*.spec.ts — golden paths, responsive @ 390px, deck PDF
+npm run test:e2e                  # e2e/*.spec.ts — golden paths, responsive @ 390px
 npx playwright show-report        # HTML report after a run
 ```
 
@@ -115,9 +114,9 @@ Reset: **Settings → Access → Clear password** while signed in, or stop the s
 4. **Governance** — open a trace; show the policy evaluations and the tool spans that ran on the server.
 5. **Fleet** — quarantined dataset, isolated worker, Rahhal's incident-response migration, conformance checks.
 6. Back to **Range** — the score card vs. what really happened. Run **Baseline** (agents paused, 8×) to compare: 14/14 stages, grade F — the July 2026 outcome.
-7. **Deck** (`/deck`, `F` for fullscreen; slide 11 pulls the live numbers from the last runs) for the close.
+7. **Why Qalaa** (`/why`) — market demand chart and UAE demand signals for the close.
 
-Keyboard: `⌘K` command palette · deck `←` `→` `F` `Esc` · `/deck?slide=N` deep links · `/phone` phone-only view for a second window.
+Keyboard: `⌘K` command palette · `/phone` phone-only view for a second window.
 
 ## Layout
 

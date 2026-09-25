@@ -63,28 +63,15 @@ export default function WorldMap({
       {/* eslint-disable-next-line @next/next/no-img-element -- aceternity upstream: inline SVG data URI generated at render time; not optimisable by next/image */}
       <img
         src={`data:image/svg+xml;utf8,${encodeURIComponent(svgMap)}`}
-        className="pointer-events-none h-full w-full select-none [mask-image:linear-gradient(to_bottom,transparent,white_8%,white_92%,transparent)]"
+        className="pointer-events-none h-full w-full select-none"
         alt=""
         height="495"
         width="1056"
         draggable={false}
       />
       <svg ref={svgRef} viewBox="0 0 800 400" className="pointer-events-none absolute inset-0 h-full w-full select-none">
-        <defs>
-          {dots.map((dot, i) => {
-            const c = dot.color ?? lineColor;
-            return (
-              <linearGradient key={`grad-${i}`} id={`arc-gradient-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor={c} stopOpacity="0" />
-                <stop offset="8%" stopColor={c} stopOpacity="1" />
-                <stop offset="92%" stopColor={c} stopOpacity="1" />
-                <stop offset="100%" stopColor={c} stopOpacity="0" />
-              </linearGradient>
-            );
-          })}
-        </defs>
-
         {dots.map((dot, i) => {
+          const c = dot.color ?? lineColor;
           const startPoint = projectPoint(dot.start.lat, dot.start.lng);
           const endPoint = projectPoint(dot.end.lat, dot.end.lng);
           return (
@@ -92,8 +79,10 @@ export default function WorldMap({
               key={`arc-${i}-${dot.start.lat}-${dot.end.lat}`}
               d={createCurvedPath(startPoint, endPoint)}
               fill="none"
-              stroke={`url(#arc-gradient-${i})`}
+              stroke={c}
+              strokeOpacity="0.85"
               strokeWidth="1"
+              strokeLinecap="round"
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: 1 }}
               transition={{ duration: 1.2, delay: 0.25 * i, ease: [0.16, 1, 0.3, 1] }}
