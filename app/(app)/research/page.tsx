@@ -42,7 +42,12 @@ const SUGGESTIONS = [
 function KbBrowser() {
   const [type, setType] = React.useState<"cve" | "technique" | "actor">("cve");
   const [q, setQ] = React.useState("");
-  const { data } = useSWR(`/research/kb?type=${type}&q=${encodeURIComponent(q)}`, () => api.research.kb(type, q), { keepPreviousData: true });
+  const { data: kb } = useSWR(
+    `/research/kb?type=${type}&q=${encodeURIComponent(q)}`,
+    async () => ({ type, rows: await api.research.kb(type, q) }),
+    { keepPreviousData: true },
+  );
+  const data = kb?.type === type ? kb.rows : undefined;
   return (
     <Card className="bezel-core gap-0 border-0 p-0">
       <Tabs value={type} onValueChange={(v) => setType(v as typeof type)} className="gap-0">
