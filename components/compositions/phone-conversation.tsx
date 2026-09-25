@@ -9,6 +9,7 @@ import { ThinkingOrb } from "thinking-orbs";
 import { ChatBubble, ChatBubbleMessage } from "@/components/vendor/shadcn-chat/chat-bubble";
 import { ChatMessageList } from "@/components/vendor/shadcn-chat/chat-message-list";
 import { ChatInput } from "@/components/vendor/shadcn-chat/chat-input";
+import { BlurFade } from "@/components/ui/blur-fade";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Button } from "@/components/ui/button";
 import { AgentAvatar } from "@/components/shell/agent-avatar";
@@ -209,16 +210,17 @@ export function PhoneConversation({
               </ChatBubble>
               {m.quickReplies && m.quickReplies.length > 0 && last && (
                 <div className="mt-1.5 flex flex-wrap gap-1.5 pl-1">
-                  {m.quickReplies.map((q) => (
-                    <Button
-                      key={q.command}
-                      size="xs"
-                      variant={q.tone === "danger" ? "destructive" : q.tone === "primary" ? "default" : "secondary"}
-                      className="rounded-full"
-                      onClick={() => send(q.command)}
-                    >
-                      {q.label}
-                    </Button>
+                  {m.quickReplies.map((q, qi) => (
+                    <BlurFade key={q.command} delay={0.08 + qi * 0.06} duration={0.35} direction="up" offset={6}>
+                      <Button
+                        size="xs"
+                        variant={q.tone === "danger" ? "destructive" : q.tone === "primary" ? "default" : "secondary"}
+                        className="rounded-full"
+                        onClick={() => send(q.command)}
+                      >
+                        {q.label}
+                      </Button>
+                    </BlurFade>
                   ))}
                 </div>
               )}

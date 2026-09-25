@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { AnimatePresence } from "motion/react";
 import { AnimatedListItem } from "@/components/ui/animated-list";
+import { FlickeringGrid } from "@/components/ui/flickering-grid";
 import { AgentAvatar } from "@/components/shell/agent-avatar";
 import { useLive } from "@/lib/hooks/use-live";
 import { clock, SEVERITY_HEX } from "@/lib/format";
@@ -43,7 +44,15 @@ export function LiveFeed({ limit = 14, types = FEED_TYPES, className }: { limit?
 
   if (items.length === 0) {
     return (
-      <div className={cn("flex h-full flex-col items-center justify-center p-6 text-center", className)}>
+      <div className={cn("relative flex h-full min-h-40 flex-col items-center justify-center overflow-hidden p-6 text-center", className)}>
+        <FlickeringGrid
+          className="absolute inset-0 -z-10 [mask-image:radial-gradient(70%_70%_at_50%_50%,white,transparent)] motion-reduce:hidden"
+          squareSize={3}
+          gridGap={5}
+          color="#24C7D6"
+          maxOpacity={0.18}
+          flickerChance={0.08}
+        />
         <p className="text-text-2">Quiet on the wire.</p>
         <p className="mt-1 text-[12px] text-text-3">Agent actions, detections and texts land here as they happen.</p>
       </div>

@@ -108,9 +108,10 @@ export default function CommandCenter() {
         eyebrow={boot ? `Frontier Hub · ${servers.length} servers · ${agents.length} agents riding` : "Frontier Hub"}
         title="Command center"
         actions={
-          <Button nativeButton={false} render={<Link href="/range" />} className="gap-2">
+          <Button nativeButton={false} render={<Link href="/range" />} className="gap-2 overflow-visible">
             <Play weight="fill" className="size-3.5" />
             {activeRun ? "Watch the replay" : "Start the July 2026 replay"}
+            <BorderBeam size={56} duration={5} borderWidth={1.5} colorFrom="var(--color-cerulean)" colorTo="var(--color-lime)" className="motion-reduce:hidden" />
           </Button>
         }
       />
