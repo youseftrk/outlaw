@@ -144,7 +144,7 @@ function Result({ q }: { q: ResearchQuery }) {
       {q.status === "running" && (
         <div className="flex items-center gap-3 rounded-[12px] bg-bg-2 p-3">
           <ThinkingOrb state="searching" size={20} theme="dark" />
-          <span className="text-text-2">Doc is working the case — enriching indicators, pulling techniques, checking exposure.</span>
+          <span className="text-text-2">Athar is working the case — enriching indicators, pulling techniques, checking exposure.</span>
           <TextLoader text="Searching" className="ml-auto text-[13px]" />
         </div>
       )}
@@ -253,7 +253,7 @@ function ResearchInner() {
       setValue("");
       void mutate();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Doc couldn't take that one");
+      toast.error(e instanceof Error ? e.message : "Athar couldn't take that one");
     } finally {
       setBusy(false);
     }
@@ -262,16 +262,16 @@ function ResearchInner() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="Doc's workbench"
+        eyebrow="Athar's workbench"
         title="Research"
-        description="Ask Doc to enrich an indicator, explain a CVE, map techniques, or investigate anything in the fleet. Every investigation is a trace."
+        description="Ask Athar to enrich an indicator, explain a CVE, map techniques, or investigate anything in the fleet. Every investigation is a trace."
       />
       <div className="grid grid-cols-12 gap-4">
         <div className="col-span-12 flex flex-col gap-4 xl:col-span-5">
           <BlurFade delay={0.05}>
             <Card className="bezel-core gap-0 border-0 p-3">
               <PromptInput value={value} onValueChange={setValue} onSubmit={() => void ask()} isLoading={busy} className="border-line bg-bg-2">
-                <PromptInputTextarea placeholder="Ask Doc…" className="text-[13.5px]" />
+                <PromptInputTextarea placeholder="Ask Athar…" className="text-[13.5px]" />
                 <PromptInputActions className="justify-end">
                   <Tooltip>
                     <TooltipTrigger
@@ -281,7 +281,7 @@ function ResearchInner() {
                     >
                       <ArrowUp weight="bold" className="size-4" />
                     </TooltipTrigger>
-                    <TooltipContent>Send to Doc</TooltipContent>
+                    <TooltipContent>Send to Athar</TooltipContent>
                   </Tooltip>
                 </PromptInputActions>
               </PromptInput>
@@ -330,7 +330,7 @@ function ResearchInner() {
             ) : (
               <div className="grid h-[600px] place-items-center text-center">
                 <div>
-                  <p className="font-display text-[26px] text-text-1">Ask Doc something.</p>
+                  <p className="font-display text-[26px] text-text-1">Ask Athar something.</p>
                   <p className="mt-1 text-text-2">An IP, a CVE id, a technique, a hostname — or a plain question.</p>
                 </div>
               </div>

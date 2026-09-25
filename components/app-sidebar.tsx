@@ -279,7 +279,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarGroup className="p-0">
-          <SidebarGroupLabel className="eyebrow group-data-[collapsible=icon]:hidden">The gang</SidebarGroupLabel>
+          <SidebarGroupLabel className="eyebrow group-data-[collapsible=icon]:hidden">The garrison</SidebarGroupLabel>
           <div className={cn("flex items-center gap-1.5 px-2 pb-1", collapsed && "flex-col gap-2 px-0")}>
             {agents.map((a) => {
               const status = liveStatus(a.status, working.has(a.id));

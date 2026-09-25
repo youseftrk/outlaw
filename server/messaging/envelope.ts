@@ -11,7 +11,7 @@ export interface DeliveryEnvelope {
   severity: Severity;
   text: string;
   quickReplies: QuickReply[];
-  /** app-relative deep link, e.g. "/messages?thread=thr-cassidy" */
+  /** app-relative deep link, e.g. "/messages?thread=thr-saqr" */
   href: string;
   sentAt: ISODate;
 }

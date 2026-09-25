@@ -57,7 +57,7 @@ export default function InsightsPage() {
       <PageHeader
         eyebrow="What your agents have been protecting"
         title="Insights"
-        description="The company view: what the gang caught, what it prevented before it mattered, and how well the fleet conforms."
+        description="The company view: what the garrison caught, what it prevented before it mattered, and how well the fleet conforms."
         actions={
           <ToggleGroup
             value={[window]}
@@ -169,7 +169,7 @@ export default function InsightsPage() {
         </BlurFade>
 
         <BlurFade delay={0.3} className="col-span-12 md:col-span-6 xl:col-span-4">
-          <Panel eyebrow="Most defended" title="What the gang protected" className="h-full">
+          <Panel eyebrow="Most defended" title="What the garrison protected" className="h-full">
             <ul className="flex flex-col gap-1">
               {(data?.topProtected ?? []).map((t, i) => (
                 <li key={t.serverId}>

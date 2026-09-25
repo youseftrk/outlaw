@@ -336,7 +336,7 @@ function ApprovalsTab() {
           <Card className="bezel-core relative gap-0 overflow-hidden border-0 p-8 text-center">
             <DotPattern glow width={18} height={18} cr={0.8} className="[mask-image:radial-gradient(60%_80%_at_50%_50%,white,transparent)] text-lime/40" />
             <p className="relative font-display text-[22px] text-text-1">No approvals waiting.</p>
-            <p className="relative mt-1 text-text-2">The gang is riding autonomously. You&apos;ll be asked for prod rebuilds and database moves.</p>
+            <p className="relative mt-1 text-text-2">The garrison is running autonomously. You&apos;ll be asked for prod rebuilds and database moves.</p>
           </Card>
         ) : (
           <ul className="flex flex-col gap-3">
@@ -370,7 +370,7 @@ function ApprovalsTab() {
                         speedReveal={2}
                         className={cn("flex items-center gap-1.5 text-[13px] font-medium", inflight[a.id].decision === "approve" ? "text-lime" : "text-sev-critical")}
                       >
-                        {inflight[a.id].decision === "approve" ? "✓ Approved — the gang rides on" : "✕ Rejected — action withheld"}
+                        {inflight[a.id].decision === "approve" ? "✓ Approved — the garrison carries on" : "✕ Rejected — action withheld"}
                       </TextEffect>
                     ) : (
                       <>

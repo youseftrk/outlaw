@@ -105,7 +105,7 @@ export default function CommandCenter() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow={boot ? `Frontier Hub · ${servers.length} servers · ${agents.length} agents riding` : "Frontier Hub"}
+        eyebrow={boot ? `Frontier Hub · ${servers.length} servers · ${agents.length} agents on watch` : "Frontier Hub"}
         title="Command center"
         actions={
           <Button nativeButton={false} render={<Link href="/range" />} className="gap-2 overflow-visible">
@@ -173,7 +173,7 @@ export default function CommandCenter() {
 
         <BlurFade delay={0.2} className="col-span-12 md:col-span-6 xl:col-span-4">
           <Panel
-            eyebrow="The gang"
+            eyebrow="The garrison"
             title="On duty"
             className="h-full"
             action={
@@ -223,7 +223,7 @@ export default function CommandCenter() {
               </span>
             }
           >
-            <p className="mb-3 text-[12px] text-text-3">Lowest scores — Ringo works these first.</p>
+            <p className="mb-3 text-[12px] text-text-3">Lowest scores — Rahhal works these first.</p>
             <ul className="flex flex-col gap-2.5">
               {lowest.map((s) => (
                 <li key={s.id}>
@@ -243,7 +243,7 @@ export default function CommandCenter() {
         <BlurFade delay={0.3} className="col-span-12 xl:col-span-4">
           <Panel eyebrow="Needs you" title={approvals.length ? `${approvals.length} waiting` : "Nothing waiting"} className="h-full">
             {approvals.length === 0 ? (
-              <p className="text-text-2">The gang is riding autonomously. Approvals only appear for prod rebuilds and database moves.</p>
+              <p className="text-text-2">The garrison is running autonomously. Approvals only appear for prod rebuilds and database moves.</p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {approvals.slice(0, 4).map((a) => (
@@ -334,7 +334,7 @@ export default function CommandCenter() {
             ) : (
               <div className="flex flex-col gap-3">
                 <p className="text-text-2">
-                  Replay the autonomous-swarm intrusion that breached a model hub in July 2026. The gang doesn&apos;t know it&apos;s
+                  Replay the autonomous-swarm intrusion that breached a model hub in July 2026. The garrison doesn&apos;t know it&apos;s
                   a drill.
                 </p>
                 <Button size="sm" nativeButton={false} render={<Link href="/range" />} className="w-fit gap-2">

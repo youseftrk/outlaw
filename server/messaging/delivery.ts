@@ -226,14 +226,14 @@ export async function deliveryTest(): Promise<NonNullable<DeliverySettings["last
   const operator = store.s.settings.operator.name || "Operator";
   const env: DeliveryEnvelope = {
     id: "MSG-test",
-    threadId: "thr-cassidy",
+    threadId: "thr-saqr",
     from: "agent",
-    agentName: "Cassidy",
+    agentName: "Saqr",
     kind: "status",
     severity: "info",
-    text: `Howdy ${operator} — Qalaa delivery test. The gang can reach you here; reply "status" to check the line.`,
+    text: `Howdy ${operator} — Qalaa delivery test. The garrison can reach you here; reply "status" to check the line.`,
     quickReplies: [],
-    href: "/messages?thread=thr-cassidy",
+    href: "/messages?thread=thr-saqr",
     sentAt: at,
   };
   const started = Date.now();

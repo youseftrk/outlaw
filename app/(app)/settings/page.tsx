@@ -449,7 +449,7 @@ export default function SettingsPage() {
           </Section>
           <Section
             title="Delivery"
-            description="Messages always land in-app. Optionally push the gang's alerts, approval requests, and reports to a webhook, Slack, or your phone — and reply from there."
+            description="Messages always land in-app. Optionally push the garrison's alerts, approval requests, and reports to a webhook, Slack, or your phone — and reply from there."
           >
             <label className="flex flex-col gap-1 text-[12px] text-text-2">
               Channel
@@ -499,7 +499,7 @@ export default function SettingsPage() {
                     <Input value={smsTo} onChange={(e) => setSmsTo(e.target.value)} placeholder="+1…" className="mono-data border-line bg-bg-2" />
                   </label>
                 </div>
-                <span className="text-[11px] text-text-3">Point the number&apos;s messaging webhook at /api/messages/inbound so replies reach the gang. Token stored in .data/secrets.json.</span>
+                <span className="text-[11px] text-text-3">Point the number&apos;s messaging webhook at /api/messages/inbound so replies reach the garrison. Token stored in .data/secrets.json.</span>
               </>
             )}
             {channel !== "off" && (
@@ -545,7 +545,7 @@ export default function SettingsPage() {
         </BlurFade>
 
         <BlurFade delay={0.1} className="flex flex-col gap-4">
-          <Section title="Operator" description="Who the gang texts, and how they address you.">
+          <Section title="Operator" description="Who the garrison texts, and how they address you.">
             <div className="grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-1 text-[12px] text-text-2">
                 Name
@@ -561,7 +561,7 @@ export default function SettingsPage() {
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="mono-data border-line bg-bg-2" />
             </label>
           </Section>
-          <Section title="Simulation" description="Clock speed for the world and the gang's patrols. Quiet hours batch medium alerts into digests.">
+          <Section title="Simulation" description="Clock speed for the world and the garrison's patrols. Quiet hours batch medium alerts into digests.">
             <div>
               <p className="mb-2 text-[12px] text-text-2">
                 Speed · <span className="mono-data text-text-1">{speed}×</span>

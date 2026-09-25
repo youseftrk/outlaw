@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const AGENTS = ["Cassidy", "Sundance", "Doc", "Belle", "Ringo", "Calamity"];
+const AGENTS = ["Saqr", "Hisn", "Athar", "Miftah", "Rahhal", "Bawwab"];
 
 test.describe("command center", () => {
   test("renders sidebar wordmark, roster of six and a live feed", async ({ page }) => {
@@ -8,7 +8,7 @@ test.describe("command center", () => {
 
     await expect(page.getByRole("img", { name: "Qalaa" })).toBeVisible();
 
-    const roster = page.locator("ul").filter({ has: page.getByRole("link", { name: /Cassidy/ }) }).first();
+    const roster = page.locator("ul").filter({ has: page.getByRole("link", { name: /Saqr/ }) }).first();
     await expect(roster.getByRole("link")).toHaveCount(6);
     for (const name of AGENTS) await expect(roster.getByRole("link", { name: new RegExp(name) })).toBeVisible();
   });

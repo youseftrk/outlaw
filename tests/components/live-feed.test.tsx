@@ -28,20 +28,20 @@ describe("LiveFeed", () => {
   it("shows only feed-worthy event types, newest first, capped at the limit", () => {
     live.events = [
       ev({ id: "e1", type: "threat.detected", summary: "Brute force on prod-db-01", severity: "high" }),
-      ev({ id: "e2", type: "agent.status", summary: "hidden status event", agentId: "agt-doc" }),
-      ev({ id: "e3", type: "agent.action", summary: "Doc isolated prod-db-01", agentId: "agt-doc" }),
-      ev({ id: "e4", type: "message.sent", payload: { text: "Cassidy: status is green" } }),
+      ev({ id: "e2", type: "agent.status", summary: "hidden status event", agentId: "agt-athar" }),
+      ev({ id: "e3", type: "agent.action", summary: "Athar isolated prod-db-01", agentId: "agt-athar" }),
+      ev({ id: "e4", type: "message.sent", payload: { text: "Saqr: status is green" } }),
     ];
     render(<LiveFeed limit={2} />);
     const rows = screen.getAllByText(/prod-db-01|status is green/).map((el) => el.textContent);
-    expect(rows).toEqual(["Cassidy: status is green", "Doc isolated prod-db-01"]);
+    expect(rows).toEqual(["Saqr: status is green", "Athar isolated prod-db-01"]);
     expect(screen.queryByText("hidden status event")).toBeNull();
     expect(screen.queryByText("Brute force on prod-db-01")).toBeNull();
     expect(screen.getAllByTestId("bot")).toHaveLength(1);
   });
 
   it("links events with an href to their destination", () => {
-    live.events = [ev({ id: "e9", type: "approval.requested", summary: "Doc wants to rebuild prod-api-01", href: "/governance?tab=approvals" })];
+    live.events = [ev({ id: "e9", type: "approval.requested", summary: "Athar wants to rebuild prod-api-01", href: "/governance?tab=approvals" })];
     render(<LiveFeed />);
     expect(screen.getByRole("link").getAttribute("href")).toBe("/governance?tab=approvals");
   });

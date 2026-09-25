@@ -150,7 +150,7 @@ export default function RangePage() {
     setStarting(true);
     try {
       await api.range.start(scenario.id, mode, speed);
-      toast.success(mode === "protected" ? "Replay started. The gang has no idea." : "Baseline run started — agents paused.");
+      toast.success(mode === "protected" ? "Replay started. The garrison has no idea." : "Baseline run started — agents paused.");
       void mutate();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't start the run");
@@ -312,7 +312,7 @@ export default function RangePage() {
               <li className="flex gap-3">
                 <span className="mono-data text-text-3">2</span>
                 <span>
-                  The gang only sees telemetry. No scenario names, no script, no hints. <span className="text-text-1">The import boundary is enforced in code and tests.</span>
+                  The garrison only sees telemetry. No scenario names, no script, no hints. <span className="text-text-1">The import boundary is enforced in code and tests.</span>
                 </span>
               </li>
               <li className="flex gap-3">

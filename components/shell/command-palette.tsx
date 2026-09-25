@@ -84,9 +84,9 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       description="Navigate, text an agent, or direct the demo"
       className="bezel-core border-line"
     >
-      <CommandInput placeholder="Where to, or what should the gang do?" />
+      <CommandInput placeholder="Where to, or what should the garrison do?" />
       <CommandList className="max-h-[420px]">
-        <CommandEmpty>Nothing matches. Try “range”, “Cassidy”, or a page name.</CommandEmpty>
+        <CommandEmpty>Nothing matches. Try “range”, “Saqr”, or a page name.</CommandEmpty>
 
         <CommandGroup heading="Go to">
           {PAGES.map((p) => (
@@ -122,7 +122,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
           <CommandItem
             value="start range protected july 2026 replay"
             onSelect={() =>
-              run("Replay started — the gang doesn't know", () => api.range.start("hf-2026", "protected", 2), "/range")
+              run("Replay started — the garrison doesn't know", () => api.range.start("hf-2026", "protected", 2), "/range")
             }
           >
             <Play weight="fill" className="size-4 text-lime" />

@@ -63,14 +63,14 @@ export function seedPolicies(nowIso: string): Policy[] {
     {
       ...base, id: "pol-09", priority: 9,
       name: "Notify operator on every high+ action",
-      description: "Informational: allow, but Cassidy must text the operator for high/destructive-risk tools.",
+      description: "Informational: allow, but Saqr must text the operator for high/destructive-risk tools.",
       effect: "allow",
       match: { risk: ["high", "destructive"] },
     },
     {
       ...base, id: "pol-10", priority: 10,
       name: "Default allow",
-      description: "Everything else is allowed — the gang rides autonomously.",
+      description: "Everything else is allowed — the garrison runs autonomously.",
       effect: "allow",
       match: {},
     },

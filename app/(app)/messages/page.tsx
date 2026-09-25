@@ -35,7 +35,7 @@ function MessagesInner() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        eyebrow="Texts from the gang"
+        eyebrow="Texts from the garrison"
         title="Messages"
         description="Agents text you like a colleague would — alerts, approvals, reports. Text back to give orders. Every command becomes a trace."
         actions={

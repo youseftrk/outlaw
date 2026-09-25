@@ -63,7 +63,7 @@ export default function ThreatsPage() {
       <PageHeader
         eyebrow="Detections · kill chains · response"
         title="Threats"
-        description="Everything the gang has seen, what they did about it, and the trace behind each decision."
+        description="Everything the garrison has seen, what they did about it, and the trace behind each decision."
       />
 
       <BlurFade delay={0.05} className="grid grid-cols-2 gap-3 xl:grid-cols-4">

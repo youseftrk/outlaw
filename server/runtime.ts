@@ -43,7 +43,7 @@ async function tick(): Promise<void> {
   const paused = baselineActive();
   await brainTick(paused);
   tickMigrations();
-  if (!paused) checkIncidentMigrations(); // Ringo-driven — agents paused in baseline
+  if (!paused) checkIncidentMigrations(); // Rahhal-driven — agents paused in baseline
   tickApprovals();
   store.flush();
 }
@@ -56,13 +56,15 @@ function scheduleLoop(): void {
   G.__qalaaTimer = t;
 }
 
+const LEGACY_AGENT_IDS = new Set(["agt-cassidy", "agt-sundance", "agt-doc", "agt-belle", "agt-ringo", "agt-calamity"]);
+
 const CALLSIGNS: Record<string, string> = {
-  "agt-cassidy": "rides point",
-  "agt-sundance": "fast draw",
-  "agt-doc": "Holliday",
-  "agt-belle": "Starr",
-  "agt-ringo": "the drover",
-  "agt-calamity": "Jane",
+  "agt-saqr": "the falcon",
+  "agt-hisn": "the wall",
+  "agt-athar": "the trace",
+  "agt-miftah": "keeper of keys",
+  "agt-rahhal": "the caravaneer",
+  "agt-bawwab": "the gatekeeper",
 };
 
 /** Normalize persisted state written by older builds (callsigns, statuses,
@@ -79,7 +81,7 @@ function migrateState(state: QalaaState): void {
   for (const m of state.messages) if (m.threadId === "thr-outlaw") m.threadId = "thr-qalaa";
   // thr-qalaa keeps agentId but always reads as the system thread
   const qalaa = state.threads.find((t) => t.id === "thr-qalaa");
-  if (qalaa) { qalaa.title = "Qalaa"; qalaa.agentId = "agt-cassidy"; }
+  if (qalaa) { qalaa.title = "Qalaa"; qalaa.agentId = "agt-saqr"; }
   // settings.delivery arrived after the first persisted states
   if (!state.settings.delivery) state.settings.delivery = defaultDeliverySettings();
   // restore id counters so persisted entities never collide with new ids
@@ -106,6 +108,8 @@ export function getRuntime(): QalaaRuntime {
   if (process.env.QALAA_RESET !== "1") {
     state = store.load();
   }
+  // state written before the agents were renamed for Qalaa can't be migrated field by field — reseed
+  if (state && state.agents.some((a) => LEGACY_AGENT_IDS.has(a.id))) state = null;
   if (!state) {
     state = buildSeed(Date.now());
   }

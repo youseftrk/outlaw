@@ -41,8 +41,8 @@ const lastCall = () => {
   return { url: String(call[0]), init: call[1] as RequestInit & { headers: Record<string, string> } };
 };
 
-function alertFromCassidy(text = "Cassidy: credential stuffing on stg-worker-01", severity: Message["severity"] = "high"): Message {
-  return sendMessage("thr-cassidy", "agent", text, { agentId: "agt-cassidy", kind: "alert", severity });
+function alertFromCassidy(text = "Saqr: credential stuffing on stg-worker-01", severity: Message["severity"] = "high"): Message {
+  return sendMessage("thr-saqr", "agent", text, { agentId: "agt-saqr", kind: "alert", severity });
 }
 
 /* ── envelope + webhook ── */
@@ -61,7 +61,7 @@ describe("generic webhook", () => {
     const raw = String(init.body);
     const env = JSON.parse(raw);
     expect(Object.keys(env).sort()).toEqual(["agentName", "from", "href", "id", "kind", "quickReplies", "sentAt", "severity", "text", "threadId"]);
-    expect(env).toMatchObject({ id: msg.id, threadId: "thr-cassidy", from: "agent", agentName: "Cassidy", kind: "alert", severity: "high", text: msg.text, href: "/messages?thread=thr-cassidy" });
+    expect(env).toMatchObject({ id: msg.id, threadId: "thr-saqr", from: "agent", agentName: "Saqr", kind: "alert", severity: "high", text: msg.text, href: "/messages?thread=thr-saqr" });
 
     const sig = init.headers[SIGNATURE_HEADER];
     expect(sig).toBe(`sha256=${createHmac("sha256", "s3cret").update(raw).digest("hex")}`);
@@ -94,11 +94,11 @@ describe("slack", () => {
   });
 
   it("renders Block Kit with severity colour/emoji and quick-reply hints", () => {
-    const approval = createApproval({ traceId: "TR-test", agent: store.agent("agt-sundance")!, toolName: "isolate_host", summary: "Isolate the box.", risk: "high", targets: ["stg-worker-01"] });
-    const msg = notifyApprovalRequest(store.agent("agt-sundance")!, approval);
+    const approval = createApproval({ traceId: "TR-test", agent: store.agent("agt-hisn")!, toolName: "isolate_host", summary: "Isolate the box.", risk: "high", targets: ["stg-worker-01"] });
+    const msg = notifyApprovalRequest(store.agent("agt-hisn")!, approval);
     const payload = renderSlack(toEnvelope(msg));
 
-    expect(payload.text).toContain("[Qalaa · Cassidy · medium]");
+    expect(payload.text).toContain("[Qalaa · Saqr · medium]");
     expect(payload.attachments[0].color).toBe(SLACK_SEVERITY.medium.color);
     const blocks = payload.attachments[0].blocks;
     expect(blocks[0]).toMatchObject({ type: "section" });
@@ -135,12 +135,12 @@ describe("twilio sms", () => {
     const form = new URLSearchParams(String(init.body));
     expect(form.get("From")).toBe("+15550000001");
     expect(form.get("To")).toBe("+15550000002");
-    expect(form.get("Body")).toBe("[Qalaa · Cassidy · critical] Lock it down.");
+    expect(form.get("Body")).toBe("[Qalaa · Saqr · critical] Lock it down.");
   });
 
   it("appends quick replies as a Reply: hint and truncates to 1500 chars", () => {
-    const approval = createApproval({ traceId: "TR-test", agent: store.agent("agt-doc")!, toolName: "quarantine_dataset", summary: "Kill it.", risk: "medium", targets: ["dataset-worker-01"] });
-    const msg = notifyApprovalRequest(store.agent("agt-doc")!, approval);
+    const approval = createApproval({ traceId: "TR-test", agent: store.agent("agt-athar")!, toolName: "quarantine_dataset", summary: "Kill it.", risk: "medium", targets: ["dataset-worker-01"] });
+    const msg = notifyApprovalRequest(store.agent("agt-athar")!, approval);
     const body = renderSms(toEnvelope(msg));
     expect(body).toContain(`Reply: Approve ${approval.id} / Reject ${approval.id}`);
 
@@ -158,7 +158,7 @@ describe("twilio sms", () => {
 /* ── filter ── */
 
 describe("delivery filter", () => {
-  const base = { from: "agent" as const, agentId: "agt-cassidy", kind: "alert" as const, severity: "high" as const };
+  const base = { from: "agent" as const, agentId: "agt-saqr", kind: "alert" as const, severity: "high" as const };
   it("never passes operator messages", () => {
     expect(passesFilter({ ...base, from: "operator" }, { minSeverity: "info", kinds: [], agentIds: [] })).toBe(false);
   });
@@ -171,9 +171,9 @@ describe("delivery filter", () => {
   it("restricts by kinds and agentIds when non-empty", () => {
     expect(passesFilter(base, { minSeverity: "info", kinds: ["approval-request"], agentIds: [] })).toBe(false);
     expect(passesFilter(base, { minSeverity: "info", kinds: ["approval-request", "alert"], agentIds: [] })).toBe(true);
-    expect(passesFilter(base, { minSeverity: "info", kinds: [], agentIds: ["agt-doc"] })).toBe(false);
-    expect(passesFilter(base, { minSeverity: "info", kinds: [], agentIds: ["agt-cassidy"] })).toBe(true);
-    expect(passesFilter({ ...base, agentId: undefined, from: "system" }, { minSeverity: "info", kinds: [], agentIds: ["agt-cassidy"] })).toBe(false);
+    expect(passesFilter(base, { minSeverity: "info", kinds: [], agentIds: ["agt-athar"] })).toBe(false);
+    expect(passesFilter(base, { minSeverity: "info", kinds: [], agentIds: ["agt-saqr"] })).toBe(true);
+    expect(passesFilter({ ...base, agentId: undefined, from: "system" }, { minSeverity: "info", kinds: [], agentIds: ["agt-saqr"] })).toBe(false);
   });
 });
 
@@ -207,8 +207,8 @@ describe("deliver()", () => {
     fetchMock.mockResolvedValue(ok());
     configureDelivery({ channel: "webhook", url: "https://example.test/hook" });
     const before = fetchMock.mock.calls.length;
-    const agentMsg = operatorSay("Howdy — Cassidy here.");
-    const opMsg = sendMessage("thr-cassidy", "operator", "status");
+    const agentMsg = operatorSay("Howdy — Saqr here.");
+    const opMsg = sendMessage("thr-saqr", "operator", "status");
     await new Promise((r) => setTimeout(r, 20));
     expect(agentMsg.delivery?.[0]?.status).toBe("sent");
     expect(opMsg.delivery).toBeUndefined();
@@ -279,7 +279,7 @@ describe("inbound", () => {
 
   it("accepts a Twilio webhook with a valid signature and routes Body through the command parser", async () => {
     store.secrets.twilioAuthToken = "twtoken";
-    const approval = createApproval({ traceId: "TR-inb", agent: store.agent("agt-ringo")!, toolName: "isolate_host", summary: "Isolate.", risk: "high", targets: ["stg-worker-01"] });
+    const approval = createApproval({ traceId: "TR-inb", agent: store.agent("agt-rahhal")!, toolName: "isolate_host", summary: "Isolate.", risk: "high", targets: ["stg-worker-01"] });
     const params = { Body: `Approve ${approval.id}`, From: "+15550000002", MessageSid: "SM123" };
     const sig = twilioSignature("twtoken", url, params);
     expect(verifyTwilioSignature("twtoken", url, params, sig)).toBe(true);
@@ -298,7 +298,7 @@ describe("inbound", () => {
 
   it("rejects a bad Twilio signature with 401 and does not touch state", async () => {
     store.secrets.twilioAuthToken = "twtoken";
-    const approval = createApproval({ traceId: "TR-inb2", agent: store.agent("agt-ringo")!, toolName: "isolate_host", summary: "Isolate.", risk: "high", targets: ["stg-worker-02"] });
+    const approval = createApproval({ traceId: "TR-inb2", agent: store.agent("agt-rahhal")!, toolName: "isolate_host", summary: "Isolate.", risk: "high", targets: ["stg-worker-02"] });
     const r = await inboundTwilio(url, { Body: `Approve ${approval.id}`, From: "+1" }, "sha1-of-nothing");
     expect(r).toMatchObject({ ok: false, status: 401 });
     expect(store.approval(approval.id)?.status).toBe("pending");
@@ -331,7 +331,7 @@ describe("inbound", () => {
 
   it("generic inbound resolves an approval via parseCommand/handleOperatorMessage", async () => {
     store.secrets.deliverySecret = "shared";
-    const approval = createApproval({ traceId: "TR-inb3", agent: store.agent("agt-belle")!, toolName: "block_egress", summary: "Block it.", risk: "low", targets: ["203.0.113.9"] });
+    const approval = createApproval({ traceId: "TR-inb3", agent: store.agent("agt-miftah")!, toolName: "block_egress", summary: "Block it.", risk: "low", targets: ["203.0.113.9"] });
     const r = await inboundGeneric({ text: `approve ${approval.id}`, secret: "shared" });
     expect(r.ok).toBe(true);
     expect(store.approval(approval.id)?.status).toBe("approved");

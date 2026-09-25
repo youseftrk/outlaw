@@ -581,7 +581,7 @@ function linkThreats(run: RangeRun): void {
         threat.rangeRunId = run.id;
         threat.rangeStepId = scenario.steps[i].id;
         run.attackerLog.push({ at: store.now(), text: `linked ${threat.id} to step ${scenario.steps[i].order}` });
-        // Cassidy texts the operator on every detected stage (alert w/ threat card)
+        // Saqr texts the operator on every detected stage (alert w/ threat card)
         const alreadyAlerted = store.s.messages.some((m) => m.threatId === threat.id && m.kind === "alert");
         if (!alreadyAlerted && run.mode === "protected") {
           const handler = threat.handledBy[0] ? store.agent(threat.handledBy[0])?.name : undefined;
@@ -601,13 +601,13 @@ function finishRun(run: RangeRun): void {
   run.attackerLog.push({ at: store.now(), text: `run complete — grade ${run.score.grade}, ${run.score.stagesBlocked} blocked / ${run.score.stagesSucceeded} succeeded` });
   if (run.status === "running" || run.status === "paused") run.status = "completed";
   store.s.activeRunId = null;
-  // Cassidy's final report to the operator
-  const cassidy = store.agent("agt-cassidy");
-  if (cassidy) {
+  // Saqr's final report to the operator
+  const saqr = store.agent("agt-saqr");
+  if (saqr) {
     const sc = run.score;
     const stopper = run.stepResults.find((r) => r.status === "blocked" && r.blockedBy);
-    const blocker = stopper?.blockedBy ? `${store.agent(stopper.blockedBy.agentId)?.name ?? "the gang"}'s ${stopper.blockedBy.toolName}` : "the gang";
-    agentSay(cassidy,
+    const blocker = stopper?.blockedBy ? `${store.agent(stopper.blockedBy.agentId)?.name ?? "the garrison"}'s ${stopper.blockedBy.toolName}` : "the garrison";
+    agentSay(saqr,
       run.mode === "baseline"
         ? `Baseline run ${run.id} done — no defense. ${sc.stagesSucceeded}/14 stages ran end to end. That's what we're here to prevent.`
         : `Run ${run.id} wrapped — grade ${sc.grade}. ${sc.stagesSucceeded}/14 stages got through; ${blocker} shut it down. ${sc.credentialsHarvested} creds lost, ${sc.datasetsAccessed} datasets touched.`,

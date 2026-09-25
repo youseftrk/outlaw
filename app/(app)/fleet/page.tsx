@@ -60,7 +60,7 @@ function ServerSheet({ serverId, onClose }: { serverId: string | null; onClose: 
     setRunning(true);
     try {
       await api.fleet.runConformance(serverId);
-      toast.success("Ringo is running conformance on this host");
+      toast.success("Rahhal is running conformance on this host");
       setTimeout(() => void mutate(), 2500);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't start checks");
@@ -301,7 +301,7 @@ function MigrationCard({ m, servers }: { m: Migration; servers: Server[] }) {
       <div className="mt-3 flex items-center gap-2">
         <AgentAvatar agentId={m.ownerAgentId} size={18} />
         <span className="text-[11px] text-text-3">
-          {servers.length ? "Ringo" : m.ownerAgentId} · updated {ago(m.updatedAt)}
+          {servers.length ? "Rahhal" : m.ownerAgentId} · updated {ago(m.updatedAt)}
         </span>
         <div className="ml-auto flex gap-1.5">
           {m.status === "awaiting-approval" && (
@@ -346,7 +346,7 @@ function NewMigrationDialog({ servers }: { servers: Server[] }) {
         reason,
         workloads: src.workloads,
       });
-      toast.success(`Ringo is planning the move for ${src.hostname}`);
+      toast.success(`Rahhal is planning the move for ${src.hostname}`);
       setOpen(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't plan migration");
@@ -359,7 +359,7 @@ function NewMigrationDialog({ servers }: { servers: Server[] }) {
       <DialogContent className="bezel-core border-line">
         <DialogHeader>
           <DialogTitle className="font-display text-[24px] font-normal">Move workloads</DialogTitle>
-          <DialogDescription>Ringo plans it, dry-runs it, then executes with a rollback path. Database moves wait for your approval.</DialogDescription>
+          <DialogDescription>Rahhal plans it, dry-runs it, then executes with a rollback path. Database moves wait for your approval.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-[12px] text-text-2">
@@ -445,13 +445,13 @@ function FleetInner() {
       <PageHeader
         eyebrow="Servers · conformance · migrations"
         title="Fleet"
-        description="Ringo conforms every host to baseline, patches what's known, and moves workloads when a server can't be trusted."
+        description="Rahhal conforms every host to baseline, patches what's known, and moves workloads when a server can't be trusted."
         actions={<NewMigrationDialog servers={servers ?? []} />}
       />
 
       <BlurFade delay={0.05} className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <KpiCard label="Avg conformance" value={avg} suffix="/100" tone="cerulean" />
-        <KpiCard label="Isolated" value={count("isolated")} tone="lime" hint="Held by Sundance" />
+        <KpiCard label="Isolated" value={count("isolated")} tone="lime" hint="Held by Hisn" />
         <KpiCard label="Compromised" value={count("compromised")} tone="warm" hint="Rebuild or migrate pending" />
         <KpiCard label="Migrating · rebuilding" value={count("migrating") + count("rebuilding")} tone="neutral" />
       </BlurFade>
@@ -530,7 +530,7 @@ function FleetInner() {
             {migrations && migrations.length === 0 && (
               <Card className="bezel-core col-span-full gap-0 border-0 p-8 text-center">
                 <p className="font-display text-[22px] text-text-1">No migrations yet.</p>
-                <p className="mt-1 text-text-2">Plan one, or wait — Ringo opens one automatically when a host is compromised.</p>
+                <p className="mt-1 text-text-2">Plan one, or wait — Rahhal opens one automatically when a host is compromised.</p>
               </Card>
             )}
           </div>

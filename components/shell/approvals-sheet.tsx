@@ -143,14 +143,14 @@ export function ApprovalsSheet({ open, onOpenChange }: { open: boolean; onOpenCh
         <SheetHeader>
           <SheetTitle className="font-display text-2xl">Needs you</SheetTitle>
           <SheetDescription>
-            Actions the gang is holding for a human. Everything else runs autonomously and is traced.
+            Actions the garrison is holding for a human. Everything else runs autonomously and is traced.
           </SheetDescription>
         </SheetHeader>
         <ScrollArea className="h-[calc(100vh-140px)] px-4 pb-6">
           {pending.length === 0 ? (
             <div className="mt-8 rounded-[14px] border border-dashed border-line-strong p-6 text-center">
               <p className="font-display text-xl text-text-1">No approvals waiting.</p>
-              <p className="mt-1 text-text-2">The gang is riding autonomously.</p>
+              <p className="mt-1 text-text-2">The garrison is running autonomously.</p>
             </div>
           ) : (
             <ul className="flex flex-col gap-3">

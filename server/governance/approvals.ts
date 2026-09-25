@@ -1,5 +1,5 @@
 /**
- * Approval lifecycle (SPEC §5): created on require-approval; Cassidy texts
+ * Approval lifecycle (SPEC §5): created on require-approval; Saqr texts
  * the operator; decision resumes or denies the waiting tool call; expiry
  * 10 sim-min → expired.
  */

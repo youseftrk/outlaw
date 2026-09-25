@@ -6,10 +6,10 @@ test.describe("messages", () => {
     await restoreSundance(request);
   });
 
-  test("`status` gets a reply from Cassidy and `Approve <id>` resolves an approval", async ({ page, request }) => {
+  test("`status` gets a reply from Saqr and `Approve <id>` resolves an approval", async ({ page, request }) => {
     const approval = await createApproval(request);
 
-    await page.goto("/messages?thread=thr-cassidy");
+    await page.goto("/messages?thread=thr-saqr");
     const composer = page.getByPlaceholder("iMessage");
     await expect(composer).toBeVisible();
 
@@ -19,7 +19,7 @@ test.describe("messages", () => {
 
     await composer.fill(`Approve ${approval.id}`);
     await composer.press("Enter");
-    await expect(page.getByText(new RegExp(`Approved ${approval.id} — block_egress for Sundance`))).toBeVisible();
+    await expect(page.getByText(new RegExp(`Approved ${approval.id} — block_egress for Hisn`))).toBeVisible();
 
     expect(await approvalStatus(request, approval.id)).toBe("approved");
   });

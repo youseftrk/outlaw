@@ -60,15 +60,15 @@ export function agentSay(agent: Agent, text: string, opts: SendOpts = {}): Messa
   return sendMessage(agentThreadId(agent), "agent", text, { ...opts, agentId: agent.id });
 }
 
-/** Cassidy texts the operator (goes to her thread). */
+/** Saqr texts the operator (goes to her thread). */
 export function operatorSay(text: string, opts: SendOpts = {}): Message {
-  const cassidy = store.agent("agt-cassidy")!;
-  return agentSay(cassidy, text, opts);
+  const saqr = store.agent("agt-saqr")!;
+  return agentSay(saqr, text, opts);
 }
 
 export function notifyApprovalRequest(agent: Agent, approval: Approval): Message {
-  const cassidy = store.agent("agt-cassidy")!;
-  return agentSay(cassidy,
+  const saqr = store.agent("agt-saqr")!;
+  return agentSay(saqr,
     `Need your call: ${agent.name} wants to run **${approval.toolName}** on ${approval.targets.join(", ") || "—"}. ${approval.summary}`,
     {
       kind: "approval-request",
@@ -84,8 +84,8 @@ export function notifyApprovalRequest(agent: Agent, approval: Approval): Message
 }
 
 export function threatAlert(threat: Threat, text: string, agent?: Agent): Message {
-  const cassidy = store.agent("agt-cassidy")!;
-  return agentSay(agent ?? cassidy, text, {
+  const saqr = store.agent("agt-saqr")!;
+  return agentSay(agent ?? saqr, text, {
     kind: "alert",
     severity: threat.severity,
     threatId: threat.id,
@@ -102,8 +102,8 @@ export function threatAlert(threat: Threat, text: string, agent?: Agent): Messag
 }
 
 export function threatResolved(threat: Threat, text: string): Message {
-  const cassidy = store.agent("agt-cassidy")!;
-  return agentSay(cassidy, text, {
+  const saqr = store.agent("agt-saqr")!;
+  return agentSay(saqr, text, {
     kind: "report",
     severity: "low",
     threatId: threat.id,

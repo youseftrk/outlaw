@@ -3,7 +3,7 @@ import type { Agent, AgentRole, ID } from "@/lib/types";
 import { store } from "../store";
 
 export const ROSTER_IDS = [
-  "agt-cassidy", "agt-sundance", "agt-doc", "agt-belle", "agt-ringo", "agt-calamity",
+  "agt-saqr", "agt-hisn", "agt-athar", "agt-miftah", "agt-rahhal", "agt-bawwab",
 ] as const;
 
 export function roster(): Agent[] {

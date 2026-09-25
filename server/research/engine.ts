@@ -1,6 +1,6 @@
 /**
  * Research engine (SPEC §2): lookup/enrichment over the KB; research runs
- * as Doc traces and completes async (research.updated).
+ * as Athar traces and completes async (research.updated).
  */
 import type { IOC, ResearchKind, ResearchQuery, ResearchResult } from "@/lib/types";
 import { bus } from "../bus";
@@ -19,20 +19,20 @@ function classify(query: string): ResearchKind {
 }
 
 export async function runResearch(query: string, kind?: ResearchKind): Promise<ResearchQuery> {
-  const doc = store.agent("agt-doc")!;
+  const athar = store.agent("agt-athar")!;
   const rq: ResearchQuery = {
     id: ids.research(),
     query,
     kind: kind ?? classify(query),
-    agentId: doc.id,
+    agentId: athar.id,
     status: "running",
     askedAt: store.now(),
   };
   store.s.research.push(rq);
   store.markDirty();
-  bus.emit("research.updated", { query: rq }, { agentId: doc.id, summary: `Doc researching "${query}"`, href: "/research" });
+  bus.emit("research.updated", { query: rq }, { agentId: athar.id, summary: `Athar researching "${query}"`, href: "/research" });
 
-  const trace = startTrace(doc, `research: ${query}`, {});
+  const trace = startTrace(athar, `research: ${query}`, {});
   rq.traceId = trace.id;
   const s1 = addSpan(trace, "observe", "parse query", { input: { query, kind: rq.kind } });
   endSpan(s1);
@@ -49,9 +49,9 @@ export async function runResearch(query: string, kind?: ResearchKind): Promise<R
       .filter((t) => t.iocs.some((i) => query.includes(i.value)) || t.title.toLowerCase().includes(query.toLowerCase()))
       .map((t) => t.id)
       .slice(0, 5);
-    const { text: summary, llm } = await narrate(doc,
+    const { text: summary, llm } = await narrate(athar,
       () => researchSummary(query, found.cves.length, found.techniques.length, relatedThreatIds.length),
-      { user: `Doc's 2-sentence research summary for "${query}". Found ${found.cves.length} CVEs, ${found.techniques.length} techniques, ${relatedThreatIds.length} related threats.` }
+      { user: `Athar's 2-sentence research summary for "${query}". Found ${found.cves.length} CVEs, ${found.techniques.length} techniques, ${relatedThreatIds.length} related threats.` }
     );
     if (llm) rs.llm = llm;
     endSpan(rs, "ok", { hits: found.cves.length + found.techniques.length + found.actors.length });
@@ -77,7 +77,7 @@ export async function runResearch(query: string, kind?: ResearchKind): Promise<R
     rq.completedAt = store.now();
     rq.result = result;
     store.markDirty();
-    bus.emit("research.updated", { query: rq }, { agentId: doc.id, summary: `research ${rq.id} done — ${result.cves.length} CVEs`, href: "/research" });
+    bus.emit("research.updated", { query: rq }, { agentId: athar.id, summary: `research ${rq.id} done — ${result.cves.length} CVEs`, href: "/research" });
   })();
 
   return rq;
