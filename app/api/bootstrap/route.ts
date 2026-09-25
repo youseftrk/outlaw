@@ -22,6 +22,8 @@ export async function GET() {
       scenarios: listScenarios(),
       activeRun: s.rangeRuns.find((r) => r.id === s.activeRunId) ?? null,
     },
+    entities: s.entities,
+    leases: s.leases,
     serverTime: store.now(),
   };
   return json(body);

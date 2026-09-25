@@ -8,6 +8,10 @@ import { join } from "node:path";
 import type {
   Agent,
   Approval,
+  AuthorityLease,
+  DecisionRecord,
+  Entity,
+  HouseRules,
   Message,
   Migration,
   QalaaEvent,
@@ -16,6 +20,7 @@ import type {
   ResearchQuery,
   Server,
   Settings,
+  StepUpChallenge,
   TelemetrySignal,
   Thread,
   Threat,
@@ -66,6 +71,11 @@ export interface QalaaState {
   activeRunId: ID | null;
   research: ResearchQuery[];
   world: World;
+  entities: Entity[];
+  rules: HouseRules[];
+  leases: AuthorityLease[];
+  stepUps: StepUpChallenge[];
+  records: DecisionRecord[];
 }
 
 const DATA_DIR = process.env.QALAA_DATA_DIR || join(process.cwd(), ".data");

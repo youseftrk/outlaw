@@ -43,6 +43,9 @@ const INVALIDATIONS: Partial<Record<EventType, string[]>> = {
   "range.step": ["/range"],
   "range.run": ["/range", "/bootstrap"],
   "insights.updated": ["/insights"],
+  "authority.requested": ["/authority/leases", "/authority/records", "/bootstrap"],
+  "authority.updated": ["/authority/leases", "/authority/records", "/authority/step", "/bootstrap"],
+  "authority.decision": ["/authority/leases", "/authority/records", "/authority/step", "/bootstrap"],
 };
 
 export function LiveProvider({ children }: { children: React.ReactNode }) {

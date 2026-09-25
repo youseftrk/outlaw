@@ -733,6 +733,9 @@ export type EventType =
   | "range.step"
   | "range.run"
   | "insights.updated"
+  | "authority.requested"
+  | "authority.updated"
+  | "authority.decision"
   | "system";
 
 export interface QalaaEvent<T = unknown> {

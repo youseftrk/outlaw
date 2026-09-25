@@ -15,6 +15,8 @@ import { tickRange, resetAttempts, baselineActive } from "./range/engine";
 import { tickNoise, noiseReset } from "./range/noise";
 import { tickMigrations, checkIncidentMigrations } from "./fleet/migrations";
 import { tickApprovals, decide } from "./governance/approvals";
+import { tickAuthority, accept as acceptLease, completeStepUp, stepUpCodeFor } from "./authority/engine";
+import { seedEntities, seedRules, assignOwnership, assignAgentEntities, seedObserveLeases } from "./seed/entities";
 import { syncSshSettings } from "./fleet/adapters/ssh-config";
 import { defaultDeliverySettings, hookDeliveryToBus } from "./messaging/delivery";
 import { ensureSessionSecret } from "./auth";
@@ -45,6 +47,7 @@ async function tick(): Promise<void> {
   tickMigrations();
   if (!paused) checkIncidentMigrations(); // Rahhal-driven — agents paused in baseline
   tickApprovals();
+  tickAuthority();
   store.flush();
 }
 
@@ -98,6 +101,19 @@ function migrateState(state: QalaaState): void {
   bump("RQ-", state.research.map((q) => q.id));
   bump("EV-", state.events.map((e) => e.id));
   bump("SIG-", state.telemetry.map((t) => t.id));
+  // authority arrived after the first persisted states — backfill entities,
+  // ownership, rules and the standing observe permissions without a reseed
+  const nowIso = new Date(state.simNowMs).toISOString();
+  if (!state.entities?.length) state.entities = seedEntities(nowIso);
+  if (!state.rules?.length) state.rules = seedRules();
+  assignOwnership(state.servers);
+  assignAgentEntities(state.agents);
+  if (!state.leases) state.leases = seedObserveLeases(nowIso);
+  if (!state.stepUps) state.stepUps = [];
+  if (!state.records) state.records = [];
+  bump("L-", state.leases.map((l) => l.id));
+  bump("REC-", state.records.map((r) => r.id));
+  bump("SU-", state.stepUps.map((c) => c.id));
 }
 
 export function getRuntime(): QalaaRuntime {
@@ -145,6 +161,15 @@ export function getRuntime(): QalaaRuntime {
         if (opts.autoApprove) {
           for (const a of store.s.approvals.filter((x) => x.status === "pending")) {
             decide(a.id, "approve", "auto-policy");
+          }
+          // pending leases get accepted and step-up passed so range/e2e flows keep working
+          for (const l of store.s.leases.filter((x) => x.status === "pending")) {
+            const r = acceptLease(l.id, "auto-policy");
+            if (r.ok && r.stepUpCode) completeStepUp(l.id, r.stepUpCode, "auto-policy");
+          }
+          for (const l of store.s.leases.filter((x) => x.status === "pending-step-up")) {
+            const code = stepUpCodeFor(l.id);
+            if (code) completeStepUp(l.id, code, "auto-policy");
           }
         }
         // flush microtasks so async plan steps progress between ticks

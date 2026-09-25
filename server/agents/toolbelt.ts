@@ -4,13 +4,15 @@
  * Tools mutate world/store via the fleet adapter, emit events, and
  * return { ok, summary, evidence }.
  */
-import type { Agent, ID, Severity, ToolName, Trace } from "@/lib/types";
+import type { Agent, AuthorityScope, AuthorizeInput, Capability, ID, Severity, ToolName, Trace } from "@/lib/types";
+import { TOOL_CAPABILITY, CAPABILITY_LABEL } from "@/lib/types";
 import { bus } from "../bus";
 import { store } from "../store";
 import * as world from "../world/world";
 import { evaluate } from "../governance/policy";
 import { addSpan, endSpan, policySpan, projectRisk } from "../governance/traces";
 import { createApproval, waitForDecision } from "../governance/approvals";
+import { authorize, request as requestLease, waitForLease, record as recordDecision, describeScope, LEASE_WAIT_MAX_SIM_SEC, entityName } from "../authority/engine";
 import { toolSpec } from "./tools";
 import { adapterFor } from "../fleet/adapters";
 import { refreshServerConformance } from "../fleet/conformance";
@@ -51,6 +53,34 @@ export async function runTool(
 ): Promise<ToolResult> {
   const spec = toolSpec(tool);
   const server = args.serverId ? store.server(args.serverId) : undefined;
+
+  // authority gate (PIVOT §4.1): every protected call needs an ACTIVE lease
+  // from the owning entity — checked before policy.
+  const auth = await authorityFor(agent, tool, args, trace);
+  if (auth) {
+    if (!auth.allow) {
+      const span = addSpan(trace, "policy", `authority → ${tool}`, {
+        toolName: tool,
+        input: args,
+        status: "pending",
+        output: { leaseId: auth.lease?.id, refusalCode: auth.code },
+      });
+      endSpan(span, "denied", { leaseId: auth.lease?.id, refusalCode: auth.code, checks: auth.checks });
+      bus.emit("agent.action", { agentId: agent.id, tool, args, result: { ok: false, summary: auth.message }, leaseId: auth.lease?.id, refusalCode: auth.code }, {
+        agentId: agent.id,
+        severity: "medium",
+        summary: `${agent.name} refused ${tool} — ${auth.code}`,
+        href: "/permissions",
+      });
+      return { ok: false, summary: auth.message, evidence: { refusalCode: auth.code, leaseId: auth.lease?.id, checks: auth.checks } };
+    }
+    addSpan(trace, "policy", `authority → ${tool}`, {
+      toolName: tool,
+      status: "ok",
+      output: { leaseId: auth.lease.id },
+    });
+  }
+
   const { effect, evaluations } = evaluate(agent, tool, { server, severity: ctx.severity, targetEnv: args.targetEnv });
   const polSpan = policySpan(trace, tool, evaluations, effect);
   endSpan(polSpan, effect === "deny" ? "denied" : "ok", { effect });
@@ -238,4 +268,96 @@ async function invoke(agent: Agent, tool: ToolName, args: ToolArgs, trace: Trace
     default:
       return { ok: false, summary: `unknown tool ${tool}` };
   }
+}
+
+/* ─────────────────────────── authority gate (PIVOT §4.1) ─────────────────────────── */
+
+/** resolve the tool's target to an owner + narrow scope; null = not gated */
+function authorityTarget(args: ToolArgs): { input: Pick<AuthorizeInput, "serverId" | "cluster" | "ownerEntityId">; scope: AuthorityScope } | null {
+  if (args.serverId) {
+    const srv = store.server(args.serverId);
+    if (!srv) return { input: { serverId: args.serverId }, scope: { serverIds: [args.serverId] } };
+    return { input: { serverId: srv.id }, scope: { serverIds: [srv.id] } };
+  }
+  if (args.clusterId) {
+    const cl = store.s.world.clusters.find((c) => c.id === args.clusterId || c.name === args.clusterId);
+    return { input: { cluster: cl?.name ?? args.clusterId }, scope: { clusters: [cl?.name ?? args.clusterId] } };
+  }
+  // estate-level resources (tokens, datasets, accounts, secrets, ips) — owned by the data authority, estate scope
+  if (args.datasetId || args.tokenId || args.tokenIds?.length || args.accountId || args.secretKind || args.ip) {
+    return { input: { ownerEntityId: "ent-data" }, scope: {} };
+  }
+  return null;
+}
+
+/** tool → capability → target. Returns null when the call isn't gated (no target / ownable target). */
+async function authorityFor(
+  agent: Agent,
+  tool: ToolName,
+  args: ToolArgs,
+  trace: Trace
+): Promise<{ allow: true; lease: import("@/lib/types").AuthorityLease } | { allow: false; code: import("@/lib/types").RefusalCode; message: string; lease?: import("@/lib/types").AuthorityLease; checks: import("@/lib/types").AuthorityCheck[] } | null> {
+  const capability = TOOL_CAPABILITY[tool];
+  if (!capability) return null;
+  const target = authorityTarget(args);
+  if (!target) return null;
+
+  const input: AuthorizeInput = { actorId: agent.id, capability: capability as Capability, ...target.input };
+  let auth = authorize(input);
+
+  if (!auth.allow && auth.code === "AUTHORITY_REQUIRED") {
+    // create/reuse one pending request, then wait up to 10 sim-min for activation
+    const req = requestLease({
+      requestingEntityId: agent.entityId ?? "ent-response",
+      ownerEntityId: auth.ownerEntityId ?? "ent-data",
+      agentId: agent.id,
+      capability: capability as Capability,
+      scope: target.scope,
+      justification: trace.threatId ? `Incident ${trace.threatId}: ${CAPABILITY_LABEL[capability as Capability].toLowerCase()} needed to work it.` : `${CAPABILITY_LABEL[capability as Capability].toLowerCase()} needed for routine work.`,
+      incidentId: trace.threatId,
+      durationSec: 3600,
+    }, agent.id);
+    if (req.ok) {
+      if (req.created) {
+        const outcome = await waitForLease(req.lease.id, LEASE_WAIT_MAX_SIM_SEC);
+        if (outcome === "active") auth = authorize(input);
+        else auth = { allow: false, code: "AUTHORITY_PENDING", ownerEntityId: auth.ownerEntityId, lease: req.lease, message: `The ${entityName(req.lease.ownerEntityId)} didn't answer in time.`, checks: auth.checks };
+      } else {
+        auth = { allow: false, code: "AUTHORITY_PENDING", ownerEntityId: auth.ownerEntityId, lease: req.lease, message: `Request ${req.lease.id} is already waiting on the ${entityName(req.lease.ownerEntityId)}.`, checks: auth.checks };
+      }
+    } else {
+      auth = { allow: false, code: req.code ?? "RULES_EXCEEDED", ownerEntityId: auth.ownerEntityId, message: req.message, checks: auth.checks };
+    }
+  }
+
+  if (auth.allow) {
+    recordDecision("allowed", {
+      actor: agent.id,
+      actorName: agent.name,
+      leaseId: auth.lease.id,
+      incidentId: trace.threatId,
+      requestingEntityId: auth.lease.requestingEntityId,
+      ownerEntityId: auth.ownerEntityId,
+      capability: capability as Capability,
+      target: `${tool} on ${describeScope(target.scope)}`,
+      checks: auth.checks,
+      summary: `${agent.name} ran ${tool} under ${auth.lease.id}.`,
+    });
+    return { allow: true, lease: auth.lease };
+  }
+
+  recordDecision("refused", {
+    actor: agent.id,
+    actorName: agent.name,
+    leaseId: auth.lease?.id,
+    incidentId: trace.threatId,
+    requestingEntityId: agent.entityId ?? "ent-response",
+    ownerEntityId: auth.ownerEntityId,
+    capability: capability as Capability,
+    target: `${tool} on ${describeScope(target.scope)}`,
+    refusalCode: auth.code,
+    checks: auth.checks,
+    summary: `${agent.name} refused ${tool} — ${auth.code}: ${auth.message}`,
+  });
+  return { allow: false, code: auth.code, message: auth.message, lease: auth.lease, checks: auth.checks };
 }
