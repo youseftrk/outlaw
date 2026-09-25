@@ -15,6 +15,7 @@ import { tickRange, resetAttempts, baselineActive } from "./range/engine";
 import { tickNoise, noiseReset } from "./range/noise";
 import { tickMigrations, checkIncidentMigrations } from "./fleet/migrations";
 import { tickApprovals, decide } from "./governance/approvals";
+import { syncSshSettings } from "./fleet/adapters/ssh-config";
 import { defaultDeliverySettings, hookDeliveryToBus } from "./messaging/delivery";
 import { ensureSessionSecret } from "./auth";
 import type { AgentStatus } from "@/lib/types";
@@ -120,6 +121,7 @@ export function getRuntime(): QalaaRuntime {
   store.init(state);
   store.loadSecrets();
   store.s.settings.llm.apiKeySet = !!store.secrets.llmApiKey;
+  syncSshSettings();
   store.s.settings.delivery.secretSet = !!store.secrets.deliverySecret;
   store.s.settings.delivery.twilioAuthTokenSet = !!store.secrets.twilioAuthToken;
   hookDeliveryToBus(); // outbound copies of agent/system messages (SPEC §8)
