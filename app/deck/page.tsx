@@ -11,7 +11,7 @@ import { FlickeringGrid } from "@/components/ui/flickering-grid";
 import { AnimatedBeam } from "@/components/ui/animated-beam";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { TextShimmer } from "@/components/ui/text-shimmer";
-import { Iphone } from "@/components/ui/iphone";
+import { PhoneMockup } from "@/components/ui/phone-mockup";
 import { Button } from "@/components/ui/button";
 import { AgentAvatar } from "@/components/shell/agent-avatar";
 import { PhoneConversation } from "@/components/compositions/phone-conversation";
@@ -51,14 +51,14 @@ function ThermalBg({ grid = true }: { grid?: boolean }) {
     <>
       <div className="thermal absolute inset-0" />
       <div className="absolute inset-0 opacity-70 mix-blend-screen">
-        <Aurora colorStops={["#015473", "#24C7D6", "#D0FF78"]} amplitude={0.9} blend={0.55} speed={0.45} />
+        <Aurora colorStops={["#333f48", "#99d6ea", "#D0FF78"]} amplitude={0.9} blend={0.55} speed={0.45} />
       </div>
       {grid && (
         <FlickeringGrid
           className="absolute inset-0 opacity-25 [mask-image:radial-gradient(70%_60%_at_50%_60%,black,transparent)]"
           squareSize={3}
           gridGap={9}
-          color="#61E7DB"
+          color="#a9e3f2"
           maxOpacity={0.35}
           flickerChance={0.06}
         />
@@ -71,8 +71,8 @@ function ThermalBg({ grid = true }: { grid?: boolean }) {
 function CarbonBg() {
   return (
     <>
-      <div className="absolute inset-0 bg-[#040e17]" />
-      <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_80%_20%,rgba(1,84,115,0.45),transparent_60%),radial-gradient(50%_40%_at_10%_90%,rgba(36,199,214,0.18),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[#0c0e11]" />
+      <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_80%_20%,rgba(51, 63, 72,0.45),transparent_60%),radial-gradient(50%_40%_at_10%_90%,rgba(153, 214, 234,0.18),transparent_60%)]" />
       <span className="grain absolute inset-0" />
     </>
   );
@@ -281,7 +281,7 @@ function FlowSlide() {
               [refs.tools, refs.trace],
             ] as const
           ).map(([a, b], i) => (
-            <AnimatedBeam key={i} containerRef={containerRef} fromRef={a} toRef={b} duration={4 + i} delay={i * 0.6} pathColor="rgba(214,240,246,0.12)" gradientStartColor="#24c7d6" gradientStopColor="#d0ff78" curvature={i === 4 ? 40 : i === 3 ? -40 : 0} />
+            <AnimatedBeam key={i} containerRef={containerRef} fromRef={a} toRef={b} duration={4 + i} delay={i * 0.6} pathColor="rgba(217, 217, 214,0.12)" gradientStartColor="#99d6ea" gradientStopColor="#d0ff78" curvature={i === 4 ? 40 : i === 3 ? -40 : 0} />
           ))}
         </div>
       </div>
@@ -366,9 +366,9 @@ function TextsSlide({ children }: { children: React.ReactNode }) {
       </div>
       <div className="relative col-span-6 flex justify-center">
         <div className="w-[min(340px,26vw)]">
-          <Iphone className="drop-shadow-[0_60px_120px_rgba(0,0,0,0.6)]" screenClassName="bg-[#040c14]">
+          <PhoneMockup className="drop-shadow-[0_60px_120px_rgba(0,0,0,0.6)]" finish="graphite">
             {children}
-          </Iphone>
+          </PhoneMockup>
         </div>
       </div>
     </div>
@@ -501,7 +501,7 @@ function CloseSlide() {
       <div className="relative flex flex-col items-center">
         <Image src="/brand/logo.svg" alt="" width={96} height={96} className="drop-shadow-[0_20px_50px_rgba(21,197,220,0.45)]" />
         <TextGenerateEffect words="Every AI agent, protected." className="font-display mt-8 text-[clamp(48px,7vw,120px)] leading-none text-text-1 [&_span]:font-display" />
-        <TextShimmer as="p" className="mt-8 text-[clamp(14px,1.2vw,20px)] [--base-color:#9db9c3] [--base-gradient-color:#d0ff78]" duration={2.4}>
+        <TextShimmer as="p" className="mt-8 text-[clamp(14px,1.2vw,20px)] [--base-color:#bbbcbc] [--base-gradient-color:#d0ff78]" duration={2.4}>
           github.com/youseftrk/outlaw
         </TextShimmer>
       </div>
@@ -609,7 +609,7 @@ function DeckInner() {
   }, [go, slides.length]);
 
   return (
-    <main className="deck relative h-svh w-full overflow-hidden bg-[#040e17] text-text-1 select-none">
+    <main className="deck relative h-svh w-full overflow-hidden bg-[#0c0e11] text-text-1 select-none">
       <AnimatePresence mode="wait" initial={false}>
         <motion.section
           key={slides[index].key}

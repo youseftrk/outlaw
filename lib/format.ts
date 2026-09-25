@@ -10,21 +10,21 @@ export const SEVERITY_CLASS: Record<Severity, string> = {
 };
 
 export const SEVERITY_HEX: Record<Severity, string> = {
-  info: "#5e7c88",
-  low: "#7fd1dc",
+  info: "#75787b",
+  low: "#b5e3f1",
   medium: "#ffc857",
   high: "#ff9a5c",
   critical: "#ff5d6c",
 };
 
 export const SERVER_STATUS_HEX: Record<ServerStatus, string> = {
-  healthy: "#24c7d6",
+  healthy: "#99d6ea",
   degraded: "#ffc857",
   isolated: "#d0ff78",
   compromised: "#ff5d6c",
-  migrating: "#7fd1dc",
+  migrating: "#b5e3f1",
   rebuilding: "#ff9a5c",
-  offline: "#5e7c88",
+  offline: "#75787b",
 };
 
 export const THREAT_STATUS_LABEL: Record<ThreatStatus, string> = {

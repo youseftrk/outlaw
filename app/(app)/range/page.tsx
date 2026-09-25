@@ -44,7 +44,7 @@ function StepChip({ step, result, active }: { step: RangeStep; result?: RangeSte
           />
         }
       >
-        {active && <BorderBeam size={60} duration={4} colorFrom="#24c7d6" colorTo="#d0ff78" borderWidth={1.5} />}
+        {active && <BorderBeam size={60} duration={4} colorFrom="#99d6ea" colorTo="#d0ff78" borderWidth={1.5} />}
         <span className="mono-data text-[10px] opacity-70">
           {String(step.order).padStart(2, "0")} · {step.realWorldLabel}
         </span>

@@ -7,7 +7,7 @@ import { X } from "@phosphor-icons/react";
 
 import { AgentAvatar } from "@/components/shell/agent-avatar";
 import { PhoneConversation } from "@/components/compositions/phone-conversation";
-import { Iphone } from "@/components/ui/iphone";
+import { PhoneMockup } from "@/components/ui/phone-mockup";
 import { FlickeringGrid } from "@/components/ui/flickering-grid";
 import { LiveProvider } from "@/lib/hooks/use-live";
 import { useBootstrap, useThreads } from "@/lib/hooks/use-data";
@@ -25,17 +25,17 @@ function PhoneInner() {
 
   return (
     <main className="thermal relative grid min-h-svh place-items-center overflow-hidden p-6">
-      <FlickeringGrid className="absolute inset-0 -z-0 opacity-30 [mask-image:radial-gradient(60%_60%_at_50%_50%,black,transparent)]" squareSize={3} gridGap={8} color="#24c7d6" maxOpacity={0.25} flickerChance={0.08} />
+      <FlickeringGrid className="absolute inset-0 -z-0 opacity-30 [mask-image:radial-gradient(60%_60%_at_50%_50%,black,transparent)]" squareSize={3} gridGap={8} color="#99d6ea" maxOpacity={0.25} flickerChance={0.08} />
       <span className="grain fixed inset-0" />
       <Link href="/messages" className="absolute right-5 top-5 z-10 grid size-9 place-items-center rounded-full bg-bg-1/70 text-text-2 backdrop-blur hover:text-text-1" aria-label="Back to Qalaa">
         <X weight="bold" className="size-4" />
       </Link>
       <div className="relative z-10 w-[400px] max-w-full">
-        <Iphone className="drop-shadow-[0_60px_120px_rgba(0,0,0,0.6)]" screenClassName="bg-[#040c14]">
+        <PhoneMockup className="drop-shadow-[0_60px_120px_rgba(0,0,0,0.6)]" finish="graphite">
           {thread ? (
             <PhoneConversation thread={thread} agent={agent} onBack={() => router.replace("/phone")} />
           ) : (
-            <div className="flex h-full flex-col bg-[#040c14] pt-14 text-text-1">
+            <div className="flex h-full flex-col bg-bg-0 pt-14 text-text-1">
               <h1 className="px-5 text-[28px] font-semibold tracking-tight">Messages</h1>
               <ul className="mt-3 flex flex-col">
                 {sorted.map((t) => {
@@ -65,7 +65,7 @@ function PhoneInner() {
               </ul>
             </div>
           )}
-        </Iphone>
+        </PhoneMockup>
       </div>
     </main>
   );

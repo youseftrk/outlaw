@@ -8,7 +8,7 @@ import { ArrowsOutSimple, PushPin } from "@phosphor-icons/react";
 import { PageHeader } from "@/components/shell/page-header";
 import { AgentAvatar } from "@/components/shell/agent-avatar";
 import { PhoneConversation } from "@/components/compositions/phone-conversation";
-import { Iphone } from "@/components/ui/iphone";
+import { PhoneMockup } from "@/components/ui/phone-mockup";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -92,9 +92,9 @@ function MessagesInner() {
         <BlurFade delay={0.1} className="col-span-12 flex justify-center lg:col-span-8">
           <div className="relative w-[360px]">
             <div className="aura pointer-events-none absolute inset-x-8 top-16 -z-10 h-[520px] rounded-full opacity-[0.16] blur-3xl" />
-            <Iphone className="drop-shadow-[0_40px_80px_rgba(0,0,0,0.55)]" screenClassName="bg-[#040c14]">
+            <PhoneMockup className="drop-shadow-[0_40px_80px_rgba(0,0,0,0.55)]" finish="graphite">
               {thread ? <PhoneConversation thread={thread} agent={agent} /> : <div className="grid h-full place-items-center text-text-3">No threads yet.</div>}
-            </Iphone>
+            </PhoneMockup>
           </div>
         </BlurFade>
       </div>

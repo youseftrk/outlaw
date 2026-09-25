@@ -45,21 +45,21 @@
 
   /* brand */
   --color-lime: #d0ff78;
-  --color-cerulean: #24c7d6;
-  --color-aqua: #10b6cb;
-  --color-ocean: #015473;
-  --color-carbon: #002845;
-  --color-bg-0: #040e17;
-  --color-bg-1: #071a28;
-  --color-bg-2: #0b2436;
-  --color-bg-3: #0f2e44;
-  --color-line: rgba(214, 240, 246, 0.08);
-  --color-line-strong: rgba(214, 240, 246, 0.16);
-  --color-text-1: #eaf6f8;
-  --color-text-2: #9db9c3;
-  --color-text-3: #5e7c88;
-  --color-sev-info: #5e7c88;
-  --color-sev-low: #7fd1dc;
+  --color-cerulean: #99d6ea;
+  --color-aqua: #71c5e8;
+  --color-ocean: #333f48;
+  --color-carbon: #101820;
+  --color-bg-0: #0c0e11;
+  --color-bg-1: #14171a;
+  --color-bg-2: #1c2024;
+  --color-bg-3: #25282a;
+  --color-line: rgba(217, 217, 214, 0.08);
+  --color-line-strong: rgba(217, 217, 214, 0.16);
+  --color-text-1: #f2f3f3;
+  --color-text-2: #bbbcbc;
+  --color-text-3: #75787b;
+  --color-sev-info: #75787b;
+  --color-sev-low: #b5e3f1;
   --color-sev-medium: #ffc857;
   --color-sev-high: #ff9a5c;
   --color-sev-critical: #ff5d6c;
@@ -76,7 +76,7 @@
 
   --shadow-ambient: 0 24px 64px -32px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --shadow-glow-lime: 0 0 0 1px rgba(208, 255, 120, 0.25), 0 0 32px -8px rgba(208, 255, 120, 0.45);
-  --shadow-glow-aqua: 0 0 0 1px rgba(36, 199, 214, 0.25), 0 0 32px -8px rgba(36, 199, 214, 0.45);
+  --shadow-glow-aqua: 0 0 0 1px rgba(153, 214, 234, 0.25), 0 0 32px -8px rgba(153, 214, 234, 0.45);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
@@ -156,60 +156,62 @@
   }
 }
 
-/* Dark is the only theme. Values are the brand tokens mapped onto shadcn's variables. */
+/* Dark is the only theme. Values are the brand tokens mapped onto shadcn's variables.
+   Neutrals follow Pantone Black 6 C / 426 C / Cool Gray 9 C / Cool Gray 4 C; accents are lime
+   and a very light sky blue (Pantone 2975 C / 297 C) used sparingly. */
 :root,
 .dark {
-  --background: #040e17;
-  --foreground: #eaf6f8;
-  --card: #071a28;
-  --card-foreground: #eaf6f8;
-  --popover: #0f2e44;
-  --popover-foreground: #eaf6f8;
+  --background: #0c0e11;
+  --foreground: #f2f3f3;
+  --card: #14171a;
+  --card-foreground: #f2f3f3;
+  --popover: #25282a;
+  --popover-foreground: #f2f3f3;
   --primary: #d0ff78;
-  --primary-foreground: #002845;
-  --secondary: #0b2436;
-  --secondary-foreground: #eaf6f8;
-  --muted: #0b2436;
-  --muted-foreground: #9db9c3;
-  --accent: #0b2436;
-  --accent-foreground: #eaf6f8;
+  --primary-foreground: #101820;
+  --secondary: #1c2024;
+  --secondary-foreground: #f2f3f3;
+  --muted: #1c2024;
+  --muted-foreground: #bbbcbc;
+  --accent: #1c2024;
+  --accent-foreground: #f2f3f3;
   --destructive: #ff5d6c;
-  --border: rgba(214, 240, 246, 0.08);
-  --input: rgba(214, 240, 246, 0.16);
-  --ring: #10b6cb;
-  --chart-1: #24c7d6;
+  --border: rgba(217, 217, 214, 0.08);
+  --input: rgba(217, 217, 214, 0.16);
+  --ring: #71c5e8;
+  --chart-1: #99d6ea;
   --chart-2: #d0ff78;
-  --chart-3: #10b6cb;
-  --chart-4: #015473;
+  --chart-3: #71c5e8;
+  --chart-4: #333f48;
   --chart-5: #ff9a5c;
   --radius: 0.75rem;
-  --sidebar: #050f19;
-  --sidebar-foreground: #9db9c3;
+  --sidebar: #0a0c0e;
+  --sidebar-foreground: #bbbcbc;
   --sidebar-primary: #d0ff78;
-  --sidebar-primary-foreground: #002845;
-  --sidebar-accent: #0b2436;
-  --sidebar-accent-foreground: #eaf6f8;
-  --sidebar-border: rgba(214, 240, 246, 0.08);
-  --sidebar-ring: #10b6cb;
+  --sidebar-primary-foreground: #101820;
+  --sidebar-accent: #1c2024;
+  --sidebar-accent-foreground: #f2f3f3;
+  --sidebar-border: rgba(217, 217, 214, 0.08);
+  --sidebar-ring: #71c5e8;
 
   /* Brand tokens as runtime CSS variables (the @theme block above is `inline`, so utilities
      embed values directly and these vars would otherwise not exist for charts/inline styles). */
   --color-lime: #d0ff78;
-  --color-cerulean: #24c7d6;
-  --color-aqua: #10b6cb;
-  --color-ocean: #015473;
-  --color-carbon: #002845;
-  --color-bg-0: #040e17;
-  --color-bg-1: #071a28;
-  --color-bg-2: #0b2436;
-  --color-bg-3: #0f2e44;
-  --color-line: rgba(214, 240, 246, 0.08);
-  --color-line-strong: rgba(214, 240, 246, 0.16);
-  --color-text-1: #eaf6f8;
-  --color-text-2: #9db9c3;
-  --color-text-3: #5e7c88;
-  --color-sev-info: #5e7c88;
-  --color-sev-low: #7fd1dc;
+  --color-cerulean: #99d6ea;
+  --color-aqua: #71c5e8;
+  --color-ocean: #333f48;
+  --color-carbon: #101820;
+  --color-bg-0: #0c0e11;
+  --color-bg-1: #14171a;
+  --color-bg-2: #1c2024;
+  --color-bg-3: #25282a;
+  --color-line: rgba(217, 217, 214, 0.08);
+  --color-line-strong: rgba(217, 217, 214, 0.16);
+  --color-text-1: #f2f3f3;
+  --color-text-2: #bbbcbc;
+  --color-text-3: #75787b;
+  --color-sev-info: #75787b;
+  --color-sev-low: #b5e3f1;
   --color-sev-medium: #ffc857;
   --color-sev-high: #ff9a5c;
   --color-sev-critical: #ff5d6c;
@@ -217,12 +219,12 @@
   --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
   --shadow-ambient: 0 24px 64px -32px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
-  --gradient-aura: radial-gradient(circle at 50% 50%, #15c5dc 0%, #61e7db 49%, #d0ffc8 100%);
+  --gradient-aura: radial-gradient(circle at 50% 50%, #71c5e8 0%, #a9e3f2 49%, #d0ffc8 100%);
   --gradient-thermal:
-    radial-gradient(ellipse 80% 60% at 20% 110%, rgba(16, 182, 203, 0.55) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 85% -10%, rgba(208, 255, 200, 0.35) 0%, transparent 55%),
-    radial-gradient(ellipse 90% 70% at 60% 60%, rgba(1, 84, 115, 0.6) 0%, transparent 70%),
-    linear-gradient(180deg, #040e17 0%, #06192a 100%);
+    radial-gradient(ellipse 80% 60% at 20% 110%, rgba(113, 197, 232, 0.32) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% -10%, rgba(208, 255, 200, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse 90% 70% at 60% 60%, rgba(51, 63, 72, 0.6) 0%, transparent 70%),
+    linear-gradient(180deg, #0c0e11 0%, #131619 100%);
 }
 
 @layer base {
@@ -242,7 +244,7 @@
   }
   ::selection {
     background: rgba(208, 255, 120, 0.28);
-    color: #eaf6f8;
+    color: #f2f3f3;
   }
   :focus-visible {
     outline: 2px solid var(--color-aqua);
@@ -313,8 +315,8 @@
 }
 /* Operator bubble: cerulean, white text, tail on the right. */
 @utility bubble-operator {
-  background: linear-gradient(180deg, #24c7d6 0%, #0fa3b3 100%);
-  color: #ffffff;
+  background: linear-gradient(180deg, #b5e3f1 0%, #99d6ea 100%);
+  color: #101820;
   border-radius: var(--radius-bubble);
   border-bottom-right-radius: 6px;
 }

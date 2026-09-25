@@ -228,7 +228,7 @@ function MigrationCard({ m, servers }: { m: Migration; servers: Server[] }) {
 
   return (
     <Card className="bezel-core relative gap-0 overflow-hidden border-0 p-4">
-      {live && <BorderBeam size={100} duration={6} colorFrom="#d0ff78" colorTo="#24c7d6" borderWidth={1.5} />}
+      {live && <BorderBeam size={100} duration={6} colorFrom="#d0ff78" colorTo="#99d6ea" borderWidth={1.5} />}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="eyebrow">
@@ -273,9 +273,9 @@ function MigrationCard({ m, servers }: { m: Migration; servers: Server[] }) {
           toRef={toRef}
           curvature={-24}
           duration={live ? 3 : 8}
-          pathColor="rgba(214,240,246,0.15)"
+          pathColor="rgba(217, 217, 214,0.15)"
           gradientStartColor="#d0ff78"
-          gradientStopColor="#24c7d6"
+          gradientStopColor="#99d6ea"
         />
       </div>
 

@@ -16,9 +16,9 @@ const buttonVariants = cva(
         default:
           "bg-primary text-primary-foreground shadow-[0_0_0_1px_rgba(208,255,120,0.18),0_6px_18px_-8px_rgba(208,255,120,0.55)] hover:bg-primary/90 hover:shadow-[0_0_0_1px_rgba(208,255,120,0.35),0_10px_26px_-8px_rgba(208,255,120,0.75)] [--sheen:rgba(255,255,255,0.55)]",
         outline:
-          "border-border bg-background hover:border-primary/40 hover:bg-muted hover:text-foreground hover:shadow-[0_0_0_1px_rgba(36,199,214,0.18),0_0_18px_-6px_rgba(36,199,214,0.5)] aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 [--sheen:rgba(36,199,214,0.28)]",
+          "border-border bg-background hover:border-primary/40 hover:bg-muted hover:text-foreground hover:shadow-[0_0_0_1px_rgba(153, 214, 234,0.18),0_0_18px_-6px_rgba(153, 214, 234,0.5)] aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 [--sheen:rgba(153, 214, 234,0.28)]",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:shadow-[0_0_0_1px_rgba(36,199,214,0.2)] [--sheen:rgba(36,199,214,0.22)]",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:shadow-[0_0_0_1px_rgba(153, 214, 234,0.2)] [--sheen:rgba(153, 214, 234,0.22)]",
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 [--sheen:rgba(255,255,255,0.08)]",
         destructive:

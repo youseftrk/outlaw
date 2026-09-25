@@ -197,7 +197,7 @@ export function PhoneConversation({
                           onClick={() => tapback(m, t.value)}
                           className={cn(
                             "grid size-7 place-items-center rounded-full text-[12px] transition-transform hover:scale-110 hover:bg-white/10",
-                            m.tapback === t.value && "bg-cerulean text-white",
+                            m.tapback === t.value && "bg-cerulean text-carbon",
                           )}
                           aria-label={t.value}
                         >

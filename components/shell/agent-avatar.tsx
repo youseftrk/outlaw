@@ -11,15 +11,15 @@ type Shape = "star" | "triangle" | "hexagon" | "flower" | "square" | "ghost" | "
 
 export const AGENT_LOOK: Record<string, { type: Shape; color: string; seed: number }> = {
   "agt-cassidy": { type: "star", color: "#D0FF78", seed: 0.05 },
-  "agt-sundance": { type: "triangle", color: "#24C7D6", seed: 0.22 },
-  "agt-doc": { type: "hexagon", color: "#7FD1DC", seed: 0.41 },
-  "agt-belle": { type: "flower", color: "#61E7DB", seed: 0.58 },
-  "agt-ringo": { type: "square", color: "#10B6CB", seed: 0.73 },
+  "agt-sundance": { type: "triangle", color: "#99d6ea", seed: 0.22 },
+  "agt-doc": { type: "hexagon", color: "#b5e3f1", seed: 0.41 },
+  "agt-belle": { type: "flower", color: "#a9e3f2", seed: 0.58 },
+  "agt-ringo": { type: "square", color: "#71c5e8", seed: 0.73 },
   "agt-calamity": { type: "ghost", color: "#D0FFC8", seed: 0.9 },
 };
 
 export function agentLook(agentId: string) {
-  return AGENT_LOOK[agentId] ?? { type: "clover" as Shape, color: "#9DB9C3", seed: 0.5 };
+  return AGENT_LOOK[agentId] ?? { type: "clover" as Shape, color: "#bbbcbc", seed: 0.5 };
 }
 
 export function avatarState(status?: AgentStatus): "default" | "working" | "sleeping" {

@@ -98,9 +98,9 @@ export default function InsightsPage() {
                     </linearGradient>
                   ))}
                 </defs>
-                <CartesianGrid vertical={false} stroke="rgba(214,240,246,0.06)" />
-                <XAxis dataKey="t" tickLine={false} axisLine={false} tick={{ fill: "#5e7c88", fontSize: 11 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fill: "#5e7c88", fontSize: 11 }} allowDecimals={false} />
+                <CartesianGrid vertical={false} stroke="rgba(217, 217, 214,0.06)" />
+                <XAxis dataKey="t" tickLine={false} axisLine={false} tick={{ fill: "#75787b", fontSize: 11 }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fill: "#75787b", fontSize: 11 }} allowDecimals={false} />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Area type="monotone" dataKey="detected" stroke="var(--color-detected)" strokeWidth={1.5} fill="url(#ins-detected)" />
                 <Area type="monotone" dataKey="neutralized" stroke="var(--color-neutralized)" strokeWidth={1.5} fill="url(#ins-neutralized)" />
@@ -115,7 +115,7 @@ export default function InsightsPage() {
             <ChartContainer config={radialConfig} className="mx-auto h-[200px] w-full aspect-auto">
               <RadialBarChart data={radial} startAngle={210} endAngle={-30} innerRadius={70} outerRadius={95}>
                 <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                <RadialBar dataKey="score" background={{ fill: "rgba(214,240,246,0.06)" }} cornerRadius={8} />
+                <RadialBar dataKey="score" background={{ fill: "rgba(217, 217, 214,0.06)" }} cornerRadius={8} />
                 <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="mono-data fill-text-1" style={{ fontSize: 34 }}>
                   {radial[0].score}
                 </text>
@@ -135,7 +135,7 @@ export default function InsightsPage() {
             <ChartContainer config={catConfig} className="h-[260px] w-full aspect-auto">
               <BarChart data={byCategory} layout="vertical" margin={{ top: 0, right: 8, bottom: 0, left: 8 }}>
                 <XAxis type="number" hide />
-                <YAxis type="category" dataKey="category" width={120} tickLine={false} axisLine={false} tick={{ fill: "#9db9c3", fontSize: 11 }} />
+                <YAxis type="category" dataKey="category" width={120} tickLine={false} axisLine={false} tick={{ fill: "#bbbcbc", fontSize: 11 }} />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Bar dataKey="count" fill="var(--color-count)" radius={[0, 6, 6, 0]} barSize={12} />
               </BarChart>

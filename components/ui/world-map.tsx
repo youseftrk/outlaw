@@ -48,7 +48,7 @@ export default function WorldMap({
   dots = [],
   markers = [],
   lineColor = "#ff9a5c",
-  dotColor = "rgba(214, 240, 246, 0.22)",
+  dotColor = "rgba(217, 217, 214, 0.22)",
   className = "",
 }: MapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -116,7 +116,7 @@ export default function WorldMap({
 
         {markers.map((m, i) => {
           const p = projectPoint(m.lat, m.lng);
-          const c = m.color ?? "#24c7d6";
+          const c = m.color ?? "#99d6ea";
           return (
             <g key={`marker-${i}-${m.lat}-${m.lng}`}>
               <circle cx={p.x} cy={p.y} r={m.weight === 2 ? 3 : 2.2} fill={c} />

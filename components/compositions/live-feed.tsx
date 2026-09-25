@@ -49,7 +49,7 @@ export function LiveFeed({ limit = 14, types = FEED_TYPES, className }: { limit?
           className="absolute inset-0 -z-10 [mask-image:radial-gradient(70%_70%_at_50%_50%,white,transparent)] motion-reduce:hidden"
           squareSize={3}
           gridGap={5}
-          color="#24C7D6"
+          color="#99d6ea"
           maxOpacity={0.18}
           flickerChance={0.08}
         />
