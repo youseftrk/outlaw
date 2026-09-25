@@ -9,7 +9,7 @@ import { bus } from "../bus";
 import { store } from "../store";
 import * as world from "../world/world";
 import { evaluate } from "../governance/policy";
-import { addSpan, endSpan, policySpan } from "../governance/traces";
+import { addSpan, endSpan, policySpan, projectRisk } from "../governance/traces";
 import { createApproval, waitForDecision } from "../governance/approvals";
 import { toolSpec } from "./tools";
 import { adapterFor } from "../fleet/adapters";
@@ -61,13 +61,16 @@ export async function runTool(
   }
 
   if (effect === "require-approval") {
+    projectRisk(trace, tool);
+    const explicitTargets = [args.serverId, args.datasetId, args.tokenId, args.clusterId].filter(Boolean) as string[];
+    const threatTargets = trace.threatId ? (store.threat(trace.threatId)?.targetServerIds ?? []) : [];
     const approval = createApproval({
       traceId: trace.id,
       agent,
       toolName: tool,
       summary: `${agent.name} wants to ${tool} ${args.serverId ? `on ${server?.hostname ?? args.serverId}` : ""}`.trim(),
       risk: spec.risk,
-      targets: [args.serverId, args.datasetId, args.tokenId, args.clusterId].filter(Boolean) as string[],
+      targets: explicitTargets.length ? explicitTargets : threatTargets,
       threatId: ctx.severity ? trace.threatId : undefined,
       migrationId: trace.migrationId,
     });

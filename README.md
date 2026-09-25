@@ -54,11 +54,21 @@ The DMG is **unsigned and not notarized**. On first launch macOS says it "could 
 
 Packaged app internals: Electron spawns `.next/standalone/server.js` (Node mode) on a free localhost port and points the window at it. Logs go to `~/Library/Application Support/Qalaa/qalaa.log`; state lives in `~/Library/Application Support/Qalaa/data/` (override with `QALAA_DATA_DIR`). The app icon (`desktop/icon.icns`) is regenerated from `public/brand/logo.svg` with `npm run desktop:icon`.
 
-Tests (policy engine, command parser, blind range, boundary check):
+Tests (policy engine, command parser, blind range, boundary check, jsdom component tests):
 
 ```bash
 npm test
 ```
+
+Browser end-to-end tests (Playwright, Chromium). The config builds and starts the app itself on port 3411 with `QALAA_RESET=1` and an isolated `QALAA_DATA_DIR=.e2e-data`, so a running `npm run dev` is not disturbed:
+
+```bash
+npx playwright install chromium   # once
+npm run test:e2e                  # e2e/*.spec.ts — golden paths, responsive @ 390px, deck PDF
+npx playwright show-report        # HTML report after a run
+```
+
+`.github/workflows/ci.yml` runs `npm test`, `npm run build` and the Chromium e2e suite on every push/PR.
 
 ## Optional: give the agents a language model
 
