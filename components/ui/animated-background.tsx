@@ -1,14 +1,21 @@
 'use client';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, Transition, motion } from 'motion/react';
-import {
+import React, {
   Children,
   cloneElement,
   ReactElement,
+  ReactNode,
   useEffect,
   useState,
   useId,
 } from 'react';
+
+type AnimatedChildProps = React.HTMLAttributes<HTMLElement> & {
+  'data-id': string;
+  'data-checked'?: string;
+  children?: ReactNode;
+};
 
 export type AnimatedBackgroundProps = {
   children:
@@ -42,11 +49,12 @@ export function AnimatedBackground({
 
   useEffect(() => {
     if (defaultValue !== undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- motion-primitives upstream: `defaultValue` re-syncs the active id
       setActiveId(defaultValue);
     }
   }, [defaultValue]);
 
-  return Children.map(children, (child: any, index) => {
+  return Children.map(children, (child: ReactElement<AnimatedChildProps>, index) => {
     const id = child.props['data-id'];
 
     const interactionProps = enableHover

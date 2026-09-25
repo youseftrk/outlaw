@@ -52,9 +52,11 @@ export default function SettingsPage() {
   const [quiet, setQuiet] = React.useState(false);
   const [testing, setTesting] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const [syncedFrom, setSyncedFrom] = React.useState<typeof data>(undefined);
 
-  React.useEffect(() => {
-    if (!data) return;
+  // Re-seed the form whenever a fresh settings snapshot arrives.
+  if (data && data !== syncedFrom) {
+    setSyncedFrom(data);
     setProvider(data.llm.provider);
     setBaseUrl(data.llm.baseUrl);
     setModel(data.llm.model);
@@ -64,7 +66,7 @@ export default function SettingsPage() {
     setOrg(data.operator.org);
     setSpeed(data.sim.speed);
     setQuiet(data.sim.quietHours);
-  }, [data]);
+  }
 
   const pickProvider = (p: LLMProvider) => {
     setProvider(p);

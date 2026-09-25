@@ -28,7 +28,6 @@ export interface QalaaRuntime {
 import { G } from "./shared";
 
 declare global {
-  // eslint-disable-next-line no-var
   var __qalaa: QalaaRuntime | undefined;
 }
 

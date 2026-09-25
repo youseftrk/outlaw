@@ -18,8 +18,9 @@ function TextShimmerComponent({
   duration = 2,
   spread = 2,
 }: TextShimmerProps) {
-  const MotionComponent = motion.create(
-    Component as keyof JSX.IntrinsicElements
+  const MotionComponent = useMemo(
+    () => motion.create(Component as keyof JSX.IntrinsicElements),
+    [Component]
   );
 
   const dynamicSpread = useMemo(() => {
@@ -27,6 +28,7 @@ function TextShimmerComponent({
   }, [children, spread]);
 
   return (
+    // eslint-disable-next-line react-hooks/static-components -- motion-primitives upstream: the motion element is memoised per `as` tag, so its identity is stable across renders
     <MotionComponent
       className={cn(
         'relative inline-block bg-[length:250%_100%,auto] bg-clip-text',

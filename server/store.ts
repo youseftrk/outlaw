@@ -3,8 +3,8 @@
  * All entities from Bootstrap plus traces, messages, telemetry ring (2000),
  * events ring (5000), range runs and research queries.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
 import type {
   Agent,
   Approval,
@@ -161,7 +161,6 @@ export const store = {
   wipe(): void {
     try {
       if (existsSync(STATE_FILE)) {
-        const { unlinkSync } = require("node:fs") as typeof import("node:fs");
         unlinkSync(STATE_FILE);
       }
     } catch {

@@ -24,7 +24,6 @@
  * - `migrate` = drain workloads via the orchestrator API, not raw ssh
  */
 import type { ID } from "@/lib/types";
-import type { Actor } from "../../world/world";
 import type { AdapterResult, ServerAdapter } from "./types";
 
 export class SshAdapter implements ServerAdapter {

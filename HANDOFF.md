@@ -8,7 +8,7 @@ State of the world as of `c8f5039` on `main`. Everything in "Verified" was exerc
 - **Deterministic agent gang**: Cassidy, Sundance, Doc, Belle, Ringo, Calamity — all `autonomous` by default, patrol servers, conform baselines, run migrations, detect/respond to telemetry, text the operator, and every action is policy-evaluated + fully traced.
 - **Blind range (hf-2026)**: world re-arms to the July-2026 incident snapshot on run start; agents see only telemetry — scenario internals are provably unreachable (import boundary enforced by `scripts/check-blind-boundary.mjs`, part of `npm test`). Every step needs real preconditions; `blocked` is only credited when an agent's actual tool call closed that step's precondition. Measured on a fresh seed: 1×→S, 2×→A, 4×→A, 8×→B, baseline→F (14/14 — the real outcome).
 - **Electron**: dev mode (`QALAA_URL`) and packaged mode (spawns `.next/standalone/server.js` via `ELECTRON_RUN_AS_NODE`, waits on `/api/health`) both verified on Windows with captured windows. macOS config in place: `titleBarStyle: "hiddenInset"`, traffic lights (18,18), vibrancy `under-window`.
-- **Checks**: `npx tsc --noEmit` clean · `npm test` 30/30 (blind boundary clean) · `npm run build` green, 30 API routes, all pages prerender.
+- **Checks**: `npx tsc --noEmit` clean · `npm run lint` 0 errors / 0 warnings · `npm test` 30/30 (blind boundary clean, lint clean) · `npm run build` green, 30 API routes, all pages prerender.
 
 ## Not finished / left to build
 
@@ -21,7 +21,7 @@ State of the world as of `c8f5039` on `main`. Everything in "Verified" was exerc
 4. **No real message delivery.** iMessage-style UI is in-app only (decision made during build). Messages.app/osascript bridge and Twilio were spec'd as optional channels, not built.
 5. **No auth or multi-tenancy.** Single demo org ("Frontier Hub"), APIs are unauthenticated — bind localhost only, do not expose.
 6. **Persistence is a JSON file** (`.data/`, gitignored). No database; `reset-demo` reseeds. Sufficient for the presentation.
-7. **UI automated tests: none.** Coverage is server-side (range, policy, messaging, fleet, boundary). `eslint` is not wired into `npm test` (no lint script).
+7. **UI automated tests: none.** Coverage is server-side (range, policy, messaging, fleet, boundary). Lint is part of `npm test` (`eslint --max-warnings=0` runs after the blind-boundary check); `npm run lint:fix` auto-fixes.
 8. **Deck print/PDF layout unverified** — slides render at window ratio; a dedicated `@media print` pass was planned, not done. For PDF export use the OS print dialog on fullscreen slides.
 9. **Known rough edges** (fine for demo, polish items): agent detail live-log shows session events only, not persisted history; approvals sheet is functional but minimal; below-768px layouts only partially tuned (sidebar collapses; dense tables clip); "On the wire" feed timestamps are sim-clock.
 

@@ -2,7 +2,7 @@
  * Scenario hf-2026 — "Autonomous agent swarm vs. AI model hub" (SPEC §9).
  * July 2026 OpenAI–Hugging Face incident replay. 14 steps, ≈6 min at 1×.
  */
-import type { RangeScenario, RangeStep, KillChainStageName, ToolName } from "@/lib/types";
+import type { RangeScenario, KillChainStageName, ToolName } from "@/lib/types";
 
 const D = 6 * 60 * 1000; // 6 min at 1×
 /**

@@ -5,9 +5,8 @@
  */
 import type { Agent, Message } from "@/lib/types";
 import { store } from "../store";
-import { ids } from "../ids";
 import { bus } from "../bus";
-import { sendMessage, agentSay, agentThreadId } from "./composer";
+import { sendMessage, agentSay } from "./composer";
 import { decide } from "../governance/approvals";
 import { startTrace, addSpan, endSpan, endTrace } from "../governance/traces";
 import { runTool } from "../agents/toolbelt";

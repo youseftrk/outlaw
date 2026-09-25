@@ -17,7 +17,7 @@ import * as world from "../world/world";
 import { ids } from "../ids";
 import { startTrace, addSpan, endSpan, endTrace } from "../governance/traces";
 import { runTool, type ToolArgs } from "./toolbelt";
-import { narrate, detectionCopy, resolutionCopy } from "./narrator";
+import { narrate, detectionCopy } from "./narrator";
 import { agentSay, threatAlert, threatResolved } from "../messaging/composer";
 import { refreshServerConformance } from "../fleet/conformance";
 import { G } from "../shared";
@@ -232,7 +232,6 @@ function exposedTokenIds(t: Threat): ID[] | undefined {
 }
 
 function planFor(t: Threat): PlanStep[] {
-  const sid = () => threatServerId(t);
   switch (t.category) {
     case "account-hijack":
       return [
@@ -483,7 +482,6 @@ function finishThreat(threat: Threat): void {
     href: `/threats/${threat.id}`,
   });
   // Doc writes the report for neutralized/prevented
-  const doc = store.agent("agt-doc")!;
   const text = prevented
     ? `Closed ${threat.id} — ${threat.title.toLowerCase()}. The path was shut before it was ever used; marked prevented.`
     : `Report on ${threat.id}: ${threat.title.toLowerCase()} — contained and neutralized. Evidence is on the trace.`;

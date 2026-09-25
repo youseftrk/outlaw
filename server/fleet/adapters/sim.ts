@@ -28,7 +28,6 @@ export class SimAdapter implements ServerAdapter {
   async applyPatch(serverId: ID, patchId: string, by?: Actor): Promise<AdapterResult> {
     const srv = store.server(serverId);
     if (!srv) return { ok: false, summary: `server ${serverId} not found`, command: `patch ${patchId}` };
-    const r = world.observe().registry;
     let res: { ok: boolean; summary: string };
     if (srv.role === "registry") {
       res = world.patchRegistry(by);
