@@ -6,6 +6,8 @@
  * - `useLiveEvent(types, handler)` subscribes to specific event types.
  * - SWR caches for entity lists are revalidated when matching events arrive,
  *   so pages stay fresh without polling.
+ * - If the stream never opens (proxies and tunnels often buffer SSE), the same
+ *   events are polled from `/api/events?json=1` every few seconds instead.
  */
 import * as React from "react";
 import { useSWRConfig } from "swr";
@@ -23,6 +25,8 @@ interface LiveContextValue {
 const LiveContext = React.createContext<LiveContextValue | null>(null);
 
 const RING = 300;
+const POLL_MS = 2500;
+const STREAM_GRACE_MS = 4000;
 
 /** Which SWR keys to revalidate for each event type. */
 const INVALIDATIONS: Partial<Record<EventType, string[]>> = {
@@ -65,6 +69,9 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     let es: EventSource | null = null;
     let retry: ReturnType<typeof setTimeout> | null = null;
+    let poll: ReturnType<typeof setTimeout> | null = null;
+    let polling = false;
+    let streamOpen = false;
     let closed = false;
 
     const flushEvents = () => {
@@ -87,14 +94,65 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
+    const ingest = (evt: QalaaEvent) => {
+      lastId.current = evt.id;
+      buffer.current.push(evt);
+      if (!flushTimer.current) flushTimer.current = setTimeout(flushEvents, 250);
+      for (const h of handlers.current) {
+        if (h.types === "*" || h.types.includes(evt.type)) h.fn(evt);
+      }
+      const keys = INVALIDATIONS[evt.type];
+      if (keys) {
+        for (const key of keys) pendingKeys.current.add(key);
+        if (!invalidateTimer.current) invalidateTimer.current = setTimeout(flushInvalidations, 1500);
+      }
+    };
+
+    const pollOnce = async () => {
+      poll = null;
+      if (closed || streamOpen) {
+        polling = false;
+        return;
+      }
+      try {
+        const since = lastId.current ? `&since=${encodeURIComponent(lastId.current)}` : "";
+        const res = await fetch(`/api/events?json=1${since}`, { cache: "no-store" });
+        if (res.ok) {
+          const body = (await res.json()) as { events: QalaaEvent[] };
+          for (const evt of body.events) ingest(evt);
+          setState("live");
+        }
+      } catch {
+        /* try again next round */
+      }
+      if (!closed && !streamOpen) poll = setTimeout(pollOnce, POLL_MS);
+      else polling = false;
+    };
+    const startPolling = () => {
+      if (polling || streamOpen || closed) return;
+      polling = true;
+      poll = setTimeout(pollOnce, 0);
+    };
+
     const connect = () => {
       const url = lastId.current ? `/api/events?since=${encodeURIComponent(lastId.current)}` : "/api/events";
+      streamOpen = false;
       es = new EventSource(url);
-      es.onopen = () => setState("live");
+      const grace = setTimeout(startPolling, STREAM_GRACE_MS);
+      es.onopen = () => {
+        clearTimeout(grace);
+        streamOpen = true;
+        setState("live");
+      };
       es.onerror = () => {
-        setState("reconnecting");
+        clearTimeout(grace);
+        streamOpen = false;
+        if (!polling) setState("reconnecting");
         es?.close();
-        if (!closed) retry = setTimeout(connect, 1500);
+        if (!closed) {
+          startPolling();
+          retry = setTimeout(connect, 1500);
+        }
       };
       const onMessage = (raw: MessageEvent) => {
         let evt: QalaaEvent;
@@ -103,17 +161,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         } catch {
           return;
         }
-        if (raw.lastEventId) lastId.current = raw.lastEventId;
-        buffer.current.push(evt);
-        if (!flushTimer.current) flushTimer.current = setTimeout(flushEvents, 250);
-        for (const h of handlers.current) {
-          if (h.types === "*" || h.types.includes(evt.type)) h.fn(evt);
-        }
-        const keys = INVALIDATIONS[evt.type];
-        if (keys) {
-          for (const key of keys) pendingKeys.current.add(key);
-          if (!invalidateTimer.current) invalidateTimer.current = setTimeout(flushInvalidations, 1500);
-        }
+        ingest(evt);
       };
       // The server names events by type; listen to all known types plus the default channel.
       es.onmessage = onMessage;
@@ -126,6 +174,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     return () => {
       closed = true;
       if (retry) clearTimeout(retry);
+      if (poll) clearTimeout(poll);
       if (flushTimer.current) clearTimeout(flushTimer.current);
       if (invalidateTimer.current) clearTimeout(invalidateTimer.current);
       es?.close();

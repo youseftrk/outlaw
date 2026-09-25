@@ -578,9 +578,9 @@ export default function SettingsPage() {
           <Section title="Simulation" description="Clock speed for the world and the garrison's patrols. Quiet hours batch medium alerts into digests.">
             <div>
               <p className="mb-2 text-[12px] text-text-2">
-                Speed · <span className="mono-data text-text-1">{speed}×</span>
+                Speed · <span className="mono-data text-text-1">{hydratedFrom ? `${speed}×` : "…"}</span>
               </p>
-              <Slider value={[speed]} min={1} max={8} step={1} onValueChange={(v) => setSpeed(Array.isArray(v) ? v[0] : v)} />
+              <Slider value={[speed]} min={1} max={8} step={1} disabled={!hydratedFrom} onValueChange={(v) => setSpeed(Array.isArray(v) ? v[0] : v)} />
             </div>
             <label className="flex items-center justify-between rounded-[10px] bg-bg-2 px-3 py-2 text-text-1">
               Quiet hours

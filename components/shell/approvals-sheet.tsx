@@ -54,7 +54,9 @@ export function ApprovalItem({
   onDecide: (decision: Decision) => void;
 }) {
   const { data: trace } = useTrace(a.traceId);
-  const policySpan = trace?.spans.find((s) => s.kind === "policy" && s.toolName === a.toolName) ?? trace?.spans.find((s) => s.kind === "policy");
+  // the authority check also writes a "policy" span for the tool, without evaluations — skip it
+  const policySpans = trace?.spans.filter((s) => s.kind === "policy" && s.policyEvaluations?.length) ?? [];
+  const policySpan = policySpans.find((s) => s.toolName === a.toolName) ?? policySpans[0];
   const gate = policySpan?.policyEvaluations?.find((ev) => ev.matched && ev.effect === "require-approval");
   const busy = deciding !== null;
 

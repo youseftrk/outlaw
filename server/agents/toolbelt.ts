@@ -290,6 +290,9 @@ function authorityTarget(args: ToolArgs): { input: Pick<AuthorizeInput, "serverI
   return null;
 }
 
+/** Refusals a fresh, correctly-scoped request to the owner can cure. A revoke or a house rule cannot be asked around. */
+const ASK_AGAIN = new Set<import("@/lib/types").RefusalCode>(["AUTHORITY_REQUIRED", "AUTHORITY_EXPIRED", "SCOPE_MISMATCH", "REQUESTER_MISMATCH"]);
+
 /** tool → capability → target. Returns null when the call isn't gated (no target / ownable target). */
 async function authorityFor(
   agent: Agent,
@@ -305,7 +308,7 @@ async function authorityFor(
   const input: AuthorizeInput = { actorId: agent.id, capability: capability as Capability, ...target.input };
   let auth = authorize(input);
 
-  if (!auth.allow && auth.code === "AUTHORITY_REQUIRED") {
+  if (!auth.allow && ASK_AGAIN.has(auth.code)) {
     // create/reuse one pending request, then wait up to 10 sim-min for activation
     const req = requestLease({
       requestingEntityId: agent.entityId ?? "ent-response",

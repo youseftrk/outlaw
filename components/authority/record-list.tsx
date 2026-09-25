@@ -23,6 +23,7 @@ const KIND: Record<DecisionKind, { label: string; dot: string }> = {
   revoked: { label: "Taken back", dot: "bg-sev-critical" },
   expired: { label: "Ran out", dot: "bg-text-3" },
   "rules-changed": { label: "Rules changed", dot: "bg-cerulean" },
+  onboarded: { label: "Under Qalaa", dot: "bg-cerulean" },
   reset: { label: "Reset", dot: "bg-text-3" },
 };
 

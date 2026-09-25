@@ -36,6 +36,7 @@ export default defineConfig({
         stderr: "pipe",
         env: {
           QALAA_RESET: "1",
+          QALAA_DEMO_SHOW_CODE: "1",
           QALAA_DATA_DIR: dataDir,
           NEXT_TELEMETRY_DISABLED: "1",
         },

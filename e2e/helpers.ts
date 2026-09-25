@@ -37,24 +37,59 @@ export async function pendingApprovals(request: APIRequestContext) {
   return (await res.json()).approvals as ApiApproval[];
 }
 
+export interface ApiLease {
+  id: string;
+  agentId: string;
+  ownerEntityId: string;
+  status: string;
+  stepUpCode?: string;
+}
+
+export async function pendingLeases(request: APIRequestContext) {
+  const res = await request.get("/api/authority/leases?status=pending");
+  expect(res.ok()).toBeTruthy();
+  return (await res.json()) as ApiLease[];
+}
+
+/**
+ * Act as the owner: say yes to a permission request and, if the owner's house
+ * rules ask for a human code, enter it (the server hands the code back in demo
+ * mode — `QALAA_DEMO_SHOW_CODE=1` in playwright.config).
+ */
+export async function ownerSaysYes(request: APIRequestContext, lease: ApiLease) {
+  const res = await request.post(`/api/authority/leases/${lease.id}/accept`, { data: { by: lease.ownerEntityId } });
+  expect(res.ok()).toBeTruthy();
+  const accepted = (await res.json()) as ApiLease;
+  if (accepted.status === "pending-step-up") {
+    expect(accepted.stepUpCode, "demo mode should surface the one-time code").toBeTruthy();
+    const stepped = await request.post(`/api/authority/leases/${lease.id}/step-up`, { data: { code: accepted.stepUpCode } });
+    expect(stepped.ok()).toBeTruthy();
+  }
+}
+
 /**
  * Deterministic require-approval path (SPEC §policy): cap Hisn (containment)
  * at `act-with-approval` so her medium-risk `block_egress` needs a human, then
- * inject a director scenario whose plan starts with that tool. The brain dedupes
- * a category+server pair for 5 simulated minutes, so fall through the scenarios
- * until one yields a fresh approval.
+ * inject a director scenario whose plan starts with that tool. Under Qalaa the
+ * tool first asks the system's owner for permission — we answer as the owner —
+ * and only then does the internal approval appear. The brain dedupes a
+ * category+server pair for 5 simulated minutes and earlier specs (the range
+ * replay in particular) leave those categories open, so start from a reset
+ * runtime, then fall through the scenarios until one yields a fresh approval.
  */
 export async function createApproval(request: APIRequestContext, scenarios = ["c2-beacon", "exfil", "brute-force"]) {
+  await director(request, "reset-demo");
   const before = new Set((await pendingApprovals(request)).map((a) => a.id));
   await patchAgent(request, "agt-hisn", { autonomy: "act-with-approval" });
   const fresh = async () => (await pendingApprovals(request)).find((a) => !before.has(a.id) && a.agentId === "agt-hisn");
 
   for (const scenario of scenarios) {
     await director(request, scenario);
-    const deadline = Date.now() + 12_000;
+    const deadline = Date.now() + 15_000;
     while (Date.now() < deadline) {
       const a = await fresh();
       if (a) return a;
+      for (const lease of (await pendingLeases(request)).filter((l) => l.agentId === "agt-hisn")) await ownerSaysYes(request, lease);
       await new Promise((r) => setTimeout(r, 500));
     }
   }

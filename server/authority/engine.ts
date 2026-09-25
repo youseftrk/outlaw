@@ -23,6 +23,7 @@ import type {
   Entity,
   HouseRules,
   ID,
+  OnboardInput,
   PermissionSuggestion,
   RefusalCode,
   Server,
@@ -612,37 +613,100 @@ export function pathFor(leaseId: ID): AuthorityPath | null {
   return { leaseId: l.id, nodes, edges };
 }
 
-const DEMO = { requestingEntityId: "ent-response", ownerEntityId: "ent-data", capability: "contain" as Capability, serverId: "srv-dataset-worker-02" };
+/** The demo's one door: the response entity's agent wants to contain this system. Who owns it is read from the system itself. */
+export const DEMO = { requestingEntityId: "ent-response", capability: "contain" as Capability, serverId: "srv-dataset-worker-02" };
+
+function demoServer(): Server | undefined {
+  return store.server(DEMO.serverId);
+}
 
 export function demoLease(): AuthorityLease | undefined {
+  const ownerEntityId = demoServer()?.ownerEntityId;
+  if (!ownerEntityId) return undefined;
   return store.s.leases
-    .filter((l) => l.requestingEntityId === DEMO.requestingEntityId && l.ownerEntityId === DEMO.ownerEntityId && l.capability === DEMO.capability && l.scope.serverIds?.includes(DEMO.serverId))
+    .filter((l) => l.requestingEntityId === DEMO.requestingEntityId && l.ownerEntityId === ownerEntityId && l.capability === DEMO.capability && l.scope.serverIds?.includes(DEMO.serverId))
     .sort((a, b) => b.requestedAt.localeCompare(a.requestedAt))[0];
 }
 
 /** GET /api/authority/step — plain-language guidance for the demo lease. */
 export function drillState(): DrillState {
+  const srv = demoServer();
+  const system: DrillState["system"] = {
+    serverId: DEMO.serverId,
+    hostname: srv?.hostname ?? DEMO.serverId,
+    ownerEntityId: srv?.ownerEntityId,
+    dataClasses: srv?.dataClasses ?? [],
+  };
+  if (!srv?.ownerEntityId) {
+    return { step: "onboard", title: "This system is not under Qalaa yet", next: `Say who owns ${system.hostname} and what data lives on it. Until then, nobody can grant anything.`, system };
+  }
   const l = demoLease();
-  const owner = entityName(DEMO.ownerEntityId);
-  if (!l) return { step: "no-permission", title: "No permission yet", next: `Ask the ${owner} to contain dataset-worker-02.` };
-  if (l.status === "pending") return { step: "asked", title: "Asked", next: `Next: the ${owner} decides.`, leaseId: l.id };
-  if (l.status === "pending-step-up") return { step: "code-needed", title: "Owner said yes — human code needed", next: "Next: a person enters the one-time code from Messages.", leaseId: l.id };
-  if (l.status === "declined") return { step: "asked", title: "Declined", next: `The ${owner} said no — ask again with a better reason.`, leaseId: l.id };
-  if (l.status === "revoked") return { step: "revoked", title: "Taken back", next: `The ${owner} revoked it — the agent is powerless again.`, leaseId: l.id };
-  if (l.status === "expired") return { step: "expired", title: "Expired", next: "The window closed — ask for a new one.", leaseId: l.id };
+  const owner = entityName(srv.ownerEntityId);
+  if (!l) return { step: "no-permission", title: "No permission yet", next: `Ask the ${owner} to contain ${system.hostname}.`, system };
+  if (l.status === "pending") return { step: "asked", title: "Asked", next: `Next: the ${owner} decides.`, leaseId: l.id, system };
+  if (l.status === "pending-step-up") return { step: "code-needed", title: "Owner said yes — human code needed", next: "Next: a person enters the one-time code from Messages.", leaseId: l.id, system };
+  if (l.status === "declined") return { step: "asked", title: "Declined", next: `The ${owner} said no — ask again with a better reason.`, leaseId: l.id, system };
+  if (l.status === "revoked") return { step: "revoked", title: "Taken back", next: `The ${owner} revoked it — the agent is powerless again.`, leaseId: l.id, system };
+  if (l.status === "expired") return { step: "expired", title: "Expired", next: "The window closed — ask for a new one.", leaseId: l.id, system };
   // active
   const acted = store.s.records.some((r) => r.leaseId === l.id && r.kind === "allowed");
-  if (acted) return { step: "acted", title: "Acted", next: `The agent used it. The ${owner} can revoke any time.`, leaseId: l.id };
-  return { step: "allowed", title: "Live permission", next: "Next: the agent may act — watch the record.", leaseId: l.id };
+  if (acted) return { step: "acted", title: "Acted", next: `The agent used it. The ${owner} can revoke any time.`, leaseId: l.id, system };
+  return { step: "allowed", title: "Live permission", next: "Next: the agent may act — watch the record.", leaseId: l.id, system };
 }
 
-/** POST /api/authority/reset — leases/records/challenges back to seed, keeps entities+rules. */
-export function resetAuthority(nowIso: string): { ok: true } {
+/**
+ * POST /api/authority/onboard — put a system under an owner. From this moment
+ * every touch on it by another entity's agent needs that owner's permission.
+ * Any permission scoped to the system under a previous owner is closed.
+ */
+export function onboardSystem(input: OnboardInput, by: string): { ok: true; server: Server; record: DecisionRecord } | { ok: false; code: "NOT_FOUND" | "NOT_AN_OWNER"; message: string } {
+  const srv = store.server(input.serverId);
+  if (!srv) return { ok: false, code: "NOT_FOUND", message: `No system called ${input.serverId}.` };
+  const owner = entity(input.ownerEntityId);
+  if (!owner || owner.operatesAgents) return { ok: false, code: "NOT_AN_OWNER", message: `${entityName(input.ownerEntityId)} cannot own systems here.` };
+  const previous = srv.ownerEntityId;
+  srv.ownerEntityId = owner.id;
+  srv.dataClasses = input.dataClasses ?? srv.dataClasses ?? [];
+  if (previous && previous !== owner.id) {
+    for (const l of store.s.leases) {
+      if (l.ownerEntityId === previous && l.scope.serverIds?.includes(srv.id) && (l.status === "pending" || l.status === "pending-step-up" || l.status === "active")) {
+        l.status = "revoked";
+        l.revokedAt = store.now();
+        l.revokedBy = by;
+        resolveLeaseWaiters(l.id, "refused");
+      }
+    }
+  }
+  const classes = srv.dataClasses.length ? srv.dataClasses.map((c) => DATA_CLASS_LABEL[c].toLowerCase()).join(", ") : "no sensitive data";
+  const rec = record("onboarded", {
+    actor: by,
+    actorName: owner.shortName,
+    ownerEntityId: owner.id,
+    target: srv.id,
+    summary: `${srv.hostname} is now under the ${owner.name}. It holds ${classes}. Nothing may touch it without their say.`,
+    detail: { previousOwnerEntityId: previous, dataClasses: srv.dataClasses },
+  });
+  store.markDirty();
+  emit("authority.updated", { onboarded: srv.id, ownerEntityId: owner.id }, rec.summary, "medium");
+  return { ok: true, server: srv, record: rec };
+}
+
+/**
+ * POST /api/authority/reset — leases/records/challenges back to seed, keeps entities+rules.
+ * With `fromOnboarding`, the demo system is also taken out from under its owner so the
+ * story starts where a real customer starts: putting a system under Qalaa.
+ */
+export function resetAuthority(nowIso: string, opts: { fromOnboarding?: boolean } = {}): { ok: true } {
   store.s.leases = seedObserveLeases(nowIso);
   store.s.stepUps = [];
   store.s.records = [];
   for (const w of [...leaseWaiters()]) resolveLeaseWaiters(w[0], "refused");
   codeCache().clear();
+  const srv = demoServer();
+  if (srv) {
+    if (opts.fromOnboarding) delete srv.ownerEntityId;
+    else srv.ownerEntityId = ownerForServer(srv);
+  }
   store.markDirty();
   emit("authority.updated", { reset: true }, "authority state reset to seed", "medium");
   return { ok: true };
