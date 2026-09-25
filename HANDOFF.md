@@ -19,7 +19,7 @@ State of the world as of `c8f5039` on `main`. Everything in "Verified" was exerc
 ### Real (post-demo) work
 3. **No real server adapters.** `ServerAdapter` contract exists; `SimAdapter` mutates the simulated world. `SshAdapter` is a documented skeleton — zero real SSH/exec capability by design.
 4. **No real message delivery.** iMessage-style UI is in-app only (decision made during build). Messages.app/osascript bridge and Twilio were spec'd as optional channels, not built.
-5. **No auth or multi-tenancy.** Single demo org ("Frontier Hub"), APIs are unauthenticated — bind localhost only, do not expose.
+5. **Single-org password auth only (optional), no multi-tenancy.** Single demo org ("Frontier Hub"). Auth is OFF by default; set `QALAA_AUTH_PASSWORD` or Settings → Access to gate the UI + every API route behind `/login` (`proxy.ts`, HttpOnly HMAC cookie, 12 h sliding, 5 failures/min/IP). See README "Optional: auth" and SPEC §7.1. There is one password, no users/roles/audit of logins, and the rate limiter is per-process memory — still bind localhost or put it behind TLS before exposing.
 6. **Persistence is a JSON file** (`.data/`, gitignored). No database; `reset-demo` reseeds. Sufficient for the presentation.
 7. **UI automated tests: none.** Coverage is server-side (range, policy, messaging, fleet, boundary). Lint is part of `npm test` (`eslint --max-warnings=0` runs after the blind-boundary check); `npm run lint:fix` auto-fixes.
 8. **Deck print/PDF layout unverified** — slides render at window ratio; a dedicated `@media print` pass was planned, not done. For PDF export use the OS print dialog on fullscreen slides.

@@ -52,6 +52,8 @@ export default function SettingsPage() {
   const [quiet, setQuiet] = React.useState(false);
   const [testing, setTesting] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const [password, setPassword] = React.useState("");
+  const [savingAuth, setSavingAuth] = React.useState(false);
   const [syncedFrom, setSyncedFrom] = React.useState<typeof data>(undefined);
 
   // Re-seed the form whenever a fresh settings snapshot arrives.
@@ -117,6 +119,28 @@ export default function SettingsPage() {
       toast.error(e instanceof Error ? e.message : "Couldn't save");
     }
   };
+
+  const saveAuth = async (next: string | null) => {
+    setSavingAuth(true);
+    try {
+      const r = await api.settings.setPassword(next);
+      setPassword("");
+      toast.success(r.auth.enabled ? "Password saved — login required from now on" : "Password cleared — login disabled");
+      void mutate();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't save");
+    } finally {
+      setSavingAuth(false);
+    }
+  };
+
+  const auth = data?.auth;
+  const authStatus =
+    auth?.source === "env"
+      ? "Login required · password from QALAA_AUTH_PASSWORD"
+      : auth?.source === "settings"
+        ? "Login required · password set here"
+        : "Open · no password set, anyone who can reach this host has full access";
 
   return (
     <div className="flex flex-col gap-4">
@@ -214,6 +238,31 @@ export default function SettingsPage() {
             <Button onClick={saveOperator} className="w-fit">
               Save
             </Button>
+          </Section>
+          <Section title="Access" description="Optional single password for the whole UI and API. Leave empty to keep the zero-config demo flow.">
+            <p className={`mono-data text-[12px] ${auth?.enabled ? "text-lime" : "text-text-3"}`}>{authStatus}</p>
+            <label className="flex flex-col gap-1 text-[12px] text-text-2">
+              {auth?.source === "settings" ? "New password" : "Password"}
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="at least 8 characters"
+                className="mono-data border-line bg-bg-2"
+                autoComplete="new-password"
+              />
+              <span className="text-[11px] text-text-3">Stored as a scrypt hash in .data/secrets.json. Delete the auth key there to reset.</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => saveAuth(password)} disabled={savingAuth || password.length < 8}>
+                Save
+              </Button>
+              {auth?.source === "settings" && (
+                <Button variant="secondary" onClick={() => saveAuth(null)} disabled={savingAuth}>
+                  Clear password
+                </Button>
+              )}
+            </div>
           </Section>
           <Section title="Desktop" description={desktop ? "Running inside the Qalaa desktop shell." : "Running in a browser. `npm run desktop` opens the native shell."}>
             <p className="mono-data text-[12px] text-text-3">
