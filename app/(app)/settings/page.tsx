@@ -25,6 +25,7 @@ const PRESETS: Record<LLMProvider, { label: string; baseUrl: string; model: stri
   cerebras: { label: "Cerebras (free)", baseUrl: "https://api.cerebras.ai/v1", model: "llama3.1-8b", keys: "cloud.cerebras.ai" },
   openrouter: { label: "OpenRouter (free models)", baseUrl: "https://openrouter.ai/api/v1", model: "meta-llama/llama-3.3-70b-instruct:free", keys: "openrouter.ai/keys" },
   huggingface: { label: "Hugging Face router", baseUrl: "https://router.huggingface.co/v1", model: "meta-llama/Meta-Llama-3.1-8B-Instruct", keys: "huggingface.co/settings/tokens" },
+  devin: { label: "Devin (Cognition) — session brain", baseUrl: "https://api.devin.ai/v1", model: "devin", keys: "app.devin.ai/settings/api-keys" },
   custom: { label: "Custom OpenAI-compatible", baseUrl: "", model: "", keys: "" },
 };
 
@@ -310,7 +311,20 @@ export default function SettingsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              {PRESETS[provider].keys && <span className="mono-data text-[11px] text-text-3">free key at {PRESETS[provider].keys}</span>}
+              {PRESETS[provider].keys && <span className="mono-data text-[11px] text-text-3">{provider === "devin" ? "API key at" : "free key at"} {PRESETS[provider].keys}</span>}
+              {provider === "devin" && (
+                <span className="text-[11px] text-text-3">
+                  Runs one long-lived Devin session as the agents&apos; brain. Replies take a minute, so alerts go out from templates and get rewritten when Devin answers.
+                  {data?.llm.sessionUrl && (
+                    <>
+                      {" "}
+                      <a href={data.llm.sessionUrl} target="_blank" rel="noreferrer" className="text-cerulean underline-offset-2 hover:underline">
+                        open brain session
+                      </a>
+                    </>
+                  )}
+                </span>
+              )}
             </label>
             {provider !== "none" && (
               <>

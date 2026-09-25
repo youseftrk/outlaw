@@ -787,6 +787,7 @@ export type LLMProvider =
   | "cerebras"
   | "openrouter"
   | "huggingface"
+  | "devin"
   | "custom";
 
 export interface LLMSettings {
@@ -796,6 +797,8 @@ export interface LLMSettings {
   enabled: boolean;
   /** key is stored server-side only; the client only learns whether one is set */
   apiKeySet: boolean;
+  /** `devin` provider only — the long-lived brain session answering the agents' prompts */
+  sessionUrl?: string;
   lastTest?: { ok: boolean; at: ISODate; latencyMs?: number; error?: string; sample?: string };
 }
 

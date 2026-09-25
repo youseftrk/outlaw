@@ -29,7 +29,7 @@ export async function GET() {
 
 const PatchSchema = z.object({
   llm: z.object({
-    provider: z.enum(["none", "groq", "gemini", "mistral", "cerebras", "openrouter", "huggingface", "custom"]).optional(),
+    provider: z.enum(["none", "groq", "gemini", "mistral", "cerebras", "openrouter", "huggingface", "devin", "custom"]).optional(),
     baseUrl: z.string().optional(),
     model: z.string().optional(),
     enabled: z.boolean().optional(),

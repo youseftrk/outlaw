@@ -31,6 +31,8 @@ export const EVENTS_CAP = 5000;
 
 export interface QalaaSecrets {
   llmApiKey?: string;
+  /** `devin` provider — id of the persistent brain session (api.devin.ai) */
+  devinSessionId?: string;
   /** SshAdapterConfig — non-secret shape, but kept out of state.json so the whole adapter config travels with the key material */
   ssh?: SshAdapterConfig;
   /** keyRef → PEM/OpenSSH private key. Never returned by any API. */

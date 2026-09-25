@@ -7,7 +7,7 @@
  * threats, the observed world, and store entities.
  */
 import type {
-  Agent, GeoPoint, IOC, KillChainStageName, Severity, TelemetrySignal,
+  Agent, GeoPoint, IOC, KillChainStageName, Message, Severity, TelemetrySignal,
   Threat, ThreatCategory, ToolName, ID,
 } from "@/lib/types";
 import { bus } from "../bus";
@@ -398,13 +398,20 @@ async function cassidyMention(threat: Threat): Promise<void> {
   const saqr = store.agent("agt-saqr")!;
   const firstStep = planFor(threat)[0];
   const actor = firstStep ? agentForRole(firstStep.agentRole) : store.agent("agt-athar")!;
+  const sent: { msg?: Message } = {};
   const { text } = await narrate(
     saqr,
     detectionCopy(threat, actor.name, firstStep?.tool ?? "investigating"),
-    { user: `Write Saqr's one-line alert for: ${threat.title} (${threat.severity}). ${actor.name} is handling it.` }
+    { user: `Write Saqr's one-line alert for: ${threat.title} (${threat.severity}). ${actor.name} is handling it.` },
+    (late) => {
+      if (!sent.msg) return;
+      sent.msg.text = late;
+      store.markDirty();
+      bus.emit("message.updated", { threadId: sent.msg.threadId }, { summary: `${saqr.name} rewrote the ${threat.id} alert`, href: "/messages" });
+    }
   );
-  const msg = threatAlert(threat, text);
-  threat.messageIds.push(msg.id);
+  sent.msg = threatAlert(threat, text);
+  threat.messageIds.push(sent.msg.id);
 }
 
 async function advancePlan(plan: Plan): Promise<void> {
