@@ -86,7 +86,7 @@ const IMPL: Record<number, StepImpl> = {
   },
   3: {
     pre: () => { const r = W().registry; return r.attackerAdminToken && r.pluginInstallAllowed && !r.locked; },
-    closedBy: (run) => {
+    closedBy: (_run) => {
       if (!W().registry.attackerAdminToken) return null;
       if (W().registry.locked) return "registry.unlocked";
       if (!W().registry.pluginInstallAllowed) return "registry.pluginInstall";
@@ -106,7 +106,7 @@ const IMPL: Record<number, StepImpl> = {
       // compromised or being evacuated (migrating) — foothold still live until isolated
       return ["compromised", "migrating"].includes(srv?.status ?? "") && W().sandbox.egressAllowed && !!W().network.egressAllowed[registryHost()];
     },
-    closedBy: (run) => {
+    closedBy: (_run) => {
       const srv = store.server(registryHost());
       if (!["compromised", "migrating"].includes(srv?.status ?? "")) return firstClosure(/^egress:srv-pkg-cache-01$/);
       if (!W().sandbox.egressAllowed) return "sandbox.egress";
@@ -122,7 +122,7 @@ const IMPL: Record<number, StepImpl> = {
   },
   5: {
     pre: () => W().attacker.hasInternet && exposedWriteTokens().length > 0,
-    closedBy: (run) => {
+    closedBy: (_run) => {
       if (!W().attacker.hasInternet) return null;
       return exposedWriteTokens().length === 0 ? "tokens.exposed" : null;
     },
@@ -138,7 +138,7 @@ const IMPL: Record<number, StepImpl> = {
   },
   6: {
     pre: () => heldTokens().some((t) => { const a = W().accounts.find((x) => x.id === t.accountId); return !!a && !a.disabled; }),
-    closedBy: (run) => {
+    closedBy: (_run) => {
       if (heldTokens().length === 0) return firstClosure(/^token:/);
       const usable = heldTokens().some((t) => { const a = W().accounts.find((x) => x.id === t.accountId); return !!a && !a.disabled; });
       return usable ? null : firstClosure(/^account:.+:(enabled|weak)$/);
@@ -166,7 +166,7 @@ const IMPL: Record<number, StepImpl> = {
   },
   7: {
     pre: () => !!maliciousDataset() && !!unpatchedWorker("fd"),
-    closedBy: (run) => {
+    closedBy: (_run) => {
       if (!maliciousDataset()) {
         if (W().datasets.some((d) => d.malicious && d.quarantined)) return "dataset:ds-malicious-hf:open";
         return null;
@@ -184,7 +184,7 @@ const IMPL: Record<number, StepImpl> = {
   },
   8: {
     pre: () => { const ds = maliciousDataset(); return !!ds && ds.templatedConfig && !!unpatchedWorker("ti"); },
-    closedBy: (run) => {
+    closedBy: (_run) => {
       if (!maliciousDataset()) return W().datasets.some((d) => d.malicious && d.quarantined) ? "dataset:ds-malicious-hf:open" : null;
       return unpatchedWorker("ti") ? null : firstClosure(/^worker:.+:ti-unpatched$/) ?? firstClosure(/^host:.+:(online|vulnerable)$/);
     },
@@ -199,7 +199,7 @@ const IMPL: Record<number, StepImpl> = {
   },
   9: {
     pre: () => !!compromisedWorker(),
-    closedBy: (run) => {
+    closedBy: (_run) => {
       if (compromisedWorker()) return null;
       return firstClosure(/^host:.+:(online|vulnerable)$/);
     },
@@ -218,7 +218,7 @@ const IMPL: Record<number, StepImpl> = {
       const clu = W().clusters.find((c) => c.name === "prod-us")!;
       return clu.nodeServerIds.some((id) => { const s = store.server(id)!; return s.status !== "isolated" && s.status !== "rebuilding"; });
     },
-    closedBy: (run) => {
+    closedBy: (_run) => {
       if (!compromisedWorker()) return firstClosure(/^host:.+:(online|vulnerable)$/);
       const clu = W().clusters.find((c) => c.name === "prod-us")!;
       const any = clu.nodeServerIds.some((id) => { const s = store.server(id)!; return s.status !== "isolated" && s.status !== "rebuilding"; });
@@ -242,7 +242,7 @@ const IMPL: Record<number, StepImpl> = {
       const held = new Set(W().secrets.filter((s) => s.attackerHeld).map((s) => s.kind));
       return held.has("k8s") || held.has("cloud");
     },
-    closedBy: (run) => {
+    closedBy: (_run) => {
       const node = compromisedNode();
       if (!node) return null;
       const clu = W().clusters.find((c) => c.nodeServerIds.includes(node.id));
@@ -264,7 +264,7 @@ const IMPL: Record<number, StepImpl> = {
   },
   12: {
     pre: () => { const n = compromisedNode(); return !!n && !!W().network.egressAllowed[n.id]; },
-    closedBy: (run) => {
+    closedBy: (_run) => {
       const n = compromisedNode();
       if (!n) return null;
       return W().network.egressAllowed[n.id] ? null : `egress:${n.id}`;
@@ -280,7 +280,7 @@ const IMPL: Record<number, StepImpl> = {
   },
   13: {
     pre: () => !!compromisedNode() && !!liveSecret("storage"),
-    closedBy: (run) => {
+    closedBy: (_run) => {
       if (!compromisedNode()) return null;
       return liveSecret("storage") ? null : firstClosure(/^secrets:storage:unrotated$/) ?? firstClosure(/^secret:.+:held$/);
     },
