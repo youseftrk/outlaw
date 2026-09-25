@@ -3,6 +3,7 @@ import { rt, json, parseBody } from "@/app/api/_lib/util";
 import { store } from "@/server/store";
 import { bus } from "@/server/bus";
 import { LLM_PRESETS } from "@/server/agents/llm";
+import { configureDelivery, redactedDelivery } from "@/server/messaging/delivery";
 import { authEnabled, authSource } from "@/server/auth";
 
 export const runtime = "nodejs";
@@ -14,6 +15,7 @@ export async function GET() {
   return json({
     ...s,
     llm: { ...s.llm, apiKeySet: !!store.secrets.llmApiKey },
+    delivery: redactedDelivery(),
     auth: { enabled: authEnabled(), source: authSource() },
     llmPresets: LLM_PRESETS,
   });
@@ -29,6 +31,18 @@ const PatchSchema = z.object({
   }).optional(),
   operator: z.object({ name: z.string().optional(), phone: z.string().optional(), org: z.string().optional() }).optional(),
   sim: z.object({ speed: z.number().min(0.25).max(16).optional(), autoRun: z.boolean().optional(), quietHours: z.boolean().optional() }).optional(),
+  delivery: z.object({
+    channel: z.enum(["off", "webhook", "slack", "twilio"]).optional(),
+    url: z.string().optional(),
+    twilio: z.object({ accountSid: z.string().optional(), from: z.string().optional(), to: z.string().optional() }).optional(),
+    filter: z.object({
+      minSeverity: z.enum(["info", "low", "medium", "high", "critical"]).optional(),
+      kinds: z.array(z.enum(["text", "alert", "approval-request", "report", "status", "system"])).optional(),
+      agentIds: z.array(z.string()).optional(),
+    }).optional(),
+    secret: z.string().optional(), // write-only → .data/secrets.json
+    twilioAuthToken: z.string().optional(), // write-only → .data/secrets.json
+  }).optional(),
 });
 
 export async function PATCH(req: Request) {
@@ -36,7 +50,7 @@ export async function PATCH(req: Request) {
   const parsed = await parseBody(req, PatchSchema);
   if ("error" in parsed) return parsed.error;
   const s = store.s.settings;
-  const { llm, operator, sim } = parsed.data;
+  const { llm, operator, sim, delivery } = parsed.data;
   if (llm) {
     const { apiKey, ...rest } = llm;
     const presetKey = rest.provider as keyof typeof LLM_PRESETS | undefined;
@@ -54,7 +68,9 @@ export async function PATCH(req: Request) {
   }
   if (operator) Object.assign(s.operator, operator);
   if (sim) Object.assign(s.sim, sim);
+  if (delivery) configureDelivery(delivery);
   store.markDirty();
-  bus.emit("system", { settings: s }, { summary: "settings updated", href: "/settings" });
-  return json({ settings: { ...s, llm: { ...s.llm, apiKeySet: !!store.secrets.llmApiKey }, auth: { enabled: authEnabled(), source: authSource() } } });
+  const redacted = { ...s, llm: { ...s.llm, apiKeySet: !!store.secrets.llmApiKey }, delivery: redactedDelivery(), auth: { enabled: authEnabled(), source: authSource() } };
+  bus.emit("system", { settings: redacted }, { summary: "settings updated", href: "/settings" });
+  return json({ settings: redacted });
 }

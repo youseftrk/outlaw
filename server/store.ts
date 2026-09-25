@@ -30,6 +30,9 @@ export const EVENTS_CAP = 5000;
 
 export interface QalaaSecrets {
   llmApiKey?: string;
+  /** HMAC key for outbound webhooks + shared secret for generic inbound */
+  deliverySecret?: string;
+  twilioAuthToken?: string;
   auth?: { passwordHash?: string; sessionSecret?: string };
 }
 

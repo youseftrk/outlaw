@@ -14,7 +14,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { api, useSettings } from "@/lib/hooks/use-data";
 import { useIsDesktop } from "@/lib/desktop";
-import type { LLMProvider } from "@/lib/types";
+import type { DeliveryChannel, LLMProvider, MessageKind, Severity } from "@/lib/types";
 
 const PRESETS: Record<LLMProvider, { label: string; baseUrl: string; model: string; keys: string }> = {
   none: { label: "Deterministic only", baseUrl: "", model: "", keys: "" },
@@ -26,6 +26,15 @@ const PRESETS: Record<LLMProvider, { label: string; baseUrl: string; model: stri
   huggingface: { label: "Hugging Face router", baseUrl: "https://router.huggingface.co/v1", model: "meta-llama/Meta-Llama-3.1-8B-Instruct", keys: "huggingface.co/settings/tokens" },
   custom: { label: "Custom OpenAI-compatible", baseUrl: "", model: "", keys: "" },
 };
+
+const CHANNELS: Record<DeliveryChannel, string> = {
+  off: "Off (in-app only)",
+  webhook: "Webhook",
+  slack: "Slack",
+  twilio: "Twilio SMS",
+};
+
+const SEVERITIES: Record<Severity, string> = { info: "Info and up (everything)", low: "Low and up", medium: "Medium and up", high: "High and up", critical: "Critical only" };
 
 function Section({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return (
@@ -52,6 +61,17 @@ export default function SettingsPage() {
   const [quiet, setQuiet] = React.useState(false);
   const [testing, setTesting] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const [channel, setChannel] = React.useState<DeliveryChannel>("off");
+  const [url, setUrl] = React.useState("");
+  const [secret, setSecret] = React.useState("");
+  const [accountSid, setAccountSid] = React.useState("");
+  const [authToken, setAuthToken] = React.useState("");
+  const [smsFrom, setSmsFrom] = React.useState("");
+  const [smsTo, setSmsTo] = React.useState("");
+  const [minSeverity, setMinSeverity] = React.useState<Severity>("info");
+  const [decisionsOnly, setDecisionsOnly] = React.useState(false);
+  const [savingDelivery, setSavingDelivery] = React.useState(false);
+  const [testingDelivery, setTestingDelivery] = React.useState(false);
   const [password, setPassword] = React.useState("");
   const [savingAuth, setSavingAuth] = React.useState(false);
 
@@ -66,6 +86,15 @@ export default function SettingsPage() {
     setOrg(data.operator.org);
     setSpeed(data.sim.speed);
     setQuiet(data.sim.quietHours);
+    if (data.delivery) {
+      setChannel(data.delivery.channel);
+      setUrl(data.delivery.url);
+      setAccountSid(data.delivery.twilio.accountSid);
+      setSmsFrom(data.delivery.twilio.from);
+      setSmsTo(data.delivery.twilio.to);
+      setMinSeverity(data.delivery.filter.minSeverity);
+      setDecisionsOnly(data.delivery.filter.kinds.length > 0);
+    }
   }, [data]);
 
   const pickProvider = (p: LLMProvider) => {
@@ -108,6 +137,47 @@ export default function SettingsPage() {
     }
   };
 
+  const deliveryPatch = () => ({
+    channel,
+    url,
+    twilio: { accountSid, from: smsFrom, to: smsTo },
+    filter: { minSeverity, kinds: (decisionsOnly ? ["approval-request", "alert"] : []) as MessageKind[] },
+    ...(secret ? { secret } : {}),
+    ...(authToken ? { twilioAuthToken: authToken } : {}),
+  });
+
+  const saveDelivery = async () => {
+    setSavingDelivery(true);
+    try {
+      await api.settings.update({ delivery: deliveryPatch() });
+      setSecret("");
+      setAuthToken("");
+      toast.success("Delivery settings saved");
+      void mutate();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't save");
+    } finally {
+      setSavingDelivery(false);
+    }
+  };
+
+  const testDelivery = async () => {
+    setTestingDelivery(true);
+    try {
+      await api.settings.update({ delivery: deliveryPatch() });
+      setSecret("");
+      setAuthToken("");
+      const r = await api.settings.testDelivery();
+      if (r?.ok) toast.success(`Test message delivered via ${r.channel} in ${r.latencyMs} ms`);
+      else toast.error(r?.error ?? "The channel didn't accept the message");
+      void mutate();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Test failed");
+    } finally {
+      setTestingDelivery(false);
+    }
+  };
+
   const saveOperator = async () => {
     try {
       await api.settings.update({ operator: { name, phone, org }, sim: { speed, quietHours: quiet } });
@@ -144,7 +214,7 @@ export default function SettingsPage() {
     <div className="flex flex-col gap-4">
       <PageHeader eyebrow="Operator · brain · simulation" title="Settings" />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <BlurFade delay={0.05}>
+        <BlurFade delay={0.05} className="flex flex-col gap-4">
           <Section
             title="Agent brain"
             description="Detection and response are deterministic and always on. An LLM adds narrated reasoning, natural texts, and freeform answers — with automatic fallback so the demo never stalls."
@@ -199,6 +269,101 @@ export default function SettingsPage() {
                 <span className={`ml-auto flex items-center gap-1.5 text-[12px] ${data.llm.lastTest.ok ? "text-lime" : "text-sev-high"}`}>
                   {data.llm.lastTest.ok ? <CheckCircle weight="fill" className="size-4" /> : <WarningCircle weight="fill" className="size-4" />}
                   {data.llm.lastTest.ok ? `ok · ${data.llm.lastTest.latencyMs} ms` : data.llm.lastTest.error}
+                </span>
+              )}
+            </div>
+          </Section>
+          <Section
+            title="Delivery"
+            description="Messages always land in-app. Optionally push the gang's alerts, approval requests, and reports to a webhook, Slack, or your phone — and reply from there."
+          >
+            <label className="flex flex-col gap-1 text-[12px] text-text-2">
+              Channel
+              <Select value={channel} onValueChange={(v) => setChannel((v as DeliveryChannel) ?? "off")} items={CHANNELS}>
+                <SelectTrigger className="border-line bg-bg-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-line bg-bg-3">
+                  {(Object.keys(CHANNELS) as DeliveryChannel[]).map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {CHANNELS[c]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+            {(channel === "webhook" || channel === "slack") && (
+              <label className="flex flex-col gap-1 text-[12px] text-text-2">
+                {channel === "slack" ? "Slack incoming webhook URL" : "Webhook URL"}
+                <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={channel === "slack" ? "https://hooks.slack.com/services/…" : "https://example.com/qalaa"} className="mono-data border-line bg-bg-2" />
+              </label>
+            )}
+            {channel === "webhook" && (
+              <label className="flex flex-col gap-1 text-[12px] text-text-2">
+                Signing secret {data?.delivery?.secretSet && <span className="text-lime">· set</span>}
+                <Input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder={data?.delivery?.secretSet ? "•••••••• (leave blank to keep)" : "shared secret"} className="mono-data border-line bg-bg-2" autoComplete="off" />
+                <span className="text-[11px] text-text-3">Signs X-Qalaa-Signature and authenticates JSON replies to /api/messages/inbound. Stored in .data/secrets.json.</span>
+              </label>
+            )}
+            {channel === "twilio" && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="flex flex-col gap-1 text-[12px] text-text-2">
+                    Account SID
+                    <Input value={accountSid} onChange={(e) => setAccountSid(e.target.value)} placeholder="AC…" className="mono-data border-line bg-bg-2" />
+                  </label>
+                  <label className="flex flex-col gap-1 text-[12px] text-text-2">
+                    Auth token {data?.delivery?.twilioAuthTokenSet && <span className="text-lime">· set</span>}
+                    <Input type="password" value={authToken} onChange={(e) => setAuthToken(e.target.value)} placeholder={data?.delivery?.twilioAuthTokenSet ? "•••••••• (leave blank to keep)" : "paste token"} className="mono-data border-line bg-bg-2" autoComplete="off" />
+                  </label>
+                  <label className="flex flex-col gap-1 text-[12px] text-text-2">
+                    From (Twilio number)
+                    <Input value={smsFrom} onChange={(e) => setSmsFrom(e.target.value)} placeholder="+15550001234" className="mono-data border-line bg-bg-2" />
+                  </label>
+                  <label className="flex flex-col gap-1 text-[12px] text-text-2">
+                    To (your phone)
+                    <Input value={smsTo} onChange={(e) => setSmsTo(e.target.value)} placeholder="+1…" className="mono-data border-line bg-bg-2" />
+                  </label>
+                </div>
+                <span className="text-[11px] text-text-3">Point the number&apos;s messaging webhook at /api/messages/inbound so replies reach the gang. Token stored in .data/secrets.json.</span>
+              </>
+            )}
+            {channel !== "off" && (
+              <>
+                <label className="flex flex-col gap-1 text-[12px] text-text-2">
+                  Minimum severity
+                  <Select value={minSeverity} onValueChange={(v) => setMinSeverity((v as Severity) ?? "info")} items={SEVERITIES}>
+                    <SelectTrigger className="border-line bg-bg-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="border-line bg-bg-3">
+                      {(Object.keys(SEVERITIES) as Severity[]).map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {SEVERITIES[s]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+                <label className="flex items-center justify-between rounded-[10px] bg-bg-2 px-3 py-2 text-text-1">
+                  Only alerts and approval requests
+                  <Switch checked={decisionsOnly} onCheckedChange={(v) => setDecisionsOnly(Boolean(v))} />
+                </label>
+              </>
+            )}
+            <div className="flex items-center gap-2">
+              <Button onClick={saveDelivery} disabled={savingDelivery}>
+                Save
+              </Button>
+              {channel !== "off" && (
+                <Button variant="secondary" onClick={testDelivery} disabled={testingDelivery}>
+                  {testingDelivery ? "Sending…" : "Save & send test"}
+                </Button>
+              )}
+              {data?.delivery?.lastTest && (
+                <span className={`ml-auto flex items-center gap-1.5 text-[12px] ${data.delivery.lastTest.ok ? "text-lime" : "text-sev-high"}`}>
+                  {data.delivery.lastTest.ok ? <CheckCircle weight="fill" className="size-4" /> : <WarningCircle weight="fill" className="size-4" />}
+                  {data.delivery.lastTest.ok ? `ok · ${data.delivery.lastTest.channel} · ${data.delivery.lastTest.latencyMs} ms` : data.delivery.lastTest.error}
                 </span>
               )}
             </div>

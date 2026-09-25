@@ -8,7 +8,8 @@ State of the world as of `c8f5039` on `main`. Everything in "Verified" was exerc
 - **Deterministic agent gang**: Cassidy, Sundance, Doc, Belle, Ringo, Calamity — all `autonomous` by default, patrol servers, conform baselines, run migrations, detect/respond to telemetry, text the operator, and every action is policy-evaluated + fully traced.
 - **Blind range (hf-2026)**: world re-arms to the July-2026 incident snapshot on run start; agents see only telemetry — scenario internals are provably unreachable (import boundary enforced by `scripts/check-blind-boundary.mjs`, part of `npm test`). Every step needs real preconditions; `blocked` is only credited when an agent's actual tool call closed that step's precondition. Measured on a fresh seed: 1×→S, 2×→A, 4×→A, 8×→B, baseline→F (14/14 — the real outcome).
 - **Electron**: dev mode (`QALAA_URL`) and packaged mode (spawns `.next/standalone/server.js` via `ELECTRON_RUN_AS_NODE`, waits on `/api/health`) both verified on Windows with captured windows. macOS config in place: `titleBarStyle: "hiddenInset"`, traffic lights (18,18), vibrancy `under-window`.
-- **Checks**: `npx tsc --noEmit` clean · `npm test` 30/30 (blind boundary clean) · `npm run build` green, 30 API routes, all pages prerender.
+- **Checks**: `npx tsc --noEmit` clean · `npm test` 77/77 (blind boundary clean) · `npm run build` green (37 API routes incl. `/api/messages/inbound` + `/api/settings/delivery/test`), all pages prerender.
+- **Outbound delivery (webhook)**: agent alert → `POST` to a local receiver with a valid `X-Qalaa-Signature`; `approve <id>` posted to `/api/messages/inbound` resolves the approval and returns Cassidy's reply.
 
 ## Not finished / left to build
 
@@ -18,7 +19,7 @@ State of the world as of `c8f5039` on `main`. Everything in "Verified" was exerc
 
 ### Real (post-demo) work
 3. **No real server adapters.** `ServerAdapter` contract exists; `SimAdapter` mutates the simulated world. `SshAdapter` is a documented skeleton — zero real SSH/exec capability by design.
-4. **No real message delivery.** iMessage-style UI is in-app only (decision made during build). Messages.app/osascript bridge and Twilio were spec'd as optional channels, not built.
+4. **Message delivery is optional and off by default** (SPEC §8.1–8.2, README “Optional: message delivery”). Generic webhook (HMAC-signed envelope), Slack incoming webhook (Block Kit) and Twilio SMS (plain `fetch`, no SDK) push agent/system messages out of the box; `POST /api/messages/inbound` takes Twilio (signature-validated, TwiML reply) or JSON `{text, secret}` replies back through the same command parser. Settings → Delivery configures it; secrets stay in `.data/secrets.json`. Verified live only with a local webhook receiver — **Slack and Twilio were never exercised against real accounts** (adapters are covered by mocked-`fetch` tests only). No Messages.app/osascript bridge.
 5. **Single-org password auth only (optional), no multi-tenancy.** Single demo org ("Frontier Hub"). Auth is OFF by default; set `QALAA_AUTH_PASSWORD` or Settings → Access to gate the UI + every API route behind `/login` (`proxy.ts`, HttpOnly HMAC cookie, 12 h sliding, 5 failures/min/IP). See README "Optional: auth" and SPEC §7.1. There is one password, no users/roles/audit of logins, and the rate limiter is per-process memory — still bind localhost or put it behind TLS before exposing.
 6. **Persistence is a JSON file** (`.data/`, gitignored). No database; `reset-demo` reseeds. Sufficient for the presentation.
 7. **UI automated tests: none.** Coverage is server-side (range, policy, messaging, fleet, boundary). `eslint` is not wired into `npm test` (no lint script).
@@ -40,4 +41,4 @@ State of the world as of `c8f5039` on `main`. Everything in "Verified" was exerc
 - `README.md` — run steps + the 8-minute demo script.
 
 ## Roadmap if continued
-SSO/RBAC + org model → real adapters (SSH/agent binary) → Postgres → message channels (Messages.app, Slack, Twilio) → range scenario packs (ransomware, insider, supply-chain) → scheduled conformance reports → notarized dmg/notarization pipeline + CI.
+SSO/RBAC + org model → real adapters (SSH/agent binary) → Postgres → message channels verified against real Slack/Twilio accounts, Messages.app bridge → range scenario packs (ransomware, insider, supply-chain) → scheduled conformance reports → notarized dmg/notarization pipeline + CI.

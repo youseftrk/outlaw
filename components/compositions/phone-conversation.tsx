@@ -31,6 +31,14 @@ function timeShort(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+const CHANNEL_LABEL: Record<string, string> = { webhook: "webhook", slack: "Slack", twilio: "SMS" };
+
+function deliverySuffix(d: NonNullable<Message["delivery"]>[number]) {
+  if (d.status === "sent") return `· sent via ${CHANNEL_LABEL[d.channel] ?? d.channel}`;
+  if (d.status === "failed") return "· delivery failed";
+  return "· sending…";
+}
+
 function Attachment({ a }: { a: NonNullable<Message["attachments"]>[number] }) {
   const href =
     a.type === "threat-card"
@@ -217,6 +225,9 @@ export function PhoneConversation({
               {!fromAgent && last && (
                 <span className="mono-data mt-0.5 self-end pr-1 text-[10px] text-text-3">{m.readAt ? "Read" : m.deliveredAt ? "Delivered" : "Sent"}</span>
               )}
+              {fromAgent && m.delivery?.length ? (
+                <span className="mono-data mt-0.5 self-start pl-1 text-[10px] text-text-3">{timeShort(m.sentAt)} {deliverySuffix(m.delivery[m.delivery.length - 1])}</span>
+              ) : null}
             </React.Fragment>
           );
         })}
