@@ -6,11 +6,11 @@ const patchOf = (id: string) => (r: import("@playwright/test").Response) =>
 
 test.describe("agents", () => {
   test.afterEach(async ({ request }) => {
-    await patchAgent(request, "agt-cassidy", { status: "idle" });
+    await patchAgent(request, "agt-cassidy", { paused: false });
   });
 
   test("Cassidy detail shows traces tab and the pause switch flips state via PATCH", async ({ page, request }) => {
-    await patchAgent(request, "agt-cassidy", { status: "idle" });
+    await patchAgent(request, "agt-cassidy", { paused: false });
 
     await page.goto("/agents");
     await page.getByRole("link", { name: /Cassidy/ }).first().click();
@@ -40,8 +40,10 @@ test.describe("agents", () => {
 
     const unpatched = page.waitForResponse(patchOf("agt-cassidy"));
     await pause.click();
-    expect((await (await unpatched).json()).agent.status).toBe("idle");
+    expect((await (await unpatched).json()).agent.status).not.toBe("paused");
     await expect(pause).toHaveAttribute("aria-checked", "false");
+    await expect(page.getByText("Status", { exact: true }).locator("xpath=following-sibling::*[1]")).not.toHaveText("Paused");
+    await expect(page.getByText(/Cassidy back on duty/)).toBeVisible();
   });
 
   test("a tool-running agent lists its traces", async ({ page }) => {

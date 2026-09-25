@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 const PatchSchema = z.object({
   autonomy: z.enum(["observe", "recommend", "act-with-approval", "autonomous"]).optional(),
   status: z.enum(["idle", "paused"]).optional(),
+  paused: z.boolean().optional(),
 });
 
 type Params = { params: Promise<{ id: string }> };
@@ -39,6 +40,7 @@ export async function PATCH(req: Request, { params }: Params) {
   if ("error" in parsed) return parsed.error;
   if (parsed.data.autonomy) agent.autonomy = parsed.data.autonomy;
   if (parsed.data.status) agent.status = parsed.data.status;
+  if (parsed.data.paused !== undefined) agent.status = parsed.data.paused ? "paused" : "idle";
   store.markDirty();
   bus.emit("agent.status", { agent }, { agentId: agent.id, summary: `${agent.name} → ${agent.autonomy}/${agent.status}`, href: `/agents/${agent.id}` });
   return json({ agent });

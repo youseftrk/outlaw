@@ -20,7 +20,7 @@ export async function getAgent(request: APIRequestContext, id: string) {
   return (await res.json()).agent as ApiAgent;
 }
 
-export async function patchAgent(request: APIRequestContext, id: string, body: Partial<Pick<ApiAgent, "autonomy" | "status">>) {
+export async function patchAgent(request: APIRequestContext, id: string, body: Partial<Pick<ApiAgent, "autonomy" | "status">> & { paused?: boolean }) {
   const res = await request.patch(`/api/agents/${id}`, { data: body });
   expect(res.ok()).toBeTruthy();
   return (await res.json()).agent as ApiAgent;

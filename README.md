@@ -40,11 +40,21 @@ Build the macOS app (must run on a Mac; unsigned .dmg lands in `release/`):
 npm run desktop:build:mac
 ```
 
-Tests (policy engine, command parser, blind range, boundary check):
+Tests (policy engine, command parser, blind range, boundary check, jsdom component tests):
 
 ```bash
 npm test
 ```
+
+Browser end-to-end tests (Playwright, Chromium). The config builds and starts the app itself on port 3411 with `QALAA_RESET=1` and an isolated `QALAA_DATA_DIR=.e2e-data`, so a running `npm run dev` is not disturbed:
+
+```bash
+npx playwright install chromium   # once
+npm run test:e2e                  # e2e/*.spec.ts — golden paths, responsive @ 390px, deck PDF
+npx playwright show-report        # HTML report after a run
+```
+
+`.github/workflows/ci.yml` runs `npm test`, `npm run build` and the Chromium e2e suite on every push/PR.
 
 ## Optional: give the agents a language model
 
