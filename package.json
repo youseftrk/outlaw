@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node scripts/check-blind-boundary.mjs && vitest run",
+    "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "desktop": "concurrently -k \"next dev\" \"wait-on http-get://localhost:3000 && cross-env QALAA_URL=http://localhost:3000 electron .\"",
     "desktop:build:mac": "next build && node scripts/prepare-standalone.mjs && electron-builder --mac dmg --arm64 --x64",
@@ -67,7 +68,10 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^24.13.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -77,6 +81,8 @@
     "electron-builder": "^26.15.3",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
+    "jsdom": "^30.1.0",
+    "pdf-lib": "^1.17.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5",

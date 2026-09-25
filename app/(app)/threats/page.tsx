@@ -116,11 +116,11 @@ export default function ThreatsPage() {
               <TableRow className="border-line hover:bg-transparent">
                 <TableHead className="w-[90px] text-text-3">Severity</TableHead>
                 <TableHead className="text-text-3">Threat</TableHead>
-                <TableHead className="text-text-3">Category</TableHead>
-                <TableHead className="text-text-3">Target</TableHead>
-                <TableHead className="text-text-3">Handled by</TableHead>
+                <TableHead className="hidden text-text-3 md:table-cell">Category</TableHead>
+                <TableHead className="hidden text-text-3 md:table-cell">Target</TableHead>
+                <TableHead className="hidden text-text-3 md:table-cell">Handled by</TableHead>
                 <TableHead className="text-text-3">Status</TableHead>
-                <TableHead className="text-right text-text-3">Detected</TableHead>
+                <TableHead className="hidden text-right text-text-3 md:table-cell">Detected</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -136,7 +136,7 @@ export default function ThreatsPage() {
                       {t.severity}
                     </span>
                   </TableCell>
-                  <TableCell className="max-w-[420px]">
+                  <TableCell className="max-w-[180px] md:max-w-[420px]">
                     <Link href={`/threats/${t.id}`} className="block truncate font-medium text-text-1 hover:text-lime" onClick={(e) => e.stopPropagation()}>
                       {t.title}
                     </Link>
@@ -146,16 +146,16 @@ export default function ThreatsPage() {
                       {t.source.geo?.country && ` · ${t.source.geo.country}`}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <Badge variant="outline" className="border-line text-text-2">
                       {humanize(t.category)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="mono-data text-[12px] text-text-2">
+                  <TableCell className="mono-data hidden text-[12px] text-text-2 md:table-cell">
                     {t.targetServerIds.length ? t.targetServerIds.slice(0, 2).map(hostname).join(", ") : "—"}
                     {t.targetServerIds.length > 2 && ` +${t.targetServerIds.length - 2}`}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <span className="flex -space-x-1.5">
                       {t.handledBy.map((id) => (
                         <span key={id} className="rounded-full ring-2 ring-bg-1">
@@ -165,7 +165,7 @@ export default function ThreatsPage() {
                     </span>
                   </TableCell>
                   <TableCell className={cn("text-[12px]", THREAT_STATUS_CLASS[t.status])}>{THREAT_STATUS_LABEL[t.status]}</TableCell>
-                  <TableCell className="mono-data text-right text-[11px] text-text-3">{ago(t.detectedAt)}</TableCell>
+                  <TableCell className="mono-data hidden text-right text-[11px] text-text-3 md:table-cell">{ago(t.detectedAt)}</TableCell>
                 </TableRow>
               ))}
               {threats && rows.length === 0 && (

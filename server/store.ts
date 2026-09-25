@@ -55,7 +55,7 @@ export interface QalaaState {
   world: World;
 }
 
-const DATA_DIR = join(process.cwd(), ".data");
+const DATA_DIR = process.env.QALAA_DATA_DIR || join(process.cwd(), ".data");
 const STATE_FILE = join(DATA_DIR, "state.json");
 const SECRETS_FILE = join(DATA_DIR, "secrets.json");
 

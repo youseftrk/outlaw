@@ -254,18 +254,18 @@ function PoliciesTab() {
       <Table>
         <TableHeader>
           <TableRow className="border-line hover:bg-transparent">
-            <TableHead className="w-12 text-text-3">#</TableHead>
+            <TableHead className="hidden w-12 text-text-3 md:table-cell">#</TableHead>
             <TableHead className="text-text-3">Policy</TableHead>
             <TableHead className="text-text-3">Effect</TableHead>
-            <TableHead className="text-text-3">Matches</TableHead>
-            <TableHead className="text-right text-text-3">Hits</TableHead>
+            <TableHead className="hidden text-text-3 md:table-cell">Matches</TableHead>
+            <TableHead className="hidden text-right text-text-3 md:table-cell">Hits</TableHead>
             <TableHead className="w-16 text-right text-text-3">On</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((p) => (
             <TableRow key={p.id} className={cn("border-line", !p.enabled && "opacity-50")}>
-              <TableCell className="mono-data text-text-3">{p.priority}</TableCell>
+              <TableCell className="mono-data hidden text-text-3 md:table-cell">{p.priority}</TableCell>
               <TableCell>
                 <p className="text-text-1">{p.name}</p>
                 <p className="text-[12px] text-text-3">{p.description}</p>
@@ -275,7 +275,7 @@ function PoliciesTab() {
                   {p.effect}
                 </Badge>
               </TableCell>
-              <TableCell className="text-[11px] text-text-2">
+              <TableCell className="hidden text-[11px] text-text-2 md:table-cell">
                 {[
                   p.match.tools?.length ? `tools: ${p.match.tools.join(", ")}` : null,
                   p.match.risk?.length ? `risk: ${p.match.risk.join("/")}` : null,
@@ -288,7 +288,7 @@ function PoliciesTab() {
                   .filter(Boolean)
                   .join(" · ") || "everything"}
               </TableCell>
-              <TableCell className="mono-data text-right text-text-2">{p.hits}</TableCell>
+              <TableCell className="mono-data hidden text-right text-text-2 md:table-cell">{p.hits}</TableCell>
               <TableCell className="text-right">
                 <Switch checked={p.enabled} onCheckedChange={(v) => toggle(p, Boolean(v))} />
               </TableCell>

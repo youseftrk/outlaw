@@ -26,7 +26,8 @@ export async function GET(_req: Request, { params }: Params) {
   const serverIds = new Set([...agent.assignedServerIds, ...store.s.servers.filter((s) => s.protectedBy.includes(agent.id)).map((s) => s.id)]);
   const servers = store.s.servers.filter((s) => serverIds.has(s.id));
   const messages = store.s.messages.filter((m) => m.threadId === `thr-${agent.name.toLowerCase()}`).slice(-50);
-  return json({ agent, tools, threats, traces, servers, messages });
+  const events = store.s.events.filter((e) => e.agentId === agent.id).slice(-200);
+  return json({ agent, tools, threats, traces, servers, messages, events });
 }
 
 export async function PATCH(req: Request, { params }: Params) {
